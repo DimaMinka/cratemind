@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrateMind — Vibe Sorter | v0.1</title>
+
+    <!-- Primary SEO -->
+    <meta name="description" content="CrateMind is a Python-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.">
+    <meta name="keywords" content="CrateMind, vibe sorter, audio router, music organizer, python audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music">
+    <meta name="author" content="CrateMind Team">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://cratemind.app/">
+
+    <!-- Open Graph (Facebook, LinkedIn, Telegram) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="CrateMind — Vibe Sorter">
+    <meta property="og:description" content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM. A Python TUI tool for music lovers.">
+    <meta property="og:url" content="https://cratemind.app/">
+    <meta property="og:site_name" content="CrateMind">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="CrateMind — Vibe Sorter">
+    <meta name="twitter:description" content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM.">
+    <meta name="twitter:site" content="@cratemind">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "CrateMind",
+      "operatingSystem": "Windows, macOS, Linux",
+      "applicationCategory": "MultimediaApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "CrateMind is a Python-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.",
+      "softwareVersion": "0.1",
+      "author": {
+        "@type": "Organization",
+        "name": "CrateMind Team"
+      }
+    }
+    </script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #d4d4d4;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .tui-window-frame {
+            border: 1px solid #444;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+            width: fit-content;
+            max-width: 90%;
+            margin: 40px auto;
+            overflow: hidden;
+            background-color: #1a1a1a;
+        }
+
+        .tui-window-content {
+            padding: 20px;
+        }
+
+        .tui-window-title {
+            text-align: center;
+            font-size: 1.2em;
+            color: #ffffff;
+            padding: 5px 0 10px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 10px;
+            margin-top: 0;
+            font-weight: normal;
+        }
+
+        .tui-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0 10px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+            color: #aaaaaa;
+        }
+
+        .tui-status {
+            color: #4caf50;
+        }
+
+        .tui-blink {
+            animation: tui-blink-anim 1.2s step-end infinite;
+        }
+
+        @keyframes tui-blink-anim {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .tui-stats {
+            color: #aaaaaa;
+        }
+
+        .tui-main-area {
+            display: flex;
+            gap: 20px;
+        }
+
+        .tui-panel {
+            flex: 1;
+            border: 1px solid #444;
+            padding: 10px;
+            position: relative;
+            background-color: #1e1e1e;
+        }
+
+        .tui-panel-header {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background-color: #1a1a1a;
+            padding: 0 8px;
+            color: #aaaaaa;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        pre {
+            margin: 10px 0 0;
+            font-family: inherit;
+            font-size: 0.85em;
+            line-height: 1.2;
+            white-space: pre-wrap;
+        }
+
+        .tui-active {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .tui-stream-item-detect {
+            color: #aaaaaa;
+        }
+
+        .tui-stream-item-id3 {
+            color: #aaaaaa;
+        }
+
+        .tui-stream-item-reasoning {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .tui-stream-item-routed {
+            color: #aaaaaa;
+        }
+
+        .tui-stream-dots {
+            color: #aaaaaa;
+            font-size: 1.1em;
+            line-height: 1;
+        }
+
+        .tui-stream-item-needs-manual {
+            color: #ffeb3b;
+        }
+
+        .tui-override-item {
+            color: #aaaaaa;
+        }
+
+        .tui-override-item-active {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .tui-override-llm {
+            color: #4caf50;
+            margin-left: 5px;
+        }
+
+        .tui-hotkeys {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+            color: #aaaaaa;
+            font-size: 0.9em;
+        }
+
+        .tui-key {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .project-meta-box {
+            border: 1px dashed #444;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #aaaaaa;
+            background-color: #1e1e1e;
+        }
+
+        .project-desc-box {
+            border: 1px dashed #444;
+            padding: 15px;
+            background-color: #1e1e1e;
+            box-sizing: border-box;
+        }
+
+        .tui-footer {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-top: 1px dashed #333;
+            color: #666666;
+            font-size: 0.8em;
+        }
+
+        .tui-footer a {
+            color: #4caf50;
+            text-decoration: none;
+        }
+
+        .tui-footer a:hover {
+            text-decoration: underline;
+        }
+
+        footer#main-footer {
+            border-top: 2px solid #444;
+            margin-top: 60px;
+            padding: 20px;
+            background: #111;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="tui-window-frame">
+            <div class="tui-window-content">
+                <h1 class="tui-window-title">About CrateMind</h1>
+                <div class="project-desc-box">
+                    <p>The CrateMind project is a Python-based intelligent tool that leverages Large Language Models (LLMs) to automatically sort audio files based on their filenames or ID3 tags.</p>
+                    <p>It runs in the terminal, providing the user with a simple and intuitive TUI (Text User Interface). The project is ideal for anyone looking to organize their music library without spending hours on manual sorting.</p>
+                    <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Key Features:</h2>
+                    <ul style="margin-bottom: 0;">
+                        <li>Automatic detection of new audio files in the incoming folder.</li>
+                        <li>Metadata extraction (artist, track title).</li>
+                        <li>Analysis using an LLM (Gemini Pro) to determine the vibe or genre.</li>
+                        <li>Automatic file routing into appropriate folders (e.g.,
+                            <code>./Sorted/galaxy trip/</code>).</li>
+                        <li>Manual Override classification in case of low LLM confidence.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="tui-app">
+        <div class="tui-window-frame">
+            <div class="tui-window-content">
+                <div class="tui-window-title">CrateMind</div>
+
+                <div class="project-meta-box">
+                    <pre style="margin: 0;">
++-----------------------------+
+| <b>Version:</b> v0.1 (Prototype)   |
+| <b>Status:</b> <span style="color: #ffeb3b;">IN DEVELOPMENT</span>      |
+| <b>Language:</b> Python            |
+| <b>Model:</b> Gemini Pro (API)     |
++-----------------------------+</pre>
+                </div>
+
+                <div class="tui-status-bar">
+                    <div class="tui-status"><span class="tui-blink">◉</span> Listening ./Incoming</div>
+                    <div class="tui-stats">
+                        Processed: 12 Overrides: 2 Err: 0
+                    </div>
+                </div>
+
+                <div class="tui-main-area">
+                    <div class="tui-panel">
+                        <div class="tui-panel-header">LIVE STREAM</div>
+                        <pre
+                            class="tui-stream"><span class="tui-stream-item-detect">• [DETECTED] Recondite - Shun.mp3</span>
+<span class="tui-stream-item-id3">• [ID3] Recondite - Shun</span>
+<span class="tui-stream-item-reasoning">• [LLM_REASONING] Deep, dark, cold minimal without bright synths. -&gt; iceland + galaxy trip</span>
+<span class="tui-stream-item-routed">• [ROUTED] -&gt; /galaxy trip/Recondite - Shun.mp3</span>
+<span class="tui-stream-item-routed">• [ROUTED] -&gt; /iceland/Recondite - Shun.mp3</span>
+<span class="tui-stream-dots">(................historical dots................)</span>
+<span class="tui-stream-item-detect">• [DETECTED] Agents of Time - The Moment.mp3</span>
+<span class="tui-stream-item-id3">• [ID3] Agents of Time - The Moment</span>
+<span class="tui-stream-item-reasoning">• [LLM_REASONING] Powerful melodic drive, emotional. -&gt; mountain sunset + club party</span>
+<span class="tui-stream-item-routed">• [ROUTED] -&gt; /mountain sunset/Agents of Time - The Moment.mp3</span>
+<span class="tui-stream-item-routed">• [ROUTED] -&gt; /club party/Agents of Time - The Moment.mp3</span>
+<span class="tui-stream-item-detect">• [DETECTED] Stephan Bodzin - Strand.flac</span>
+<span class="tui-stream-item-id3">• [ID3] Stephan Bodzin - Strand</span>
+<span class="tui-stream-item-reasoning">• [LLM_REASONING] Hypnotic melodic lead, deep texture. -&gt; galaxy trip</span>
+<span class="tui-stream-item-needs-manual">                 -&gt; galaxy trip</span>
+<span class="tui-stream-item-needs-manual">• [LLM_REASONING] Confidence below 0.7 (0.68). Needs ManualOverride.</span></pre>
+                    </div>
+                    <div class="tui-panel">
+                        <div class="tui-panel-header">MANUAL OVERRIDE</div>
+                        <pre class="tui-override">Sort: Stephan Bodzin - Strand.flac
+<span class="tui-override-item-active">&gt; [ ] mountain sunset</span>
+<span class="tui-override-item">[ ] magic forest</span>
+<span class="tui-override-item">[ ] nargila vibe</span>
+<span class="tui-override-item">[ ] club party</span>
+<span class="tui-override-item">[ ] new day vibe</span>
+<span class="tui-override-item">[ ] tropical vibe</span>
+<span class="tui-override-item">[ ] beach party</span>
+<span class="tui-override-item">[ ] earth</span>
+<span class="tui-override-item">[ ] iceland</span>
+<span class="tui-override-item">[ ] desert vibe</span>
+<span class="tui-override-item">[ ] spain vibe</span>
+<span class="tui-override-item">[ ] india jungle</span>
+<span class="tui-override-item-active">[x] galaxy trip          &lt;-- LLM</span>
+<span class="tui-override-item">[ ] psy</span>
+<span class="tui-override-item">[ ] epic</span>
+<span class="tui-override-item">[ ] mantra</span>
+<span class="tui-override-item">[ ] drum 'n' bass</span>
+<span class="tui-override-item">[ ] retro</span>
+<span class="tui-override-item">[ ] robotic</span>
+<span class="tui-override-item">[ ] rock</span>
+<span class="tui-override-item">[ ] intro outro</span>
+ 
+Selected: 1   Enter: Done</pre>
+                    </div>
+                </div>
+
+                <div class="tui-hotkeys">
+                    <span class="tui-key">Space:</span> Pause/Resume <span class="tui-key">M:</span> Manual Override <span
+                        class="tui-key">O:</span> Play Track <span class="tui-key">Q:</span> Quit
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="tui-footer" id="main-footer">
+        <p>&copy; 2026 <a href="https://github.com/cratemind" target="_blank">CrateMind</a>. Built with Python & Gemini API. All rights reserved.</p>
+    </footer>
+</body>
+</html>
