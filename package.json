@@ -1,0 +1,28 @@
+{
+  "name": "cratemind",
+  "version": "0.1.0",
+  "description": "AI-driven TUI audio file vibe sorter and router",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.tsx"
+  },
+  "dependencies": {
+    "@google/genai": "^0.1.1",
+    "chokidar": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "ink": "^4.4.1",
+    "music-metadata": "^7.14.0",
+    "p-queue": "^6.6.2",
+    "react": "^18.2.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
