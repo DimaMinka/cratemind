@@ -7,8 +7,8 @@
     <title>CrateMind — Vibe Sorter | v0.1</title>
 
     <!-- Primary SEO -->
-    <meta name="description" content="CrateMind is a Python-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.">
-    <meta name="keywords" content="CrateMind, vibe sorter, audio router, music organizer, python audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music">
+    <meta name="description" content="CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.">
+    <meta name="keywords" content="CrateMind, vibe sorter, audio router, music organizer, typescript audio tool, node.js audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music">
     <meta name="author" content="CrateMind Team">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://dimaminka.github.io/cratemind/">
@@ -16,7 +16,7 @@
     <!-- Open Graph (Facebook, LinkedIn, Telegram) -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="CrateMind — Vibe Sorter">
-    <meta property="og:description" content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM. A Python TUI tool for music lovers.">
+    <meta property="og:description" content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM. A TypeScript/Node.js TUI tool for music lovers.">
     <meta property="og:url" content="https://dimaminka.github.io/cratemind/">
     <meta property="og:site_name" content="CrateMind">
     <meta property="og:locale" content="en_US">
@@ -38,7 +38,7 @@
         "price": "0",
         "priceCurrency": "USD"
       },
-      "description": "CrateMind is a Python-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.",
+      "description": "CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.",
       "softwareVersion": "0.1",
       "author": {
         "@type": "Organization",
@@ -250,16 +250,21 @@
             <div class="tui-window-content">
                 <h1 class="tui-window-title">About CrateMind</h1>
                 <div class="project-desc-box">
-                    <p>The CrateMind project is a Python-based intelligent tool that leverages Large Language Models (LLMs) to automatically sort audio files based on their filenames or ID3 tags.</p>
-                    <p>It runs in the terminal, providing the user with a simple and intuitive TUI (Text User Interface). The project is ideal for anyone looking to organize their music library without spending hours on manual sorting.</p>
+                    <p>The CrateMind project is a local TypeScript/Node.js-based vibe sorter and audio router that leverages Gemini LLM to automatically categorize and sort your music files.</p>
+                    <p>It runs directly in your terminal using a beautiful React-based TUI (powered by Ink 4 & Zustand), making it the perfect tool for DJs and music collectors to curate their libraries with zero manual friction.</p>
+                    <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Technical Architecture:</h2>
+                    <ul style="margin-bottom: 15px;">
+                        <li><b>FSService:</b> Chokidar file watcher & sequential queue manager (p-queue).</li>
+                        <li><b>ID3Service:</b> Metadata tag extraction using music-metadata.</li>
+                        <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation.</li>
+                        <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
+                    </ul>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Key Features:</h2>
                     <ul style="margin-bottom: 0;">
-                        <li>Automatic detection of new audio files in the incoming folder.</li>
-                        <li>Metadata extraction (artist, track title).</li>
-                        <li>Analysis using an LLM (Gemini Pro) to determine the vibe or genre.</li>
-                        <li>Automatic file routing into appropriate folders (e.g.,
-                            <code>./Sorted/galaxy trip/</code>).</li>
-                        <li>Manual Override classification in case of low LLM confidence.</li>
+                        <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
+                        <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
+                        <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
+                        <li>Native OS audio preview triggers from within the terminal.</li>
                     </ul>
                 </div>
             </div>
@@ -276,8 +281,10 @@
 +-----------------------------+
 | <b>Version:</b> v0.1 (Prototype)   |
 | <b>Status:</b> <span style="color: #ffeb3b;">IN DEVELOPMENT</span>      |
-| <b>Language:</b> Python            |
-| <b>Model:</b> Gemini Pro (API)     |
+| <b>Language:</b> TypeScript        |
+| <b>Runtime:</b> Node.js 20+        |
+| <b>Framework:</b> Ink 4 (React)    |
+| <b>Model:</b> Gemini 2.5 (API)     |
 +-----------------------------+</pre>
                 </div>
 
@@ -347,7 +354,7 @@ Selected: 1   Enter: Done</pre>
     </main>
 
     <footer class="tui-footer" id="main-footer">
-        <p>&copy; 2026 <a href="https://github.com/DimaMinka/cratemind" target="_blank">CrateMind</a>. Built with Python & Gemini API. All rights reserved.</p>
+        <p>&copy; 2026 <a href="https://github.com/DimaMinka/cratemind" target="_blank">CrateMind</a>. Built with Node.js, TypeScript & Gemini API. All rights reserved.</p>
     </footer>
 </body>
 </html>
