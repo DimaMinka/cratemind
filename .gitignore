@@ -3,3 +3,5 @@ dist/
 .env
 .DS_Store
 Incoming
+cratemind.log
+cratemind-memory.json

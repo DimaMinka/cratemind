@@ -1,6 +1,8 @@
 import React from 'react';
 import { render } from 'ink';
 import { create } from 'zustand';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AppState } from '../types.js';
 import { LOG_MAX } from '../config.js';
 import { App } from '../components/App.js';
@@ -23,12 +25,21 @@ export const useStore = create<AppState>((set) => ({
     set((state) => ({
       stats: { ...state.stats, [key]: state.stats[key] + 1 }
     })),
-  addLog: (type, message) =>
+  addLog: (type, message) => {
+    try {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const logLine = `[${timestamp}] [${type}] ${message}\n`;
+      fs.appendFileSync(path.resolve('./cratemind.log'), logLine);
+    } catch {
+      // Graceful fallback if log writing fails
+    }
+
     set((state) => {
       const nextLog = [...state.log, { type, message, ts: Date.now() }];
       if (nextLog.length > LOG_MAX) nextLog.shift(); // FIFO eviction
       return { log: nextLog };
-    }),
+    });
+  },
   setOverride: (override) => set({ override }),
   setRagStatus: (ragStatus, stats) =>
     set((state) => ({
