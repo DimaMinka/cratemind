@@ -67,7 +67,7 @@ export async function classifyTrack(
   }
 
   // Real Gemini API Execution
-  let attempts = 3;
+  let attempts = 2;
   while (attempts > 0) {
     try {
       const ai = getAIClient();
@@ -132,7 +132,7 @@ ${ragContext}`;
     } catch (err) {
       attempts--;
       if (attempts === 0) {
-        throw new Error('Gemini API classification failed after 3 attempts', { cause: err });
+        throw new Error('Gemini API classification failed after 2 attempts', { cause: err });
       }
       // Simple exponential backoff delay before retrying
       await new Promise((resolve) => setTimeout(resolve, 1000));
