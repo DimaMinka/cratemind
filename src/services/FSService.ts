@@ -214,7 +214,7 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
     stopAudio(); // Stop any active playback first
 
     // Spawn native macOS background player starting at offset seconds
-    activeAudioProcess = spawn('afplay', ['-t', String(offset), filepath], { stdio: 'ignore' });
+    activeAudioProcess = spawn('afplay', ['-b', String(offset), filepath], { stdio: 'ignore' });
 
     activeAudioProcess.on('exit', () => {
       // Auto-clear playback if ended naturally
@@ -281,6 +281,6 @@ export function seekPlayback(deltaSeconds: number): void {
     newOffset = playback.duration - 2; // Stay at least 2 seconds before end
   }
 
-  addLog('RAG', `Seeking audio playback to ${formatTime(newOffset)}...`);
+  addLog('DETECTED', `Seeking audio playback to ${formatTime(newOffset)}...`);
   previewAudio(playback.filepath, newOffset, playback.duration);
 }
