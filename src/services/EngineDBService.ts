@@ -3,22 +3,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { EngineTrack } from '../types.js';
-import { ENGINE_DB_PATH } from '../config.js';
+import { ENGINE_DB_PATH, MOCK_MODE } from '../config.js';
+import { MOCK_ENGINE_TRACKS } from '../mocks/mockData.js';
 
 /**
  * EngineDBService.ts
  *
  * READ-ONLY integration with Engine DJ's SQLite library (m.db).
- *
- * Denon DJ/Engine DJ Database Architecture:
- * - SQLite database engines.
- * - Main Database (m.db): Contains track metadata, playlists, history.
- * - Performance Database (p.db): Contains cues, beatgrids, loops, waveforms.
- *
- * SAFETY INSTRUCTION:
- * - This service MUST operate in STRICTLY READ-ONLY mode.
- * - Under no circumstances should any write/update/insert queries be run.
- * - Connecting is strictly enforced with `{ readonly: true }` flag.
  */
 
 // Helper to resolve home directory tilde (~) in database path
@@ -34,6 +25,9 @@ function resolvePath(filePath: string): string {
  * Returns false if the file does not exist or opening it fails.
  */
 export function isAvailable(): boolean {
+  if (MOCK_MODE) {
+    return true; // Mock mode overrides file check
+  }
   const resolvedPath = resolvePath(ENGINE_DB_PATH);
   if (!fs.existsSync(resolvedPath)) {
     return false;
@@ -74,6 +68,9 @@ function runQuery<T>(queryFn: (db: Database.Database) => T): T | [] {
  * Key Columns: id, path, filename, title, artist.
  */
 export function getTracks(): EngineTrack[] {
+  if (MOCK_MODE) {
+    return MOCK_ENGINE_TRACKS;
+  }
   return runQuery((db) => {
     return db.prepare('SELECT id, path, filename, title, artist FROM Track').all() as EngineTrack[];
   }) as EngineTrack[];
@@ -86,7 +83,12 @@ export function getTracks(): EngineTrack[] {
  * Query: SELECT ... FROM Track WHERE path LIKE ? || '%'
  */
 export function getTracksInPath(dirPath: string): EngineTrack[] {
-  // Ensure the directory path has a trailing separator to prevent matching similar prefix folder names
+  if (MOCK_MODE) {
+    return MOCK_ENGINE_TRACKS.map((t) => ({
+      ...t,
+      path: path.join(dirPath, t.path)
+    }));
+  }
   const normalizedDir = dirPath.endsWith(path.sep) ? dirPath : dirPath + path.sep;
   return runQuery((db) => {
     return db

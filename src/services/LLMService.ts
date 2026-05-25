@@ -1,4 +1,5 @@
 import { LLMResponse } from '../types.js';
+import { MOCK_MODE } from '../config.js';
 
 /**
  * LLMService.ts
@@ -8,10 +9,43 @@ import { LLMResponse } from '../types.js';
  */
 
 export async function classifyTrack(
-  _artist: string,
-  _title: string,
+  artist: string,
+  title: string,
   _ragContext = ''
 ): Promise<LLMResponse> {
+  if (MOCK_MODE) {
+    // Artificial latency to simulate Gemini API network calls
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    const artistLower = artist.toLowerCase();
+
+    // Trigger Manual Override for Stephan Bodzin
+    if (artistLower.includes('bodzin')) {
+      return {
+        folders: ['galaxy trip'],
+        reasoning: 'Hypnotic melodic synth lead, deep hardware textures. Borderline atmospheric.',
+        confidence: 0.65 // Below 0.70 threshold -> triggers manual selection!
+      };
+    }
+
+    // Auto-route Recondite
+    if (artistLower.includes('recondite')) {
+      return {
+        folders: ['galaxy trip', 'iceland'],
+        reasoning:
+          'Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.',
+        confidence: 0.95
+      };
+    }
+
+    // Default mock response for other tracks
+    return {
+      folders: ['mountain sunset'],
+      reasoning: 'Warm organic instrumentation, melancholic strings and emotional progression.',
+      confidence: 0.88
+    };
+  }
+
   // TODO: Implement Gemini 2.5 API integration, structured schema, and retries
   return {
     folders: ['intro outro'],

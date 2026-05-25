@@ -6,17 +6,16 @@ import {
   RAG_EXAMPLES_PER_FOLDER,
   RAG_MAX_STORED,
   FOLDERS,
-  AUDIO_EXTENSIONS
+  AUDIO_EXTENSIONS,
+  MOCK_MODE
 } from '../config.js';
 import { extractMetadata } from './ID3Service.js';
+import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
 
 /**
  * RAGService.ts
  *
  * Implements few-shot retrieval-augmented memory for vibe classification.
- *
- * Storage: Flat JSON file (RAG_MEMORY_FILE = cratemind-memory.json)
- * FIFO Eviction policy when total examples exceed RAG_MAX_STORED (500)
  */
 
 function loadMemory(): RagMemory {
@@ -42,27 +41,28 @@ function saveMemory(memory: RagMemory): void {
   }
 }
 
-/**
- * Performs a deep bootstrap scan across already sorted vibe directories to populate
- * the RAG memories.
- *
- * Employs collection change detection: If the active SORTED_DIR changes compared to the
- * last scan, it clears the stale memory first to maintain library consistency.
- */
 export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
-  const memory = loadMemory();
   const currentSortedDir = path.resolve(sortedDir);
 
+  if (MOCK_MODE) {
+    const memory = {
+      version: 1 as const,
+      examples: [...MOCK_RAG_EXAMPLES],
+      lastScanDir: currentSortedDir
+    };
+    saveMemory(memory);
+    return { found: MOCK_RAG_EXAMPLES.length, added: MOCK_RAG_EXAMPLES.length, folders: 4 };
+  }
+
+  const memory = loadMemory();
   let found = 0;
   let added = 0;
   let foldersScanned = 0;
 
-  // Collection change detection: Reset memory if collection dir changed
   if (memory.lastScanDir && path.resolve(memory.lastScanDir) !== currentSortedDir) {
     memory.examples = [];
   }
 
-  // Walk through each known vibe folder inside the sorted directory
   for (const folder of FOLDERS) {
     const folderPath = path.join(currentSortedDir, folder);
     if (!fs.existsSync(folderPath)) {
@@ -81,7 +81,6 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
       found++;
       const fullPath = path.join(folderPath, file);
 
-      // Check if this example is already recorded in memory (deduplication)
       const isDuplicate = memory.examples.some(
         (ex) =>
           ex.artist.toLowerCase() === file.toLowerCase() ||
@@ -94,10 +93,8 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
         continue;
       }
 
-      // Extract metadata
       const meta = await extractMetadata(fullPath);
 
-      // Add to memory
       memory.examples.push({
         artist: meta.artist,
         title: meta.title,
@@ -111,7 +108,6 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
     }
   }
 
-  // Cap memory size (FIFO)
   if (memory.examples.length > RAG_MAX_STORED) {
     memory.examples = memory.examples.slice(-RAG_MAX_STORED);
   }
@@ -126,13 +122,8 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
   };
 }
 
-/**
- * Add a successfully classified track to the memory ledger.
- */
 export function addExample(example: RagExample): void {
   const memory = loadMemory();
-
-  // Deduplicate: remove matching track before adding new one
   memory.examples = memory.examples.filter(
     (ex) =>
       !(
@@ -140,21 +131,13 @@ export function addExample(example: RagExample): void {
         ex.title.toLowerCase() === example.title.toLowerCase()
       )
   );
-
   memory.examples.push(example);
-
-  // FIFO eviction
   if (memory.examples.length > RAG_MAX_STORED) {
     memory.examples.shift();
   }
-
   saveMemory(memory);
 }
 
-/**
- * Generates the Few-shot RAG prompt injection context for the LLM classifier.
- * Selects up to RAG_EXAMPLES_PER_FOLDER most recent examples for each folder.
- */
 export function getContext(): string {
   const memory = loadMemory();
   if (memory.examples.length === 0) {
@@ -164,7 +147,6 @@ export function getContext(): string {
   const lines: string[] = [];
 
   for (const folder of FOLDERS) {
-    // Find all examples associated with the current folder, sorted by timestamp descending
     const folderExamples = memory.examples
       .filter((ex) => ex.folders.includes(folder))
       .sort((a, b) => b.ts - a.ts)
@@ -187,9 +169,6 @@ export function getContext(): string {
   ].join('\n');
 }
 
-/**
- * Completely clears the persistent memory store.
- */
 export function clear(): void {
   saveMemory({ version: 1, examples: [], lastScanDir: null });
 }
