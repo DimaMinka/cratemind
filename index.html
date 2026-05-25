@@ -7,7 +7,7 @@
     <title>CrateMind — Vibe Sorter | v0.1</title>
 
     <!-- Primary SEO -->
-    <meta name="description" content="CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.">
+    <meta name="description" content="CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM + RAG memory to automatically organize your music library by mood and genre.">
     <meta name="keywords" content="CrateMind, vibe sorter, audio router, music organizer, typescript audio tool, node.js audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music">
     <meta name="author" content="CrateMind Team">
     <meta name="robots" content="index, follow">
@@ -252,19 +252,29 @@
                 <div class="project-desc-box">
                     <p>The CrateMind project is a local TypeScript/Node.js-based vibe sorter and audio router that leverages Gemini LLM to automatically categorize and sort your music files.</p>
                     <p>It runs directly in your terminal using a beautiful React-based TUI (powered by Ink 4 & Zustand), making it the perfect tool for DJs and music collectors to curate their libraries with zero manual friction.</p>
+                    <p>A built-in <b>RAG (Retrieval-Augmented Generation)</b> memory layer accumulates every past routing decision and injects few-shot examples into each new Gemini prompt — so the more tracks you sort, the smarter and more consistent the vibe classification becomes.</p>
+                    <p>CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests, the user decides. Every action touching your collection requires explicit confirmation.</p>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Technical Architecture:</h2>
                     <ul style="margin-bottom: 15px;">
                         <li><b>FSService:</b> Chokidar file watcher & sequential queue manager (p-queue).</li>
                         <li><b>ID3Service:</b> Metadata tag extraction using music-metadata.</li>
-                        <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation.</li>
+                        <li><b>RAGService:</b> Few-shot memory layer — persists routing history to <code>cratemind-memory.json</code> and builds context strings for LLM prompts.</li>
+                        <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation. Accepts RAG context for improved accuracy.</li>
                         <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
                     </ul>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Key Features:</h2>
-                    <ul style="margin-bottom: 0;">
+                    <ul style="margin-bottom: 15px;">
                         <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
                         <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
+                        <li><b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not just artist name.</li>
+                        <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit <code>[Y/n]</code> confirmation.</li>
                         <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
                         <li>Native OS audio preview triggers from within the terminal.</li>
+                    </ul>
+                    <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Future Integration Ideas:</h2>
+                    <ul style="margin-bottom: 0;">
+                        <li><b>Model Context Protocol (MCP) Server:</b> Expose CrateMind's RAG memory and vibe-routing logic as an MCP server. This allows IDE agents (like Claude or Antigravity) to query your library's organization rules, analyze track metadata, and suggest playlists directly inside your coding/chat environments.</li>
+                        <li><b>Antigravity SDK (AGY CLI) Integration:</b> Integrate CrateMind with the AGY CLI to Orchestrate autonomous multi-agent music curations. For example, let one subagent scour streaming platforms or charts for new releases, while CrateMind acts as the local routing agent to seamlessly classify them into your physical crates.</li>
                     </ul>
                 </div>
             </div>
@@ -280,18 +290,24 @@
                     <pre style="margin: 0;">
 +-----------------------------+
 | <b>Version:</b> v0.1 (Prototype)   |
-| <b>Status:</b> <span style="color: #ffeb3b;">IN DEVELOPMENT</span>      |
+| <b>Status:</b> <span style="color: #ffeb3b;">READY TO SCAN</span>       |
 | <b>Language:</b> TypeScript        |
 | <b>Runtime:</b> Node.js 20+        |
 | <b>Framework:</b> Ink 4 (React)    |
 | <b>Model:</b> Gemini 2.5 (API)     |
-+-----------------------------+</pre>
+| <b>RAG:</b> <span style="color: #4caf50;">few-shot memory</span>      |
++-----------------------------+
+
+RAG States on startup:
+  <span style="color: #ffeb3b;">◆ CONFIRM</span>   Bootstrap scan required
+  <span style="color: #aaaaaa;">◌ SCANNING</span>  awaiting user input
+  <span style="color: #4caf50;">◉ MEMORY</span>    347 tracks · 18 folders</pre>
                 </div>
 
                 <div class="tui-status-bar">
-                    <div class="tui-status"><span class="tui-blink">◉</span> Listening ./Incoming</div>
+                    <div class="tui-status"><span class="tui-blink">◉</span> Awaiting User Approval</div>
                     <div class="tui-stats">
-                        Processed: 12 Overrides: 2 Err: 0
+                        Processed: 0 Overrides: 0 Err: 0 &nbsp;|&nbsp; <span style="color: #4caf50;">MEM: 347 tracks · 18/21 folders</span>
                     </div>
                 </div>
 
@@ -299,11 +315,22 @@
                     <div class="tui-panel">
                         <div class="tui-panel-header">LIVE STREAM</div>
                         <pre
-                            class="tui-stream"><span class="tui-stream-item-detect">• [DETECTED] Recondite - Shun.mp3</span>
+                            class="tui-stream"><span class="tui-stream-item-id3">• [RAG] Found 347 tracks in ./Sorted (18 folders)</span>
+<span class="tui-stream-item-needs-manual">► Scan collection into memory to enable RAG context? [Y/n]</span>
+<span style="color: #aaaaaa;">• [USER] Y</span>
+<span class="tui-stream-item-id3">• [RAG] Starting bootstrap scan: ./Sorted</span>
+<span class="tui-stream-item-id3">• [RAG] Scanning galaxy trip... 12 files</span>
+<span class="tui-stream-item-id3">• [RAG] Scanning iceland... 8 files</span>
+<span class="tui-stream-item-id3">• [RAG] Scanning mountain sunset... 15 files</span>
+<span class="tui-stream-item-id3">• [RAG] Bootstrap complete: 347 tracks added · 18 folders · 0.4s</span>
+<span class="tui-stream-dots">(...................................................)</span>
+<span class="tui-stream-item-detect">• [DETECTED] Recondite - Shun.mp3</span>
 <span class="tui-stream-item-id3">• [ID3] Recondite - Shun</span>
+<span class="tui-stream-item-id3">• [RAG] context loaded: 38 examples across 14 folders</span>
 <span class="tui-stream-item-reasoning">• [LLM_REASONING] Deep, dark, cold minimal without bright synths. -&gt; iceland + galaxy trip</span>
 <span class="tui-stream-item-routed">• [ROUTED] -&gt; /galaxy trip/Recondite - Shun.mp3</span>
 <span class="tui-stream-item-routed">• [ROUTED] -&gt; /iceland/Recondite - Shun.mp3</span>
+<span class="tui-stream-item-id3">• [RAG] saved: Recondite - Shun (source: auto)</span>
 <span class="tui-stream-dots">(................historical dots................)</span>
 <span class="tui-stream-item-detect">• [DETECTED] Agents of Time - The Moment.mp3</span>
 <span class="tui-stream-item-id3">• [ID3] Agents of Time - The Moment</span>
@@ -347,7 +374,7 @@ Selected: 1   Enter: Done</pre>
 
                 <div class="tui-hotkeys">
                     <span class="tui-key">Space:</span> Pause/Resume <span class="tui-key">M:</span> Manual Override <span
-                        class="tui-key">O:</span> Play Track <span class="tui-key">Q:</span> Quit
+                        class="tui-key">O:</span> Play Track <span class="tui-key">R:</span> RAG Stats <span class="tui-key">Q:</span> Quit
                 </div>
             </div>
         </div>
