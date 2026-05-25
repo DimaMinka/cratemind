@@ -59,7 +59,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
 
       <Box marginBottom={1} flexDirection="column">
         <Text color="white" bold>
-          Track: {override.filename}
+          Track: {override.filename} <Text color="green" bold>[PLAYING]</Text>
         </Text>
         <Text color="gray" dimColor>
           Select vibes to copy (showing {start + 1}-{end} of {FOLDERS.length})

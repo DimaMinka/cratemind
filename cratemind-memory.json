@@ -9,7 +9,17 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779709204043
+      "ts": 1779710814397
+    },
+    {
+      "artist": "Bonobo",
+      "title": "Kong",
+      "folders": [
+        "mountain sunset"
+      ],
+      "reasoning": "Added during mock scan",
+      "source": "scan",
+      "ts": 1779710814397
     },
     {
       "artist": "Kiasmos",
@@ -19,7 +29,7 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779709204043
+      "ts": 1779710814397
     },
     {
       "artist": "Recondite",
@@ -30,59 +40,7 @@
       ],
       "reasoning": "Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.",
       "source": "auto",
-      "ts": 1779710432682
-    },
-    {
-      "artist": "Stephan Bodzin",
-      "title": "Strand",
-      "folders": [
-        "galaxy trip",
-        "mountain sunset",
-        "magic forest"
-      ],
-      "reasoning": "Routed via manual user override checklist",
-      "source": "manual",
-      "ts": 1779710443283
-    },
-    {
-      "artist": "Bonobo",
-      "title": "Kong",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710456670
-    },
-    {
-      "artist": "test",
-      "title": "track",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710490561
-    },
-    {
-      "artist": "test",
-      "title": "track2",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710519200
-    },
-    {
-      "artist": "test",
-      "title": "galaxy1",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710577428
+      "ts": 1779710834503
     },
     {
       "artist": "ARTBAT",
@@ -92,7 +50,17 @@
       ],
       "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
       "source": "auto",
-      "ts": 1779710725149
+      "ts": 1779710838566
+    },
+    {
+      "artist": "Stephan Bodzin",
+      "title": "Strand",
+      "folders": [
+        "galaxy trip"
+      ],
+      "reasoning": "Routed via manual user override checklist",
+      "source": "manual",
+      "ts": 1779710847429
     }
   ],
   "lastScanDir": "/Users/dima/www/ai-projects/CrateMind/Sorted"
