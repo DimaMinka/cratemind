@@ -16,8 +16,8 @@ export async function extractMetadata(
   let artist: string | undefined;
   let title: string | undefined;
 
-  // Bypassed in MOCK_MODE or if the file does not physically exist to prevent console pollution
-  const fileExists = !MOCK_MODE && fs.existsSync(filepath);
+  // Bypassed if the file does not physically exist to prevent console pollution
+  const fileExists = fs.existsSync(filepath);
 
   if (fileExists) {
     try {
