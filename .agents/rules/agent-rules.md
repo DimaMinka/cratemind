@@ -81,3 +81,8 @@ Upon initialization, CrateMind executes the following detection and import pipel
 * **Dependency Management**: Ensure `better-sqlite3` and `@types/better-sqlite3` are correctly configured.
 * **Avoid Circular Imports**: Do not import `UIService` or `useStore` directly inside `EngineDBService` or `RAGService` to prevent circular dependency breaks in ESM. Use parameters, events, or state updates downstream.
 * **TUI Transparency**: Clearly differentiate between tracks already indexed in the Engine DJ database and raw untracked audio files detected on the disk.
+* **Collaborative Testing & Interactive Verification**: 
+  Once development phases are completed, the agent MUST establish a collaborative verification process before final completion.
+  * Provide interactive verification scripts or sandbox CLI testing steps (e.g., temporary/mock database and directories) that the developer can easily execute themselves.
+  * Print clear, formatted diagnostic logs or summaries during tests so the developer can visually confirm that SQLite, RAG, and UI state layers function perfectly.
+  * Walk through the verification results step-by-step with the developer, explaining exactly how to run, observe, and validate the correct behavior.
