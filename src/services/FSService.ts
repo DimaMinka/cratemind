@@ -10,8 +10,9 @@ import { extractMetadata } from './ID3Service.js';
 import { MOCK_MODE, FOLDERS, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 
-// Module-level task queue to ensure sequential processing
-const queue = new (PQueue as any)({ concurrency: 1 });
+// Safe fallback resolution for PQueue constructability in NodeNext ESM contexts
+const PQueueClass = (PQueue as any).default || PQueue;
+const queue = new PQueueClass({ concurrency: 1 });
 
 // Active background audio player process
 let activeAudioProcess: ChildProcess | null = null;
