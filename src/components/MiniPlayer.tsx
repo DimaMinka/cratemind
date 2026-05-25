@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useStore } from '../services/UIService.js';
-import { formatTime } from '../services/FSService.js';
+import { formatTime } from '../services/AudioService.js';
 
 /**
  * MiniPlayer.tsx
