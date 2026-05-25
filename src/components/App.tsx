@@ -6,6 +6,8 @@ import { Header } from './Header.js';
 import { LiveStream } from './LiveStream.js';
 import { ManualOverride } from './ManualOverride.js';
 import { BottomBar } from './BottomBar.js';
+import { MiniPlayer } from './MiniPlayer.js';
+import { seekPlayback } from '../services/FSService.js';
 
 /**
  * App.tsx
@@ -32,8 +34,9 @@ export function App(): React.JSX.Element {
   // Capture global hotkeys (only when no boot or override overlays are active)
   const isOverlayActive = bootPrompt !== null || override !== null;
 
-  useInput((input, _key) => {
+  useInput((input, key) => {
     if (isOverlayActive) {
+      // ManualOverride.tsx will capture its own inputs (including Left/Right arrows)
       return;
     }
 
@@ -54,6 +57,10 @@ export function App(): React.JSX.Element {
         'RAG',
         `Memory Status: [${ragStatus}] - Total Tracks: ${ragStats.total} across ${ragStats.folders} directories.`
       );
+    } else if (key.leftArrow) {
+      seekPlayback(-10);
+    } else if (key.rightArrow) {
+      seekPlayback(10);
     }
   });
 
@@ -105,6 +112,9 @@ export function App(): React.JSX.Element {
             </Box>
           ) : null}
         </Box>
+
+        {/* Premium animated progress player */}
+        <MiniPlayer />
 
         {/* Fixed hotkey footer */}
         <BottomBar />

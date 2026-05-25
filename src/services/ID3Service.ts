@@ -12,9 +12,10 @@ import { MOCK_MODE } from '../config.js';
 
 export async function extractMetadata(
   filepath: string
-): Promise<{ artist: string; title: string }> {
+): Promise<{ artist: string; title: string; duration: number }> {
   let artist: string | undefined;
   let title: string | undefined;
+  let duration = 180; // Default mock fallback (3 minutes)
 
   // Bypassed if the file does not physically exist to prevent console pollution
   const fileExists = fs.existsSync(filepath);
@@ -24,6 +25,9 @@ export async function extractMetadata(
       const metadata = await mm.parseFile(filepath);
       artist = metadata.common.artist;
       title = metadata.common.title;
+      if (metadata.format.duration) {
+        duration = Math.round(metadata.format.duration);
+      }
     } catch {
       // Silently fall back to filename parsing without corrupting TUI screen buffer
     }
@@ -63,7 +67,8 @@ export async function extractMetadata(
 
   return {
     artist: artist || 'Unknown',
-    title: title || 'Unknown'
+    title: title || 'Unknown',
+    duration
   };
 }
 export default extractMetadata;

@@ -75,12 +75,12 @@ export async function processFile(filepath: string): Promise<void> {
     const filename = path.basename(filepath);
     addLog('DETECTED', `Discovered track: ${filename}`);
 
-    // Auto-trigger audio preview when a new track is processed
-    previewAudio(filepath);
-
     // 1. ID3 Metadata extraction
     const meta = await extractMetadata(filepath);
     addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
+
+    // Auto-trigger audio preview when a new track is processed
+    previewAudio(filepath, 0, meta.duration);
 
     // 2. Load RAG Context
     const ragContext = RAGService.getContext();
@@ -194,20 +194,42 @@ export async function route(srcPath: string, selectedFolders: string[]): Promise
  * Triggers background audio playback using macOS native 'afplay'.
  * Auto-kills any currently active audio process to prevent multiple overlays.
  */
-export function previewAudio(filepath: string): void {
+export function previewAudio(filepath: string, offset = 0, duration = 180): void {
+  const setPlayback = useStore.getState().setPlayback;
+  const filename = path.basename(filepath);
+
   // If in mock mode and the file doesn't physically exist, bypass preview gracefully
   if (MOCK_MODE && !fs.existsSync(filepath)) {
+    setPlayback({
+      filepath,
+      filename,
+      duration,
+      offset,
+      lastStartedAt: Date.now()
+    });
     return;
   }
 
   try {
     stopAudio(); // Stop any active playback first
 
-    // Spawn native macOS background player
-    activeAudioProcess = spawn('afplay', [filepath], { stdio: 'ignore' });
+    // Spawn native macOS background player starting at offset seconds
+    activeAudioProcess = spawn('afplay', ['-t', String(offset), filepath], { stdio: 'ignore' });
 
     activeAudioProcess.on('exit', () => {
-      activeAudioProcess = null;
+      // Auto-clear playback if ended naturally
+      const currentPlayback = useStore.getState().playback;
+      if (currentPlayback?.filepath === filepath && activeAudioProcess === null) {
+        setPlayback(null);
+      }
+    });
+
+    setPlayback({
+      filepath,
+      filename,
+      duration,
+      offset,
+      lastStartedAt: Date.now()
     });
   } catch {
     // Graceful recovery if afplay fails or is missing (e.g. non-macOS systems)
@@ -217,7 +239,10 @@ export function previewAudio(filepath: string): void {
 /**
  * Stops any active background audio process.
  */
-function stopAudio(): void {
+export function stopAudio(): void {
+  const setPlayback = useStore.getState().setPlayback;
+  setPlayback(null);
+
   if (activeAudioProcess) {
     try {
       activeAudioProcess.kill('SIGKILL');
@@ -226,4 +251,36 @@ function stopAudio(): void {
     }
     activeAudioProcess = null;
   }
+}
+
+/**
+ * Visual time formatting helper (e.g., 125 -> "2:05").
+ */
+export function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Seeks forward/backward in the current playing track by deltaSeconds.
+ * Re-spawns afplay with the computed starting offset.
+ */
+export function seekPlayback(deltaSeconds: number): void {
+  const playback = useStore.getState().playback;
+  if (!playback) return;
+
+  const addLog = useStore.getState().addLog;
+  const elapsed = Math.round((Date.now() - playback.lastStartedAt) / 1000);
+  let newOffset = playback.offset + elapsed + deltaSeconds;
+
+  if (newOffset < 0) {
+    newOffset = 0;
+  }
+  if (newOffset > playback.duration) {
+    newOffset = playback.duration - 2; // Stay at least 2 seconds before end
+  }
+
+  addLog('RAG', `Seeking audio playback to ${formatTime(newOffset)}...`);
+  previewAudio(playback.filepath, newOffset, playback.duration);
 }

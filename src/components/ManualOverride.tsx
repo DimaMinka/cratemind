@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { OverrideState } from '../types.js';
 import { FOLDERS } from '../config.js';
+import { seekPlayback } from '../services/FSService.js';
 
 interface ManualOverrideProps {
   override: OverrideState;
@@ -34,6 +35,10 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
       );
     } else if (key.return) {
       override.resolve(selectedList);
+    } else if (key.leftArrow) {
+      seekPlayback(-10);
+    } else if (key.rightArrow) {
+      seekPlayback(10);
     }
   });
 

@@ -20,6 +20,7 @@ export const useStore = create<AppState>((set) => ({
   bootPrompt: null,
   log: [],
   override: null,
+  playback: null,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -46,7 +47,8 @@ export const useStore = create<AppState>((set) => ({
       ragStatus,
       ragStats: { ...state.ragStats, ...stats }
     })),
-  setBootPrompt: (bootPrompt) => set({ bootPrompt })
+  setBootPrompt: (bootPrompt) => set({ bootPrompt }),
+  setPlayback: (playback) => set({ playback })
 }));
 
 /**

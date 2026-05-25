@@ -9,7 +9,17 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779710929054
+      "ts": 1779711065157
+    },
+    {
+      "artist": "Bonobo",
+      "title": "Kong",
+      "folders": [
+        "mountain sunset"
+      ],
+      "reasoning": "Added during mock scan",
+      "source": "scan",
+      "ts": 1779711065157
     },
     {
       "artist": "Kiasmos",
@@ -19,7 +29,7 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779710929054
+      "ts": 1779711065157
     },
     {
       "artist": "Recondite",
@@ -30,37 +40,30 @@
       ],
       "reasoning": "Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.",
       "source": "auto",
-      "ts": 1779710937090
+      "ts": 1779711072173
     },
     {
       "artist": "Stephan Bodzin",
       "title": "Strand",
       "folders": [
-        "galaxy trip"
+        "galaxy trip",
+        "mountain sunset",
+        "magic forest"
       ],
       "reasoning": "Routed via manual user override checklist",
       "source": "manual",
-      "ts": 1779710948830
-    },
-    {
-      "artist": "Bonobo",
-      "title": "Kong",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710961083
+      "ts": 1779711097505
     },
     {
       "artist": "ARTBAT",
       "title": "Dance",
       "folders": [
-        "mountain sunset"
+        "new day vibe",
+        "tropical vibe"
       ],
-      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
-      "source": "auto",
-      "ts": 1779710962631
+      "reasoning": "Routed via manual user override checklist",
+      "source": "manual",
+      "ts": 1779711126777
     }
   ],
   "lastScanDir": "/Users/dima/www/ai-projects/CrateMind/Sorted"

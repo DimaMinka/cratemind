@@ -75,12 +75,20 @@ export type AppState = {
   bootPrompt: BootPromptState | null;
   log: LogEntry[];
   override: OverrideState | null;
+  playback: {
+    filepath: string;
+    filename: string;
+    duration: number;
+    offset: number;
+    lastStartedAt: number;
+  } | null;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
   setOverride: (override: OverrideState | null) => void;
   setRagStatus: (status: RagStatus, stats?: Partial<RagStats>) => void;
   setBootPrompt: (prompt: BootPromptState | null) => void;
+  setPlayback: (playback: AppState['playback']) => void;
 };
 
 export type LLMResponse = {
