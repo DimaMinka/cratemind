@@ -1,17 +1,37 @@
+import { GoogleGenAI, Type } from '@google/genai';
+import { z } from 'zod';
 import { LLMResponse } from '../types.js';
-import { MOCK_MODE } from '../config.js';
+import { MOCK_MODE, FOLDERS, LLM_MODEL } from '../config.js';
 
 /**
  * LLMService.ts
  *
- * Integrates with Google Gen AI SDK (Gemini) to categorize tracks
- * based on vibe and atmosphere. Uses structured JSON output with Zod validation.
+ * Integrates with the official Google Gen AI SDK (Gemini) to categorize tracks
+ * based on vibe and atmosphere. Enforces structured JSON output with Zod validation.
  */
+
+// Zod Schema to validate the structured JSON response from Gemini
+const LLMResponseSchema = z.object({
+  folders: z.array(z.enum(FOLDERS)).min(1).max(3),
+  reasoning: z.string(),
+  confidence: z.number().min(0).max(1)
+});
+
+// Lazy-initialized Google Gen AI client
+let aiClient: GoogleGenAI | null = null;
+
+function getAIClient(): GoogleGenAI {
+  if (!aiClient) {
+    // The GoogleGenAI client automatically retrieves GEMINI_API_KEY from process.env
+    aiClient = new GoogleGenAI({});
+  }
+  return aiClient;
+}
 
 export async function classifyTrack(
   artist: string,
   title: string,
-  _ragContext = ''
+  ragContext = ''
 ): Promise<LLMResponse> {
   if (MOCK_MODE) {
     // Artificial latency to simulate Gemini API network calls
@@ -46,10 +66,78 @@ export async function classifyTrack(
     };
   }
 
-  // TODO: Implement Gemini 2.5 API integration, structured schema, and retries
-  return {
-    folders: ['intro outro'],
-    reasoning: 'Stub reasoning',
-    confidence: 1.0
-  };
+  // Real Gemini API Execution
+  let attempts = 3;
+  while (attempts > 0) {
+    try {
+      const ai = getAIClient();
+
+      const systemInstruction = `You are CrateMind, an elite audio classification system designed to organize music libraries into atmospheric vibe-based folders ("crates").
+Available vibes (crates):
+${FOLDERS.map((f) => `- ${f}`).join('\n')}
+
+Task:
+Analyze the artist and track title. Utilize the provided Few-Shot RAG memory of already sorted tracks to align with the user's specific library style.
+Classify the track into 1 to 3 folders.
+Provide a clear, detailed, one-sentence reasoning.
+Provide a confidence score (between 0.0 and 1.0). Set confidence lower than 0.70 if the track is highly ambiguous, cross-genre, or does not perfectly fit the vibes.
+
+You MUST respond strictly with a valid JSON matching this schema:
+{
+  "folders": ["crate name 1", "crate name 2"],
+  "reasoning": "A short, descriptive one-sentence analysis of the track vibes.",
+  "confidence": 0.92
+}`;
+
+      const promptText = `Artist: ${artist}
+Title: ${title}
+
+${ragContext}`;
+
+      const response = await ai.models.generateContent({
+        model: LLM_MODEL,
+        contents: promptText,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          // Explicitly define the JSON schema for Gemini structured output
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              folders: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.STRING,
+                  enum: FOLDERS as unknown as string[]
+                }
+              },
+              reasoning: { type: Type.STRING },
+              confidence: { type: Type.NUMBER }
+            },
+            required: ['folders', 'reasoning', 'confidence']
+          }
+        }
+      });
+
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error('Gemini returned an empty response');
+      }
+
+      // Parse and validate the response against our strict Zod schema
+      const parsedData = JSON.parse(responseText);
+      const validatedResponse = LLMResponseSchema.parse(parsedData);
+
+      return validatedResponse;
+    } catch (err) {
+      attempts--;
+      if (attempts === 0) {
+        throw new Error('Gemini API classification failed after 3 attempts', { cause: err });
+      }
+      // Simple exponential backoff delay before retrying
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  throw new Error('Unexpected execution flow in Gemini classifier');
 }
