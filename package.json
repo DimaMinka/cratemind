@@ -2,6 +2,7 @@
   "name": "cratemind",
   "version": "0.1.0",
   "description": "AI-driven TUI audio file vibe sorter and router",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
