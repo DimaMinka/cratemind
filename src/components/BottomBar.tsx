@@ -1,11 +1,31 @@
 import React from 'react';
+import { Box, Text } from 'ink';
 
 /**
  * BottomBar.tsx
- * Renders the TUI keyboard shortcuts and bottom border menu.
+ *
+ * Renders a fixed hotkey banner at the very base of the terminal viewport.
  */
-
 export function BottomBar(): React.JSX.Element {
-  // TODO: Render hotkeys banner at the base of the viewport
-  return <></>;
+  return (
+    <Box
+      flexDirection="row"
+      justifyContent="space-around"
+      borderStyle="round"
+      borderColor="gray"
+      padding={1}
+      marginTop={1}
+    >
+      <Text color="cyan" bold>
+        [Space] Pause/Resume
+      </Text>
+      <Text color="magenta" bold>
+        [R] Log RAG Stats
+      </Text>
+      <Text color="red" bold>
+        [Q] Exit Sorter
+      </Text>
+    </Box>
+  );
 }
+export default BottomBar;

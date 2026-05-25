@@ -1,6 +1,9 @@
+import React from 'react';
+import { render } from 'ink';
 import { create } from 'zustand';
 import { AppState } from '../types.js';
 import { LOG_MAX } from '../config.js';
+import { App } from '../components/App.js';
 
 /**
  * UIService.ts
@@ -35,6 +38,10 @@ export const useStore = create<AppState>((set) => ({
   setBootPrompt: (bootPrompt) => set({ bootPrompt })
 }));
 
+/**
+ * Starts the React-Ink terminal interface.
+ * Mounts the <App /> root layout to standard output and blocks the CLI.
+ */
 export function startTUI(): void {
-  // TODO: Implement Ink React render loop wrapping
+  render(React.createElement(App));
 }
