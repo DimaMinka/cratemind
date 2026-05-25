@@ -37,8 +37,8 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
     }
   });
 
-  // Take a sliding window of 6 folders around the cursor to prevent tall TUI overflows
-  const maxVisible = 6;
+  // Take a sliding window of 5 folders around the cursor to prevent tall TUI overflows
+  const maxVisible = 10;
   const half = Math.floor(maxVisible / 2);
   let start = Math.max(0, cursor - half);
   let end = Math.min(FOLDERS.length, start + maxVisible);
@@ -62,7 +62,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
           Track: {override.filename}
         </Text>
         <Text color="gray" dimColor>
-          Select vibes to copy to crate(s)
+          Select vibes to copy (showing {start + 1}-{end} of {FOLDERS.length})
         </Text>
       </Box>
 
@@ -103,7 +103,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
         })}
       </Box>
 
-      <Box borderStyle="single" borderColor="yellow" paddingLeft={1}>
+      <Box paddingLeft={1} marginTop={1}>
         <Text color="white">Selected: </Text>
         <Text color="green" bold>
           {selectedList.length} crates

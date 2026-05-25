@@ -256,10 +256,10 @@
                     <p>CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests, the user decides. Every action touching your collection requires explicit confirmation.</p>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Technical Architecture:</h2>
                     <ul style="margin-bottom: 15px;">
-                        <li><b>FSService:</b> Chokidar file watcher & sequential queue manager (p-queue).</li>
-                        <li><b>ID3Service:</b> Metadata tag extraction using music-metadata.</li>
+                        <li><b>FSService:</b> Chokidar file watcher & sequential queue manager (p-queue). Fully integrated with Mock Mode simulation.</li>
+                        <li><b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful fallback in simulated states).</li>
                         <li><b>RAGService:</b> Few-shot memory layer — persists routing history to <code>cratemind-memory.json</code> and builds context strings for LLM prompts.</li>
-                        <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation. Accepts RAG context for improved accuracy.</li>
+                        <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation (simulated in Mock Mode).</li>
                         <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
                     </ul>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Key Features:</h2>
@@ -270,6 +270,7 @@
                         <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit <code>[Y/n]</code> confirmation.</li>
                         <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
                         <li>Native OS audio preview triggers from within the terminal.</li>
+                        <li><b>Mock Mode:</b> Complete sandboxed offline simulation (via <code>.env</code> toggle) to test base SQLite DB, file watchers, Gemini classifications, and physical routing without real dependencies.</li>
                     </ul>
                     <h2 style="margin-top: 15px; font-size: 1.1em; color: #ffffff;">Future Integration Ideas:</h2>
                     <ul style="margin-bottom: 0;">
@@ -296,6 +297,7 @@
 | <b>Framework:</b> Ink 4 (React)    |
 | <b>Model:</b> Gemini 2.5 (API)     |
 | <b>RAG:</b> <span style="color: #4caf50;">few-shot memory</span>      |
+| <b>Mock Mode:</b> <span style="color: #4caf50;">ACTIVE (.env)</span>    |
 +-----------------------------+
 
 RAG States on startup:

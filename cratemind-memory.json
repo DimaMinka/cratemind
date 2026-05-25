@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "examples": [
+    {
+      "artist": "Nils Frahm",
+      "title": "Says",
+      "folders": [
+        "iceland"
+      ],
+      "reasoning": "Added during mock scan",
+      "source": "scan",
+      "ts": 1779709204043
+    },
+    {
+      "artist": "Kiasmos",
+      "title": "Looped",
+      "folders": [
+        "magic forest"
+      ],
+      "reasoning": "Added during mock scan",
+      "source": "scan",
+      "ts": 1779709204043
+    },
+    {
+      "artist": "Recondite",
+      "title": "Shun",
+      "folders": [
+        "galaxy trip",
+        "iceland"
+      ],
+      "reasoning": "Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.",
+      "source": "auto",
+      "ts": 1779710050622
+    },
+    {
+      "artist": "Stephan Bodzin",
+      "title": "Strand",
+      "folders": [
+        "galaxy trip",
+        "mountain sunset",
+        "magic forest"
+      ],
+      "reasoning": "Routed via manual user override checklist",
+      "source": "manual",
+      "ts": 1779710070987
+    },
+    {
+      "artist": "Bonobo",
+      "title": "Kong",
+      "folders": [
+        "mountain sunset"
+      ],
+      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
+      "source": "auto",
+      "ts": 1779710074610
+    }
+  ],
+  "lastScanDir": "/Users/dima/www/ai-projects/CrateMind/Sorted"
+}

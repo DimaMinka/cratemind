@@ -10,18 +10,18 @@ export function BottomBar(): React.JSX.Element {
   return (
     <Box
       flexDirection="row"
-      justifyContent="space-around"
-      borderStyle="round"
-      borderColor="gray"
-      padding={1}
+      justifyContent="center"
       marginTop={1}
+      paddingX={1}
     >
       <Text color="cyan" bold>
         [Space] Pause/Resume
       </Text>
+      <Text color="gray">   |   </Text>
       <Text color="magenta" bold>
         [R] Log RAG Stats
       </Text>
+      <Text color="gray">   |   </Text>
       <Text color="red" bold>
         [Q] Exit Sorter
       </Text>

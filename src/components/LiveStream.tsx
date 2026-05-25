@@ -13,8 +13,8 @@ interface LiveStreamProps {
  * ID3 details, RAG status notes, LLM reasoning, and final routing paths.
  */
 export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
-  // Take last 8 entries to avoid vertical terminal overflows
-  const visibleLogs = log.slice(-8);
+  // Take last 6 entries to avoid vertical terminal overflows
+  const visibleLogs = log.slice(-6);
 
   return (
     <Box flexDirection="column" width="100%">

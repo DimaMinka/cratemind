@@ -35,8 +35,8 @@ export function Header({ status, stats, ragStatus, ragStats }: HeaderProps): Rea
   }
 
   return (
-    <Box flexDirection="column" marginBottom={1}>
-      <Box justifyContent="space-between" paddingBottom={1} borderStyle="single" borderColor="cyan">
+    <Box flexDirection="column" marginBottom={0}>
+      <Box justifyContent="space-between" paddingBottom={0} borderStyle="single" borderColor="cyan">
         {/* Status Indicator */}
         <Box>
           <Text color={status === 'listening' ? 'green' : 'yellow'} bold>

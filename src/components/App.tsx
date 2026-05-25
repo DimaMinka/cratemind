@@ -71,7 +71,7 @@ export function App(): React.JSX.Element {
       alignItems="center"
       justifyContent="center"
     >
-      <Box flexDirection="column" padding={1} width={80}>
+      <Box flexDirection="column" paddingX={1} width={150}>
         {/* Top Status Header */}
         <Header status={status} stats={stats} ragStatus={ragStatus} ragStats={ragStats} />
 
@@ -80,16 +80,27 @@ export function App(): React.JSX.Element {
           flexDirection="row"
           flexGrow={1}
           minHeight={12}
-          borderStyle="single"
-          borderColor="gray"
-          padding={1}
+          width="100%"
         >
-          <Box flexGrow={1} marginRight={1}>
+          {/* Left panel: Live Stream Log with its own border */}
+          <Box
+            width={override !== null ? 95 : 150}
+            borderStyle="single"
+            borderColor="gray"
+            padding={1}
+          >
             <LiveStream log={log} />
           </Box>
 
+          {/* Right panel: Manual Override outside of the log window */}
           {override !== null ? (
-            <Box width={35} borderStyle="round" borderColor="yellow" padding={1}>
+            <Box
+              width={55}
+              borderStyle="round"
+              borderColor="yellow"
+              padding={1}
+              marginLeft={1}
+            >
               <ManualOverride override={override} />
             </Box>
           ) : null}
