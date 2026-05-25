@@ -1,8 +1,11 @@
 import * as mm from 'music-metadata';
 import * as path from 'path';
+import * as fs from 'fs';
+import { MOCK_MODE } from '../config.js';
 
 /**
  * ID3Service.ts
+ *
  * Extracts audio metadata (artist and title) using music-metadata,
  * falling back to filename splitting.
  */
@@ -13,15 +16,17 @@ export async function extractMetadata(
   let artist: string | undefined;
   let title: string | undefined;
 
-  try {
-    const metadata = await mm.parseFile(filepath);
-    artist = metadata.common.artist;
-    title = metadata.common.title;
-  } catch (error: unknown) {
-    const cause = error instanceof Error ? error.message : String(error);
-    console.error(
-      `[ID3Service] Error\n  Cause → ${cause}\n  Fix → Continuing with filename fallback`
-    );
+  // Bypassed in MOCK_MODE or if the file does not physically exist to prevent console pollution
+  const fileExists = !MOCK_MODE && fs.existsSync(filepath);
+
+  if (fileExists) {
+    try {
+      const metadata = await mm.parseFile(filepath);
+      artist = metadata.common.artist;
+      title = metadata.common.title;
+    } catch {
+      // Silently fall back to filename parsing without corrupting TUI screen buffer
+    }
   }
 
   // Fallback to filename parsing if artist or title are missing
@@ -61,3 +66,4 @@ export async function extractMetadata(
     title: title || 'Unknown'
   };
 }
+export default extractMetadata;
