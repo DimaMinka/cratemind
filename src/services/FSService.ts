@@ -167,8 +167,9 @@ export async function processFile(filepath: string): Promise<void> {
  * then cleanly unlinks (deletes) the original incoming file.
  */
 export async function route(srcPath: string, selectedFolders: string[]): Promise<void> {
-  if (MOCK_MODE) {
-    return; // Skip physical moves in simulation
+  // If in mock mode and the file doesn't physically exist, bypass routing gracefully
+  if (MOCK_MODE && !fs.existsSync(srcPath)) {
+    return;
   }
 
   const filename = path.basename(srcPath);
@@ -194,8 +195,9 @@ export async function route(srcPath: string, selectedFolders: string[]): Promise
  * Auto-kills any currently active audio process to prevent multiple overlays.
  */
 export function previewAudio(filepath: string): void {
-  if (MOCK_MODE) {
-    return; // Bypassed in mock simulation
+  // If in mock mode and the file doesn't physically exist, bypass preview gracefully
+  if (MOCK_MODE && !fs.existsSync(filepath)) {
+    return;
   }
 
   try {

@@ -30,19 +30,17 @@
       ],
       "reasoning": "Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.",
       "source": "auto",
-      "ts": 1779710050622
+      "ts": 1779710328478
     },
     {
       "artist": "Stephan Bodzin",
       "title": "Strand",
       "folders": [
-        "galaxy trip",
-        "mountain sunset",
-        "magic forest"
+        "galaxy trip"
       ],
       "reasoning": "Routed via manual user override checklist",
       "source": "manual",
-      "ts": 1779710070987
+      "ts": 1779710338344
     },
     {
       "artist": "Bonobo",
@@ -52,7 +50,27 @@
       ],
       "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
       "source": "auto",
-      "ts": 1779710074610
+      "ts": 1779710352469
+    },
+    {
+      "artist": "test",
+      "title": "track",
+      "folders": [
+        "mountain sunset"
+      ],
+      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
+      "source": "auto",
+      "ts": 1779710372618
+    },
+    {
+      "artist": "test",
+      "title": "track2",
+      "folders": [
+        "mountain sunset"
+      ],
+      "reasoning": "Warm organic instrumentation, melancholic strings and emotional progression.",
+      "source": "auto",
+      "ts": 1779710401272
     }
   ],
   "lastScanDir": "/Users/dima/www/ai-projects/CrateMind/Sorted"
