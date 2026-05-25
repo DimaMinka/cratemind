@@ -27,6 +27,14 @@ let activeAudioProcess: ChildProcess | null = null;
 export async function initWatcher(): Promise<void> {
   const addLog = useStore.getState().addLog;
 
+  // Ensure Incoming & Sorted directories exist physically
+  if (!fs.existsSync(INCOMING_DIR)) {
+    fs.mkdirSync(INCOMING_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(SORTED_DIR)) {
+    fs.mkdirSync(SORTED_DIR, { recursive: true });
+  }
+
   if (MOCK_MODE) {
     addLog('RAG', 'MOCK MODE active. Starting simulated track discovery loop...');
 
@@ -35,16 +43,6 @@ export async function initWatcher(): Promise<void> {
         queue.add(() => processFile(discovery.filepath));
       }, discovery.delayMs);
     });
-
-    return;
-  }
-
-  // Ensure Incoming & Sorted directories exist physically
-  if (!fs.existsSync(INCOMING_DIR)) {
-    fs.mkdirSync(INCOMING_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(SORTED_DIR)) {
-    fs.mkdirSync(SORTED_DIR, { recursive: true });
   }
 
   addLog('RAG', `Initializing file watcher inside ${INCOMING_DIR}...`);
@@ -55,7 +53,7 @@ export async function initWatcher(): Promise<void> {
     persistent: true,
     ignoreInitial: true,
     awaitWriteFinish: {
-      stabilityThreshold: 1000,
+      stabilityThreshold: 500,
       pollInterval: 100
     }
   });
