@@ -104,7 +104,7 @@ export function App(): React.JSX.Element {
             <Box
               width={55}
               borderStyle="round"
-              borderColor="yellow"
+              borderColor="gray"
               padding={1}
               marginLeft={1}
             >

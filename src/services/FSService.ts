@@ -133,20 +133,24 @@ export async function processFile(filepath: string): Promise<void> {
         });
       });
 
-      addLog('ROUTED', `Manual routing -> /${selectedFolders.join(' & /')}/${filename}`);
+      if (selectedFolders.length === 0) {
+        addLog('ROUTED', `Manual routing skipped: track left in Incoming`);
+      } else {
+        addLog('ROUTED', `Manual routing -> /${selectedFolders.join(' & /')}/${filename}`);
 
-      // Perform physical file system routing
-      await route(filepath, selectedFolders);
+        // Perform physical file system routing
+        await route(filepath, selectedFolders);
 
-      // Save RAG example
-      RAGService.addExample({
-        artist: meta.artist,
-        title: meta.title,
-        folders: selectedFolders,
-        reasoning: 'Routed via manual user override checklist',
-        source: 'manual',
-        ts: Date.now()
-      });
+        // Save RAG example
+        RAGService.addExample({
+          artist: meta.artist,
+          title: meta.title,
+          folders: selectedFolders,
+          reasoning: 'Routed via manual user override checklist',
+          source: 'manual',
+          ts: Date.now()
+        });
+      }
     }
 
     // Stop audio playback once track is successfully routed
@@ -290,7 +294,6 @@ export function seekPlayback(deltaSeconds: number): void {
   const playback = useStore.getState().playback;
   if (!playback) return;
 
-  const addLog = useStore.getState().addLog;
   const elapsed = Math.round((Date.now() - playback.lastStartedAt) / 1000);
   let newOffset = playback.offset + elapsed + deltaSeconds;
 

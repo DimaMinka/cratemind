@@ -36,10 +36,10 @@ export function Header({ status, stats, ragStatus, ragStats }: HeaderProps): Rea
 
   return (
     <Box flexDirection="column" marginBottom={0}>
-      <Box justifyContent="space-between" paddingBottom={0} borderStyle="single" borderColor="cyan">
+      <Box justifyContent="space-between" paddingBottom={0} borderStyle="single" borderColor="gray">
         {/* Status Indicator */}
         <Box>
-          <Text color={status === 'listening' ? 'green' : 'yellow'} bold>
+          <Text color={status === 'listening' ? 'yellowBright' : 'yellow'} bold>
             {status === 'listening' ? '* ACTIVE LISTENER' : '[PAUSED] SYSTEM PAUSED'}
           </Text>
           <Text color="gray"> | Listening ./Incoming</Text>

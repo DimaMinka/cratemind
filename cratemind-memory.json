@@ -9,17 +9,7 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779715304225
-    },
-    {
-      "artist": "Bonobo",
-      "title": "Kong",
-      "folders": [
-        "mountain sunset"
-      ],
-      "reasoning": "Added during mock scan",
-      "source": "scan",
-      "ts": 1779715304225
+      "ts": 1779720988392
     },
     {
       "artist": "Kiasmos",
@@ -29,7 +19,7 @@
       ],
       "reasoning": "Added during mock scan",
       "source": "scan",
-      "ts": 1779715304225
+      "ts": 1779720988392
     },
     {
       "artist": "Recondite",
@@ -40,7 +30,28 @@
       ],
       "reasoning": "Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.",
       "source": "auto",
-      "ts": 1779715310292
+      "ts": 1779720997174
+    },
+    {
+      "artist": "Stephan Bodzin",
+      "title": "Strand",
+      "folders": [
+        "galaxy trip"
+      ],
+      "reasoning": "Routed via manual user override checklist",
+      "source": "manual",
+      "ts": 1779721022314
+    },
+    {
+      "artist": "Bonobo",
+      "title": "Kong",
+      "folders": [
+        "mountain sunset",
+        "nargila vibe"
+      ],
+      "reasoning": "Routed via manual user override checklist",
+      "source": "manual",
+      "ts": 1779721026151
     }
   ],
   "lastScanDir": "/Users/dima/www/ai-projects/CrateMind/Sorted"

@@ -57,14 +57,14 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
   return (
     <Box flexDirection="column" width="100%">
       <Box marginBottom={1}>
-        <Text bold underline color="yellow">
+        <Text bold color="yellowBright">
           * MANUAL OVERRIDE
         </Text>
       </Box>
 
       <Box marginBottom={1} flexDirection="column">
         <Text color="white" bold>
-          Track: {override.filename} <Text color="green" bold>[PLAYING]</Text>
+          Track: {override.filename} <Text color="greenBright" bold>[PLAYING]</Text>
         </Text>
         <Text color="gray" dimColor>
           Select vibes to copy (showing {start + 1}-{end} of {FOLDERS.length})
@@ -82,17 +82,17 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
           let folderText = <Text color="white">{folder}</Text>;
           if (isCurrent) {
             folderText = (
-              <Text color="yellow" bold>
+              <Text color="yellowBright" bold>
                 {folder} (cursor)
               </Text>
             );
           } else if (isChecked) {
-            folderText = <Text color="green">{folder}</Text>;
+            folderText = <Text color="greenBright">{folder}</Text>;
           }
 
           return (
             <Box key={folder}>
-              <Text color={isCurrent ? 'yellow' : 'gray'}>
+              <Text color={isCurrent ? 'yellowBright' : 'gray'}>
                 {isCurrent ? '> ' : '  '}
                 {isChecked ? '[x] ' : '[ ] '}
               </Text>
@@ -110,7 +110,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
 
       <Box paddingLeft={1} marginTop={1}>
         <Text color="white">Selected: </Text>
-        <Text color="green" bold>
+        <Text color="greenBright" bold>
           {selectedList.length} crates
         </Text>
       </Box>

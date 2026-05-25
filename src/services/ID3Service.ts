@@ -1,7 +1,6 @@
 import * as mm from 'music-metadata';
 import * as path from 'path';
 import * as fs from 'fs';
-import { MOCK_MODE } from '../config.js';
 
 /**
  * ID3Service.ts

@@ -5,6 +5,7 @@ import { Box, Text } from 'ink';
  * BottomBar.tsx
  *
  * Renders a fixed hotkey banner at the very base of the terminal viewport.
+ * Color-coded keys: [Space] yellowBright, [R] green, [Q] red.
  */
 export function BottomBar(): React.JSX.Element {
   return (
@@ -14,17 +15,20 @@ export function BottomBar(): React.JSX.Element {
       marginTop={1}
       paddingX={1}
     >
-      <Text color="cyan" bold>
-        [Space] Pause/Resume
+      <Text color="yellowBright" bold>
+        [Space]
       </Text>
+      <Text color="gray"> Pause/Resume</Text>
       <Text color="gray">   |   </Text>
-      <Text color="magenta" bold>
-        [R] Log RAG Stats
+      <Text color="greenBright" bold>
+        [R]
       </Text>
+      <Text color="gray"> Log RAG Stats</Text>
       <Text color="gray">   |   </Text>
       <Text color="red" bold>
-        [Q] Exit Sorter
+        [Q]
       </Text>
+      <Text color="gray"> Exit Sorter</Text>
     </Box>
   );
 }

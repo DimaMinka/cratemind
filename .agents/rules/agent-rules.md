@@ -14,6 +14,7 @@ CrateMind is a semi-automatic audio classifier designed to organize a music libr
 
 ### Core Principles:
 * **User-First (Semi-Automatic)**: The user retains ultimate control. All critical bootstrap/scanning actions require explicit user confirmation (`[Y/n]`). If the LLM confidence score falls below `CONFIDENCE_THRESHOLD`, the process blocks and spins up a `ManualOverride` UI (multi-select folder checklist).
+* **Safe Manual Override (Empty Routing)**: When resolving a manual override with no folders selected, the original track must not be deleted or routed. It must remain untouched in the incoming directory (`Incoming`), and the system should log the skip action and proceed to the next item.
 * **Few-Shot RAG Memory**: Before classifying a new track, the system retrieves up to `RAG_EXAMPLES_PER_FOLDER` (default: 2) sorted examples for each vibe folder. These are injected into the Gemini prompt as highly relevant few-shot exemplars to align classification with the user's library style.
 * **Bootstrap Scanning**: On startup, the system scans the active `SORTED_DIR` to construct the RAG memory dynamically. This makes the memory collection-agnostic (switching between temporary and main folders seamlessly) and prevents stale index states.
 

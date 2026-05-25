@@ -1,3 +1,4 @@
+/* global setInterval, clearInterval */
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useStore } from '../services/UIService.js';
@@ -49,7 +50,7 @@ export function MiniPlayer(): React.JSX.Element | null {
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor="green"
+      borderColor="gray"
       paddingX={2}
       paddingY={1}
       marginTop={1}
@@ -63,7 +64,7 @@ export function MiniPlayer(): React.JSX.Element | null {
         </Box>
         <Box>
           <Text backgroundColor="green" color="black" bold> DURATION </Text>
-          <Text color="green" bold> {formatTime(currentSecs)}</Text>
+          <Text color="greenBright" bold> {formatTime(currentSecs)}</Text>
           <Text color="gray"> / {formatTime(playback.duration)}</Text>
         </Box>
       </Box>
@@ -72,7 +73,7 @@ export function MiniPlayer(): React.JSX.Element | null {
       <Box justifyContent="space-between" alignItems="center">
         <Box marginRight={2}>
           <Text color="gray">[</Text>
-          <Text color="green" bold>{progressBar}</Text>
+          <Text color="greenBright" bold>{progressBar}</Text>
           <Text color="gray">]</Text>
         </Box>
         <Box>

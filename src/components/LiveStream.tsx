@@ -19,7 +19,7 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
   return (
     <Box flexDirection="column" width="100%">
       <Box marginBottom={1}>
-        <Text bold underline color="white">
+        <Text bold color="yellowBright">
           * LIVE STREAM log
         </Text>
       </Box>
@@ -39,23 +39,24 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
 
             switch (entry.type) {
               case 'DETECTED':
-                prefixColor = 'cyan';
+                prefixColor = 'gray';
                 messageColor = 'white';
                 break;
               case 'ID3':
-                prefixColor = 'blue';
+                prefixColor = '#cc88ff';
+                messageColor = '#cc88ff';
                 break;
               case 'RAG':
-                prefixColor = 'magenta';
-                messageColor = 'cyan';
+                prefixColor = '#5599ff';
+                messageColor = '#5599ff';
                 break;
               case 'LLM_REASONING':
-                prefixColor = 'green';
-                messageColor = 'white';
+                prefixColor = 'yellow';
+                messageColor = 'yellow';
                 isBold = true;
                 break;
               case 'ROUTED':
-                prefixColor = 'green';
+                prefixColor = 'gray';
                 break;
               case 'NEEDS_MANUAL':
                 prefixColor = 'yellow';
