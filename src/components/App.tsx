@@ -11,12 +11,8 @@ import { BottomBar } from './BottomBar.js';
  * App.tsx
  *
  * Root Ink component. Orchestrates global layouts, conditional boot dialogs,
- * manual override displays, and main navigation hotkeys.
- *
- * Keyboard Commands (when no overlay is active):
- * - Space: Toggle system status (Listening / Paused)
- * - R: Log active RAG memory stats to the Live Stream
- * - Q: Gracefully exit CrateMind
+ * manual override displays, and main navigation hotkeys. All layouts are centered
+ * horizontally and vertically inside the terminal window.
  */
 export function App(): React.JSX.Element {
   const { exit } = useApp();
@@ -66,34 +62,42 @@ export function App(): React.JSX.Element {
     return <ConfirmPrompt prompt={bootPrompt} />;
   }
 
-  // 2. Normal layout
+  // 2. Normal layout centered in viewport
   return (
-    <Box flexDirection="column" padding={1} width={80}>
-      {/* Top Status Header */}
-      <Header status={status} stats={stats} ragStatus={ragStatus} ragStats={ragStats} />
+    <Box
+      width="100%"
+      height="100%"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box flexDirection="column" padding={1} width={80}>
+        {/* Top Status Header */}
+        <Header status={status} stats={stats} ragStatus={ragStatus} ragStats={ragStats} />
 
-      {/* Main Panel split (Live stream vs Manual Override check boxes) */}
-      <Box
-        flexDirection="row"
-        flexGrow={1}
-        minHeight={12}
-        borderStyle="single"
-        borderColor="gray"
-        padding={1}
-      >
-        <Box flexGrow={1} marginRight={1}>
-          <LiveStream log={log} />
+        {/* Main Panel split (Live stream vs Manual Override check boxes) */}
+        <Box
+          flexDirection="row"
+          flexGrow={1}
+          minHeight={12}
+          borderStyle="single"
+          borderColor="gray"
+          padding={1}
+        >
+          <Box flexGrow={1} marginRight={1}>
+            <LiveStream log={log} />
+          </Box>
+
+          {override !== null ? (
+            <Box width={35} borderStyle="round" borderColor="yellow" padding={1}>
+              <ManualOverride override={override} />
+            </Box>
+          ) : null}
         </Box>
 
-        {override !== null ? (
-          <Box width={35} borderStyle="round" borderColor="yellow" padding={1}>
-            <ManualOverride override={override} />
-          </Box>
-        ) : null}
+        {/* Fixed hotkey footer */}
+        <BottomBar />
       </Box>
-
-      {/* Fixed hotkey footer */}
-      <BottomBar />
     </Box>
   );
 }
