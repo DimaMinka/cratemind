@@ -44,11 +44,11 @@ export function App(): React.JSX.Element {
       setStatus(nextStatus);
       addLog('RAG', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
     } else if (keyLower === 'q') {
-      addLog('RAG', 'Exiting CrateMind. Goodbye!');
+      addLog('RAG', 'Shutting down CrateMind in 3 seconds. Goodbye!');
       setTimeout(() => {
         exit();
         process.exit(0);
-      }, 300);
+      }, 3000);
     } else if (keyLower === 'r') {
       addLog(
         'RAG',
