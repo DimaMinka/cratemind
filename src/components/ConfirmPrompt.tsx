@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { BootPromptState } from '../types.js';
+import { useStdoutDimensions } from '../hooks/useStdoutDimensions.js';
 
 interface ConfirmPromptProps {
   prompt: BootPromptState;
@@ -13,6 +14,8 @@ interface ConfirmPromptProps {
  * inside the terminal Alternate Buffer.
  */
 export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element {
+  const { columns, rows } = useStdoutDimensions();
+
   // Capture local keyboard inputs and block global hotkeys
   useInput((input, key) => {
     const keyLower = input.toLowerCase();
@@ -25,13 +28,14 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
 
   return (
     <Box
-      width="100%"
-      height="100%"
+      width={columns}
+      height={rows}
       flexDirection="column"
       alignItems="center"
       justifyContent="center"
+      overflow="hidden"
     >
-      <Box flexDirection="column" borderStyle="round" borderColor="yellow" padding={1} width={65}>
+      <Box flexDirection="column" borderStyle="round" borderColor="yellow" padding={1} width="80%">
         <Box justifyContent="center" marginBottom={1}>
           <Text bold color="yellow">
             [!] CrateMind — Confirmation Required

@@ -8,6 +8,7 @@ import { ManualOverride } from './ManualOverride.js';
 import { BottomBar } from './BottomBar.js';
 import { MiniPlayer } from './MiniPlayer.js';
 import { useGlobalHotkeys } from '../hooks/useGlobalHotkeys.js';
+import { useStdoutDimensions } from '../hooks/useStdoutDimensions.js';
 
 /**
  * App.tsx
@@ -30,6 +31,8 @@ export function App(): React.JSX.Element {
   const isOverlayActive = bootPrompt !== null || override !== null;
   useGlobalHotkeys(isOverlayActive);
 
+  const { columns, rows } = useStdoutDimensions();
+
   // 1. Boot flow: Show Confirmation overlay if required
   if (bootPrompt !== null) {
     return <ConfirmPrompt prompt={bootPrompt} />;
@@ -38,13 +41,14 @@ export function App(): React.JSX.Element {
   // 2. Normal layout centered in viewport
   return (
     <Box
-      width="100%"
-      height="100%"
+      width={columns}
+      height={rows}
       flexDirection="column"
       alignItems="center"
-      justifyContent="center"
+      justifyContent="flex-start"
+      overflow="hidden"
     >
-      <Box flexDirection="column" paddingX={1} width={150}>
+      <Box flexDirection="column" paddingX={1} width="100%">
         {/* Top Status Header */}
         <Header status={status} stats={stats} ragStatus={ragStatus} ragStats={ragStats} />
 
@@ -57,10 +61,11 @@ export function App(): React.JSX.Element {
         >
           {/* Left panel: Live Stream Log with its own border */}
           <Box
-            width={override !== null ? 95 : 150}
+            flexGrow={1}
             borderStyle="single"
             borderColor="gray"
             padding={1}
+            overflow="hidden"
           >
             <LiveStream log={log} />
           </Box>
@@ -68,11 +73,13 @@ export function App(): React.JSX.Element {
           {/* Right panel: Manual Override outside of the log window */}
           {override !== null ? (
             <Box
-              width={55}
+              width="40%"
+              minWidth={30}
               borderStyle="round"
               borderColor="gray"
               padding={1}
               marginLeft={1}
+              overflow="hidden"
             >
               <ManualOverride override={override} />
             </Box>
