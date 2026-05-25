@@ -14,7 +14,7 @@ interface LiveStreamProps {
  */
 export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
   // Take last 6 entries to avoid vertical terminal overflows
-  const visibleLogs = log.slice(-6);
+  const visibleLogs = log.slice(-10);
 
   return (
     <Box flexDirection="column" width="100%">
