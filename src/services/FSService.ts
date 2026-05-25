@@ -196,6 +196,7 @@ export async function route(srcPath: string, selectedFolders: string[]): Promise
  */
 export function previewAudio(filepath: string, offset = 0, duration = 180): void {
   const setPlayback = useStore.getState().setPlayback;
+  const addLog = useStore.getState().addLog;
   const filename = path.basename(filepath);
 
   // If in mock mode and the file doesn't physically exist, bypass preview gracefully
@@ -213,10 +214,28 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
   try {
     stopAudio(); // Stop any active playback first
 
-    // Spawn native macOS background player starting at offset seconds
-    activeAudioProcess = spawn('afplay', ['-b', String(offset), filepath], { stdio: 'ignore' });
+    const absolutePath = path.resolve(filepath);
 
-    activeAudioProcess.on('exit', () => {
+    // Check if the file is empty (0 bytes), which commonly happens during 'touch' command tests
+    if (fs.existsSync(absolutePath)) {
+      const stats = fs.statSync(absolutePath);
+      if (stats.size === 0) {
+        addLog('ERROR', `Skipping audio preview: file is empty (0 bytes)`);
+        return;
+      }
+    }
+
+    // Spawn ffplay with precise seeking (-ss) and disabled video window (-nodisp)
+    activeAudioProcess = spawn('ffplay', ['-nodisp', '-ss', String(offset), absolutePath], { stdio: 'ignore' });
+
+    activeAudioProcess.on('error', (err) => {
+      addLog('ERROR', `ffplay launch failed: ${err.message}`);
+    });
+
+    activeAudioProcess.on('exit', (code) => {
+      if (code !== null && code !== 0 && code !== 15 && code !== 9) {
+        addLog('ERROR', `ffplay exited with error code: ${code}`);
+      }
       // Auto-clear playback if ended naturally
       const currentPlayback = useStore.getState().playback;
       if (currentPlayback?.filepath === filepath && activeAudioProcess === null) {
@@ -231,8 +250,9 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
       offset,
       lastStartedAt: Date.now()
     });
-  } catch {
-    // Graceful recovery if afplay fails or is missing (e.g. non-macOS systems)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    addLog('ERROR', `Playback trigger failed: ${msg}`);
   }
 }
 
@@ -281,6 +301,5 @@ export function seekPlayback(deltaSeconds: number): void {
     newOffset = playback.duration - 2; // Stay at least 2 seconds before end
   }
 
-  addLog('DETECTED', `Seeking audio playback to ${formatTime(newOffset)}...`);
   previewAudio(playback.filepath, newOffset, playback.duration);
 }
