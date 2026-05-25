@@ -20,7 +20,7 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
     <Box flexDirection="column" width="100%">
       <Box marginBottom={1}>
         <Text bold underline color="white">
-          🎬 LIVE STREAM log
+          * LIVE STREAM log
         </Text>
       </Box>
 

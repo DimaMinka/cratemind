@@ -53,7 +53,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
     <Box flexDirection="column" width="100%">
       <Box marginBottom={1}>
         <Text bold underline color="yellow">
-          🎯 MANUAL OVERRIDE
+          * MANUAL OVERRIDE
         </Text>
       </Box>
 

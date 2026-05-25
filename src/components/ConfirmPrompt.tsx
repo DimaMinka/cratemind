@@ -34,7 +34,7 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
       <Box flexDirection="column" borderStyle="round" borderColor="yellow" padding={1} width={65}>
         <Box justifyContent="center" marginBottom={1}>
           <Text bold color="yellow">
-            ⚠️ CrateMind — Confirmation Required
+            [!] CrateMind — Confirmation Required
           </Text>
         </Box>
 
