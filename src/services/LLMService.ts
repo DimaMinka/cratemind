@@ -62,7 +62,7 @@ export async function classifyTrack(
     return {
       folders: ['mountain sunset'],
       reasoning: 'Warm organic instrumentation, melancholic strings and emotional progression.',
-      confidence: 0.88
+      confidence: 0.65 // Below 0.70 threshold to trigger manual override for testing!
     };
   }
 
