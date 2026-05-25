@@ -1,4 +1,3 @@
-import React from 'react';
 import dotenv from 'dotenv';
 import { startTUI } from './services/UIService.js';
 import { initWatcher } from './services/FSService.js';

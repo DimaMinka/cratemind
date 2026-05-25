@@ -42,7 +42,7 @@ export function isAvailable(): boolean {
     const db = new Database(resolvedPath, { readonly: true, timeout: 2000 });
     db.close();
     return true;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
@@ -50,17 +50,17 @@ export function isAvailable(): boolean {
 /**
  * Helper to execute a read-only query safely and close the connection immediately.
  */
-function runQuery<T>(queryFn: (db: any) => T): T | [] {
+function runQuery<T>(queryFn: (db: Database.Database) => T): T | [] {
   const resolvedPath = resolvePath(ENGINE_DB_PATH);
   if (!fs.existsSync(resolvedPath)) {
     return [];
   }
-  let db: any;
+  let db: Database.Database | undefined;
   try {
     db = new Database(resolvedPath, { readonly: true, timeout: 5000 });
     const result = queryFn(db);
     return result;
-  } catch (err) {
+  } catch {
     return [];
   } finally {
     if (db) {
@@ -75,9 +75,7 @@ function runQuery<T>(queryFn: (db: any) => T): T | [] {
  */
 export function getTracks(): EngineTrack[] {
   return runQuery((db) => {
-    return db
-      .prepare('SELECT id, path, filename, title, artist FROM Track')
-      .all() as EngineTrack[];
+    return db.prepare('SELECT id, path, filename, title, artist FROM Track').all() as EngineTrack[];
   }) as EngineTrack[];
 }
 
@@ -92,7 +90,7 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
   const normalizedDir = dirPath.endsWith(path.sep) ? dirPath : dirPath + path.sep;
   return runQuery((db) => {
     return db
-      .prepare('SELECT id, path, filename, title, artist FROM Track WHERE path LIKE ? || \'%\'')
+      .prepare("SELECT id, path, filename, title, artist FROM Track WHERE path LIKE ? || '%'")
       .all(normalizedDir) as EngineTrack[];
   }) as EngineTrack[];
 }

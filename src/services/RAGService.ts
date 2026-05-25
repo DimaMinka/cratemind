@@ -28,7 +28,7 @@ function loadMemory(): RagMemory {
         return parsed;
       }
     }
-  } catch (err) {
+  } catch {
     // Graceful recovery: return a fresh, empty structure
   }
   return { version: 1, examples: [], lastScanDir: null };
@@ -37,7 +37,7 @@ function loadMemory(): RagMemory {
 function saveMemory(memory: RagMemory): void {
   try {
     fs.writeFileSync(RAG_MEMORY_FILE, JSON.stringify(memory, null, 2), 'utf8');
-  } catch (err) {
+  } catch {
     // Ignore save errors, or handle gracefully
   }
 }
@@ -52,7 +52,7 @@ function saveMemory(memory: RagMemory): void {
 export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
   const memory = loadMemory();
   const currentSortedDir = path.resolve(sortedDir);
-  
+
   let found = 0;
   let added = 0;
   let foldersScanned = 0;
@@ -74,7 +74,7 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
 
     for (const file of files) {
       const ext = path.extname(file).toLowerCase();
-      if (!AUDIO_EXTENSIONS.includes(ext as any)) {
+      if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
         continue;
       }
 
@@ -84,10 +84,10 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
       // Check if this example is already recorded in memory (deduplication)
       const isDuplicate = memory.examples.some(
         (ex) =>
-          ex.artist.toLowerCase() === file.toLowerCase() || 
-          (ex.folders.includes(folder) && 
-           (ex.title.toLowerCase() === file.toLowerCase() || 
-            fullPath.toLowerCase().endsWith(ex.title.toLowerCase())))
+          ex.artist.toLowerCase() === file.toLowerCase() ||
+          (ex.folders.includes(folder) &&
+            (ex.title.toLowerCase() === file.toLowerCase() ||
+              fullPath.toLowerCase().endsWith(ex.title.toLowerCase())))
       );
 
       if (isDuplicate) {
@@ -131,10 +131,14 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
  */
 export function addExample(example: RagExample): void {
   const memory = loadMemory();
-  
+
   // Deduplicate: remove matching track before adding new one
   memory.examples = memory.examples.filter(
-    (ex) => !(ex.artist.toLowerCase() === example.artist.toLowerCase() && ex.title.toLowerCase() === example.title.toLowerCase())
+    (ex) =>
+      !(
+        ex.artist.toLowerCase() === example.artist.toLowerCase() &&
+        ex.title.toLowerCase() === example.title.toLowerCase()
+      )
   );
 
   memory.examples.push(example);
@@ -167,9 +171,7 @@ export function getContext(): string {
       .slice(0, RAG_EXAMPLES_PER_FOLDER);
 
     if (folderExamples.length > 0) {
-      const formattedTracks = folderExamples
-        .map((ex) => `${ex.artist} - ${ex.title}`)
-        .join(' | ');
+      const formattedTracks = folderExamples.map((ex) => `${ex.artist} - ${ex.title}`).join(' | ');
       lines.push(`[${folder}]: ${formattedTracks}`);
     }
   }

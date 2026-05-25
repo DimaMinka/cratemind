@@ -7,7 +7,9 @@ import * as path from 'path';
  * falling back to filename splitting.
  */
 
-export async function extractMetadata(filepath: string): Promise<{ artist: string; title: string }> {
+export async function extractMetadata(
+  filepath: string
+): Promise<{ artist: string; title: string }> {
   let artist: string | undefined;
   let title: string | undefined;
 
@@ -17,13 +19,15 @@ export async function extractMetadata(filepath: string): Promise<{ artist: strin
     title = metadata.common.title;
   } catch (error: unknown) {
     const cause = error instanceof Error ? error.message : String(error);
-    console.error(`[ID3Service] Error\n  Cause → ${cause}\n  Fix → Continuing with filename fallback`);
+    console.error(
+      `[ID3Service] Error\n  Cause → ${cause}\n  Fix → Continuing with filename fallback`
+    );
   }
 
   // Fallback to filename parsing if artist or title are missing
   if (!artist || !title) {
     let filename = path.basename(filepath, path.extname(filepath));
-    
+
     // Normalize common patterns
     filename = filename.replace(/_-_/g, ' - ');
 
@@ -40,10 +44,10 @@ export async function extractMetadata(filepath: string): Promise<{ artist: strin
         break;
       }
     }
-    
+
     if (parts.length >= 2) {
       if (!artist) artist = parts[0]?.replace(/_/g, ' ').trim();
-      
+
       const joinedTitle = parts.slice(1).join(usedSeparator === '_' ? ' ' : usedSeparator);
       if (!title) title = joinedTitle.replace(/_/g, ' ').trim();
     } else {
@@ -52,8 +56,8 @@ export async function extractMetadata(filepath: string): Promise<{ artist: strin
     }
   }
 
-  return { 
-    artist: artist || 'Unknown', 
-    title: title || 'Unknown' 
+  return {
+    artist: artist || 'Unknown',
+    title: title || 'Unknown'
   };
 }
