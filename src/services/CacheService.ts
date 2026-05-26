@@ -51,7 +51,7 @@ function readStats(): StatsStore {
       }
       return stats;
     }
-  } catch (err) {
+  } catch {
     // Graceful fallback to defaults
   }
   return defaultStats;
@@ -63,7 +63,7 @@ function readStats(): StatsStore {
 function writeStats(stats: StatsStore): void {
   try {
     fs.writeFileSync(STATS_FILE_PATH, JSON.stringify(stats, null, 2), 'utf-8');
-  } catch (err) {
+  } catch {
     // Ignore write errors to prevent system crash
   }
 }
@@ -77,7 +77,7 @@ function readCache(): CacheStore {
       const content = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
       return JSON.parse(content) as CacheStore;
     }
-  } catch (err) {
+  } catch {
     // Graceful fallback
   }
   return {};
@@ -89,7 +89,7 @@ function readCache(): CacheStore {
 function writeCache(cache: CacheStore): void {
   try {
     fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
-  } catch (err) {
+  } catch {
     // Ignore write errors
   }
 }
@@ -182,7 +182,7 @@ export function clearCacheAndStats(): void {
     if (fs.existsSync(STATS_FILE_PATH)) {
       fs.unlinkSync(STATS_FILE_PATH);
     }
-  } catch (err) {
+  } catch {
     // Ignore errors
   }
 }
