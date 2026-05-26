@@ -15,19 +15,27 @@ interface ManualOverrideProps {
  * Allows quick manual routing override when LLM confidence falls below threshold.
  */
 export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Element {
-  const { cursor, selectedList } = useOverrideHotkeys(override);
+  // Dynamically sort vibe folders: put suggested ones on top, and sort the rest alphabetically
+  const suggested = override.suggested || [];
+  const remainingFolders = [...FOLDERS]
+    .filter((f) => !suggested.includes(f as string))
+    .sort((a, b) => a.localeCompare(b));
+
+  const sortedFolders = [...suggested, ...remainingFolders] as string[];
+
+  const { cursor, selectedList } = useOverrideHotkeys(override, sortedFolders);
 
   // Take a sliding window of 5 folders around the cursor to prevent tall TUI overflows
   const maxVisible = 10;
   const half = Math.floor(maxVisible / 2);
   let start = Math.max(0, cursor - half);
-  let end = Math.min(FOLDERS.length, start + maxVisible);
+  let end = Math.min(sortedFolders.length, start + maxVisible);
 
   if (end - start < maxVisible) {
     start = Math.max(0, end - maxVisible);
   }
 
-  const visibleFolders = FOLDERS.slice(start, end);
+  const visibleFolders = sortedFolders.slice(start, end);
 
   return (
     <Box flexDirection="column" width="100%">
@@ -52,8 +60,36 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
             [PLAYING]
           </Text>
         </Text>
+
+        {override.suggested && override.suggested.length > 0 ? (
+          <Box
+            flexDirection="column"
+            borderStyle="single"
+            borderColor="cyan"
+            padding={1}
+            marginY={1}
+          >
+            <Text color="cyan" bold>
+              🤖 GEMINI RECOMMENDATION:
+            </Text>
+            <Text color="white" bold>
+              {override.suggested.join(' & ')}
+            </Text>
+            {override.reason ? (
+              <Text color="gray" italic>
+                "{override.reason}"
+              </Text>
+            ) : null}
+            <Box marginTop={1}>
+              <Text color="cyanBright" bold>
+                Press [A] to Approve suggestion & route
+              </Text>
+            </Box>
+          </Box>
+        ) : null}
+
         <Text color="gray" dimColor>
-          Select vibes to copy (showing {start + 1}-{end} of {FOLDERS.length})
+          Select vibes to copy (showing {start + 1}-{end} of {sortedFolders.length})
         </Text>
       </Box>
 

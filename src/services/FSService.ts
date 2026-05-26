@@ -121,25 +121,43 @@ export async function processFile(filepath: string): Promise<void> {
     let selectedFolders: string[] = [];
     const hasError = limitExceeded || missingApiKey || networkError || schemaError;
 
-    // Connect user approval hook if confidence is high
-    let approvedByUser = false;
-    if (llmResponse.confidence >= 0.7 && !hasError) {
-      const setBootPrompt = useStore.getState().setBootPrompt;
-      approvedByUser = await new Promise<boolean>((resolve) => {
-        setBootPrompt({
-          message: `Gemini suggests: ${llmResponse.folders.join(' & ')}`,
-          detail: `Reason: "${llmResponse.reasoning}" (Confidence: ${(llmResponse.confidence * 100).toFixed(0)}%). Press [Y] to Approve, [N] for Manual checklist.`,
-          resolve: (val) => {
-            setBootPrompt(null);
-            resolve(val);
-          }
-        });
-      });
-    }
+    const reasonText = hasError
+      ? `Error occurred (${errorMsg}). Prompting user override...`
+      : `New track discovered. Reviewing suggestions...`;
 
-    if (approvedByUser && !hasError) {
-      selectedFolders = llmResponse.folders;
-      addLog('ROUTED', `Auto-routing approved -> /${selectedFolders.join(' & /')}/${filename}`);
+    addLog('NEEDS_MANUAL', reasonText);
+    incrementStat('overrides');
+
+    // Play audio only when human review is required
+    previewAudio(filepath, 0, meta.duration);
+
+    selectedFolders = await new Promise<string[]>((resolve) => {
+      setOverride({
+        filename: filename,
+        filepath: filepath,
+        folders: [...FOLDERS],
+        suggested: llmResponse.folders,
+        selected: [],
+        reason: hasError ? errorMsg : undefined,
+        resolve: (folders) => {
+          setOverride(null);
+          resolve(folders);
+        }
+      });
+    });
+
+    if (selectedFolders.length === 0) {
+      addLog('ROUTED', `Manual routing skipped: track left in Incoming`);
+    } else {
+      const isApprovedSuggestion =
+        !hasError &&
+        selectedFolders.length === llmResponse.folders.length &&
+        selectedFolders.every((f) => llmResponse.folders.includes(f));
+
+      addLog(
+        'ROUTED',
+        `${isApprovedSuggestion ? 'Auto-routing approved' : 'Manual routing'} -> /${selectedFolders.join(' & /')}/${filename}`
+      );
 
       await routeFile(filepath, selectedFolders);
 
@@ -147,56 +165,12 @@ export async function processFile(filepath: string): Promise<void> {
         artist: meta.artist,
         title: meta.title,
         folders: selectedFolders,
-        reasoning: llmResponse.reasoning,
-        source: 'auto',
+        reasoning: isApprovedSuggestion
+          ? llmResponse.reasoning
+          : 'Routed via manual user override checklist',
+        source: isApprovedSuggestion ? 'auto' : 'manual',
         ts: Date.now()
       });
-    } else {
-      const reasonText = hasError
-        ? `Error occurred (${errorMsg}). Prompting user override...`
-        : !approvedByUser && llmResponse.confidence >= 0.7
-          ? 'User declined Gemini suggestion. Prompting manual override...'
-          : `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`;
-
-      addLog('NEEDS_MANUAL', reasonText);
-      incrementStat('overrides');
-
-      // Play audio only when human review is required
-      previewAudio(filepath, 0, meta.duration);
-
-      selectedFolders = await new Promise<string[]>((resolve) => {
-        setOverride({
-          filename: filename,
-          filepath: filepath,
-          folders: [...FOLDERS],
-          suggested: llmResponse.folders,
-          selected: [],
-          reason: hasError ? errorMsg : undefined,
-          resolve: (folders) => {
-            setOverride(null);
-            resolve(folders);
-          }
-        });
-      });
-
-      if (selectedFolders.length === 0) {
-        addLog('ROUTED', `Manual routing skipped: track left in Incoming`);
-      } else {
-        addLog('ROUTED', `Manual routing -> /${selectedFolders.join(' & /')}/${filename}`);
-
-        await routeFile(filepath, selectedFolders);
-
-        RAGService.addExample({
-          artist: meta.artist,
-          title: meta.title,
-          folders: selectedFolders,
-          reasoning: hasError
-            ? `Routed via manual user override (API issue: ${errorMsg})`
-            : 'Routed via manual user override checklist',
-          source: 'manual',
-          ts: Date.now()
-        });
-      }
     }
 
     stopAudio();
