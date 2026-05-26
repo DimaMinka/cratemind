@@ -40,7 +40,7 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
       {override.reason ? (
         <Box marginBottom={1} borderStyle="single" borderColor="red" paddingX={1}>
           <Text color="redBright" bold>
-            ⚠️ {override.reason.toUpperCase()}
+            ▲ {override.reason.toUpperCase()}
           </Text>
         </Box>
       ) : null}
