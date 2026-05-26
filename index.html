@@ -528,8 +528,10 @@
                 <li><b>RAGService:</b> Few-shot memory layer — persists routing history to
                     <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
                 </li>
-                <li><b>LLMService:</b> Gemini 2.5 API integration with structured Zod schema validation (simulated in
-                    Mock Mode).</li>
+                <li><b>CacheService:</b> Handles persistent offline SHA-256 caching in
+                    <code>.cratemind-cache.json</code> and daily API request counts in <code>.cratemind-stats.json</code>.
+                </li>
+                <li><b>LLMService:</b> Gemini API integration with structured Zod schema validation, local cache lookup, and limit checks (simulated in Mock Mode).</li>
                 <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
             </ul>
 
@@ -539,6 +541,7 @@
                 <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
                 <li><b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not just artist
                     name.</li>
+                <li><b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM latency/charges, paired with daily request limits to avoid API overspending.</li>
                 <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit
                     <code>[Y/n]</code> confirmation.
                 </li>
