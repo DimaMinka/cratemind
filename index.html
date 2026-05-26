@@ -564,52 +564,6 @@
                 smarter and more consistent the vibe classification becomes.</p>
             <p>CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests, the user
                 decides. Every action touching your collection requires explicit confirmation.</p>
-
-            <h2>Technical Architecture:</h2>
-            <ul>
-                <li><b>FSService:</b> Chokidar file watcher &amp; sequential queue manager (p-queue). Fully integrated
-                    with Mock Mode simulation.</li>
-                <li><b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful fallback in
-                    simulated states).</li>
-                <li><b>RAGService:</b> Few-shot memory layer — persists routing history to
-                    <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
-                </li>
-                <li><b>CacheService:</b> Handles persistent offline SHA-256 caching in
-                    <code>.cratemind-cache.json</code> and daily API request counts in <code>.cratemind-stats.json</code>.
-                </li>
-                <li><b>LLMService:</b> Gemini API integration with structured Zod schema validation, local cache lookup, and limit checks (simulated in Mock Mode).</li>
-                <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
-            </ul>
-
-            <h2>Key Features:</h2>
-            <ul>
-                <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
-                <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
-                <li><b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not just artist
-                    name.</li>
-                <li><b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your manual overrides, generating inline system instruction corrections to align Gemini's routing with your precise music taste over time.</li>
-                <li><b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM latency/charges, paired with daily request limits to avoid API overspending.</li>
-                <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit
-                    <code>[Y/n]</code> confirmation.
-                </li>
-                <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
-                <li>Native OS audio preview via <code>ffplay</code> with precise seeking support.</li>
-                <li><b>Mock Mode:</b> Complete sandboxed offline simulation (via <code>.env</code> toggle) to test base
-                    SQLite DB, file watchers, Gemini classifications, and physical routing without real dependencies.
-                </li>
-            </ul>
-
-            <h2>Future Integration Ideas:</h2>
-            <ul>
-                <li><b>Model Context Protocol (MCP) Server:</b> Expose CrateMind's RAG memory and vibe-routing logic as
-                    an MCP server. This allows IDE agents (like Claude or Antigravity) to query your library's
-                    organization rules, analyze track metadata, and suggest playlists directly inside your coding/chat
-                    environments.</li>
-                <li><b>Antigravity SDK (AGY CLI) Integration:</b> Integrate CrateMind with the AGY CLI to orchestrate
-                    autonomous multi-agent music curations. For example, let one subagent scour streaming platforms or
-                    charts for new releases, while CrateMind acts as the local routing agent to seamlessly classify them
-                    into your physical crates.</li>
-            </ul>
         </section>
 
         <!-- ── TUI Demo ───────────────────────────────────────────────── -->
@@ -745,6 +699,55 @@
             </div>
 
         </main>
+
+        <!-- ── Details ───────────────────────────────────────────────── -->
+        <section class="about-box" aria-label="Technical Details">
+            <h2>Technical Architecture:</h2>
+            <ul>
+                <li><b>FSService:</b> Chokidar file watcher &amp; sequential queue manager (p-queue). Fully integrated
+                    with Mock Mode simulation.</li>
+                <li><b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful fallback in
+                    simulated states).</li>
+                <li><b>RAGService:</b> Few-shot memory layer — persists routing history to
+                    <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
+                </li>
+                <li><b>CacheService:</b> Handles persistent offline SHA-256 caching in
+                    <code>.cratemind-cache.json</code> and daily API request counts in <code>.cratemind-stats.json</code>.
+                </li>
+                <li><b>LLMService:</b> Gemini API integration with structured Zod schema validation, local cache lookup, and limit checks (simulated in Mock Mode).</li>
+                <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
+            </ul>
+
+            <h2>Key Features:</h2>
+            <ul>
+                <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
+                <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
+                <li><b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not just artist
+                    name.</li>
+                <li><b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your manual overrides, generating inline system instruction corrections to align Gemini's routing with your precise music taste over time.</li>
+                <li><b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM latency/charges, paired with daily request limits to avoid API overspending.</li>
+                <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit
+                    <code>[Y/n]</code> confirmation.
+                </li>
+                <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
+                <li>Native OS audio preview via <code>ffplay</code> with precise seeking support.</li>
+                <li><b>Mock Mode:</b> Complete sandboxed offline simulation (via <code>.env</code> toggle) to test base
+                    SQLite DB, file watchers, Gemini classifications, and physical routing without real dependencies.
+                </li>
+            </ul>
+
+            <h2>Future Integration Ideas:</h2>
+            <ul>
+                <li><b>Model Context Protocol (MCP) Server:</b> Expose CrateMind's RAG memory and vibe-routing logic as
+                    an MCP server. This allows IDE agents (like Claude or Antigravity) to query your library's
+                    organization rules, analyze track metadata, and suggest playlists directly inside your coding/chat
+                    environments.</li>
+                <li><b>Antigravity SDK (AGY CLI) Integration:</b> Integrate CrateMind with the AGY CLI to orchestrate
+                    autonomous multi-agent music curations. For example, let one subagent scour streaming platforms or
+                    charts for new releases, while CrateMind acts as the local routing agent to seamlessly classify them
+                    into your physical crates.</li>
+            </ul>
+        </section>
 
         <!-- ── Footer ─────────────────────────────────────────────────── -->
         <footer class="site-footer" id="main-footer">
