@@ -75,8 +75,6 @@ export async function processFile(filepath: string): Promise<void> {
     const meta = await extractMetadata(filepath);
     addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
 
-    previewAudio(filepath, 0, meta.duration);
-
     const ragContext = RAGService.getContext();
     if (ragContext) {
       addLog('SYSTEM', 'Context loaded: few-shot examples injected');
@@ -144,6 +142,9 @@ export async function processFile(filepath: string): Promise<void> {
 
       addLog('NEEDS_MANUAL', reasonText);
       incrementStat('overrides');
+
+      // Play audio only when human review is required
+      previewAudio(filepath, 0, meta.duration);
 
       selectedFolders = await new Promise<string[]>((resolve) => {
         setOverride({
