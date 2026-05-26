@@ -59,13 +59,13 @@ async function promptManualScan(): Promise<boolean> {
   });
 }
 
-async function runBootstrap(): Promise<void> {
+async function runBootstrap(useEngineDB = false): Promise<void> {
   const addLog = useStore.getState().addLog;
   const setRagStatus = useStore.getState().setRagStatus;
 
   addLog('RAG', `Starting bootstrap scan inside ${SORTED_DIR}...`);
   try {
-    const result = await RAGService.bootstrap(SORTED_DIR);
+    const result = await RAGService.bootstrap(SORTED_DIR, useEngineDB);
     addLog(
       'RAG',
       `Scan complete: ${result.found} tracks found, ${result.added} added to RAG across ${result.folders} folders.`
@@ -107,7 +107,7 @@ async function main() {
 
   // 4. Run Bootstrap
   if (useEngineDB || useManualScan) {
-    await runBootstrap();
+    await runBootstrap(useEngineDB);
   } else {
     addLog('SYSTEM', 'Memory is empty. Starting fresh without RAG context.');
     setRagStatus('first-run');

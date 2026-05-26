@@ -41,7 +41,9 @@ function saveMemory(memory: RagMemory): void {
   }
 }
 
-export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
+import * as EngineDBService from './EngineDBService.js';
+
+export async function bootstrap(sortedDir: string, useEngineDB = false): Promise<BootstrapResult> {
   const currentSortedDir = path.resolve(sortedDir);
 
   if (MOCK_MODE) {
@@ -61,6 +63,79 @@ export async function bootstrap(sortedDir: string): Promise<BootstrapResult> {
 
   if (memory.lastScanDir && path.resolve(memory.lastScanDir) !== currentSortedDir) {
     memory.examples = [];
+  }
+
+  // 1. If Engine DJ DB import is requested, query database tracks and extract vibe from path
+  if (useEngineDB) {
+    const dbTracks = EngineDBService.getTracks();
+    const folderVibeSet = new Set<string>();
+
+    // Track count per vibe folder to enforce a strict import limit
+    const vibeCounts: Record<string, number> = {};
+    const maxPerVibe = RAG_EXAMPLES_PER_FOLDER * 2; // e.g., max 4 tracks per vibe folder
+
+    for (const track of dbTracks) {
+      found++;
+      
+      // Safety guard: skip invalid records that miss physical paths
+      if (!track || !track.path) {
+        continue;
+      }
+
+      // Determine if track path matches any of our atmospheric vibe folders
+      const pathParts = track.path.toLowerCase().split(/[/\\]/);
+      const matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+
+      if (!matchedVibe) {
+        continue; // Path doesn't belong to any known vibe folders
+      }
+
+      // Enforce per-vibe limit to keep RAG memory lightweight
+      const currentCount = vibeCounts[matchedVibe] ?? 0;
+      if (currentCount >= maxPerVibe) {
+        continue;
+      }
+
+      const trackArtist = track.artist || 'Unknown Artist';
+      const trackTitle = track.title || track.filename || 'Unknown Title';
+
+      const isDuplicate = memory.examples.some(
+        (ex) =>
+          ex.artist.toLowerCase() === trackArtist.toLowerCase() &&
+          ex.title.toLowerCase() === trackTitle.toLowerCase()
+      );
+
+      if (isDuplicate) {
+        continue;
+      }
+
+      folderVibeSet.add(matchedVibe);
+      vibeCounts[matchedVibe] = currentCount + 1;
+
+      memory.examples.push({
+        artist: trackArtist,
+        title: trackTitle,
+        folders: [matchedVibe],
+        reasoning: 'Imported from Engine DJ database',
+        source: 'engine-dj',
+        ts: Date.now()
+      });
+
+      added++;
+    }
+
+    if (memory.examples.length > RAG_MAX_STORED) {
+      memory.examples = memory.examples.slice(-RAG_MAX_STORED);
+    }
+
+    memory.lastScanDir = currentSortedDir;
+    saveMemory(memory);
+
+    return {
+      found,
+      added,
+      folders: folderVibeSet.size
+    };
   }
 
   for (const folder of FOLDERS) {
