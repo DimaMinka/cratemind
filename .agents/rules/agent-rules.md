@@ -94,3 +94,13 @@ Upon initialization, CrateMind executes the following detection and import pipel
 ## 6. GitHub MCP Integration & Token Conservation
 
 * **Tool Usage Optimization**: CrateMind utilizes the `github-mcp-server` plugin tools where applicable for repository operations, issue tracking, and metadata queries. This helps optimize token consumption inside Gemini by delegating specialized workflows to efficient MCP tools rather than executing general, expensive LLM semantic parsing/generation cycles.
+
+---
+
+## 7. Validation Pipeline & Code Quality
+
+Before considering any task complete, committing, or verifying success, the agent MUST run a strict validation sequence to guarantee code cleanliness and system safety:
+1. **Format First (`npm run format`)**: Format modified files using Prettier to maintain a flawless, unified code style.
+2. **Lint Second (`npm run lint`)**: Validate static analysis and Typescript rules using ESLint to spot potential bugs or redundant imports.
+3. **Build Third (`npm run build`)**: Compile the project with TypeScript (`tsc`) to verify type safety.
+* **Rule**: The complete chain `npm run format && npm run lint && npm run build` must run and exit with code `0` before presenting the final summary. Never skip this pipeline!

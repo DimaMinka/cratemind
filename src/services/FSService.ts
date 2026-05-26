@@ -12,9 +12,9 @@ import { MOCK_MODE, FOLDERS, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 import * as CacheService from './CacheService.js';
 
-const PQueueClass = ('default' in PQueue
-  ? PQueue.default
-  : PQueue) as unknown as new (opts: { concurrency: number }) => { add: (fn: () => Promise<void>) => void };
+const PQueueClass = ('default' in PQueue ? PQueue.default : PQueue) as unknown as new (opts: {
+  concurrency: number;
+}) => { add: (fn: () => Promise<void>) => void };
 const queue = new PQueueClass({ concurrency: 1 });
 
 /**
@@ -182,7 +182,7 @@ export async function processFile(filepath: string): Promise<void> {
 
     stopAudio();
     incrementStat('processed');
-    
+
     // Sync cache hits and daily limits stats to the global Zustand store
     const currentStats = CacheService.getStats();
     useStore.getState().setLimitStats(currentStats);
