@@ -11,6 +11,13 @@ export class RequestLimitExceededError extends Error {
   }
 }
 
+export class MissingApiKeyError extends Error {
+  constructor(message = 'GEMINI_API_KEY is missing in environment variables') {
+    super(message);
+    this.name = 'MissingApiKeyError';
+  }
+}
+
 /**
  * LLMService.ts
  *
@@ -29,9 +36,11 @@ const LLMResponseSchema = z.object({
 let aiClient: GoogleGenAI | null = null;
 
 function getAIClient(): GoogleGenAI {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new MissingApiKeyError();
+  }
   if (!aiClient) {
-    // The GoogleGenAI client automatically retrieves GEMINI_API_KEY from process.env
-    aiClient = new GoogleGenAI({});
+    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
   return aiClient;
 }
@@ -49,7 +58,12 @@ export async function classifyTrack(
     return cachedResponse;
   }
 
-  // 2. Check and increment limits
+  // 2. Validate API Key before incrementing limits
+  if (!process.env.GEMINI_API_KEY) {
+    throw new MissingApiKeyError();
+  }
+
+  // 3. Check and increment limits
   const limitCheck = CacheService.checkAndIncrementLimits();
   if (!limitCheck.success) {
     throw new RequestLimitExceededError();

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { RagStatus, RagStats } from '../types.js';
+import { MOCK_MODE } from '../config.js';
 
 interface HeaderProps {
   status: 'listening' | 'paused';
@@ -45,6 +46,9 @@ export function Header({
     );
   }
 
+  const engineStateText = MOCK_MODE ? ' [SIMULATOR]' : ' [LIVE API]';
+  const engineStateColor = MOCK_MODE ? 'cyan' : 'greenBright';
+
   return (
     <Box flexDirection="column" marginBottom={0}>
       <Box justifyContent="space-between" paddingBottom={0} borderStyle="single" borderColor="gray">
@@ -54,6 +58,7 @@ export function Header({
             {status === 'listening' ? '* ACTIVE LISTENER' : '[PAUSED] SYSTEM PAUSED'}
           </Text>
           <Text color="gray"> | Listening ./Incoming</Text>
+          <Text color={engineStateColor} bold>{engineStateText}</Text>
         </Box>
 
         {/* RAG Memory Info */}

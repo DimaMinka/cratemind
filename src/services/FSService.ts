@@ -82,6 +82,10 @@ export async function processFile(filepath: string): Promise<void> {
 
     let llmResponse;
     let limitExceeded = false;
+    let missingApiKey = false;
+    let networkError = false;
+    let schemaError = false;
+    let errorMsg = '';
 
     try {
       llmResponse = await LLMService.classifyTrack(meta.artist, meta.title, ragContext);
@@ -89,19 +93,35 @@ export async function processFile(filepath: string): Promise<void> {
     } catch (err) {
       if (err instanceof LLMService.RequestLimitExceededError) {
         limitExceeded = true;
-        llmResponse = {
-          folders: [],
-          reasoning: 'Daily API request limit reached.',
-          confidence: 0
-        };
+        errorMsg = 'Daily API request limit reached';
+      } else if (err instanceof LLMService.MissingApiKeyError) {
+        missingApiKey = true;
+        errorMsg = 'Configuration: GEMINI_API_KEY is missing';
+      } else if (
+        err instanceof Error &&
+        (err.name === 'ZodError' ||
+          err.message.includes('JSON') ||
+          err.message.includes('parsing') ||
+          err.message.includes('validation'))
+      ) {
+        schemaError = true;
+        errorMsg = 'Error: Invalid schema response format';
       } else {
-        throw err;
+        networkError = true;
+        errorMsg = 'Network Error: Google Gemini API unreachable';
       }
+
+      llmResponse = {
+        folders: [],
+        reasoning: errorMsg,
+        confidence: 0
+      };
     }
 
     let selectedFolders: string[] = [];
+    const hasError = limitExceeded || missingApiKey || networkError || schemaError;
 
-    if (llmResponse.confidence >= 0.7 && !limitExceeded) {
+    if (llmResponse.confidence >= 0.7 && !hasError) {
       selectedFolders = llmResponse.folders;
       addLog('ROUTED', `Auto-routing -> /${selectedFolders.join(' & /')}/${filename}`);
 
@@ -116,8 +136,8 @@ export async function processFile(filepath: string): Promise<void> {
         ts: Date.now()
       });
     } else {
-      const reasonText = limitExceeded
-        ? 'Daily request limit exceeded. Prompting user override...'
+      const reasonText = hasError
+        ? `Error occurred (${errorMsg}). Prompting user override...`
         : `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`;
 
       addLog('NEEDS_MANUAL', reasonText);
@@ -130,7 +150,7 @@ export async function processFile(filepath: string): Promise<void> {
           folders: [...FOLDERS],
           suggested: llmResponse.folders,
           selected: [],
-          reason: limitExceeded ? 'Daily API request limit reached' : undefined,
+          reason: hasError ? errorMsg : undefined,
           resolve: (folders) => {
             setOverride(null);
             resolve(folders);
@@ -149,8 +169,8 @@ export async function processFile(filepath: string): Promise<void> {
           artist: meta.artist,
           title: meta.title,
           folders: selectedFolders,
-          reasoning: limitExceeded
-            ? 'Routed via manual user override (API limit reached)'
+          reasoning: hasError
+            ? `Routed via manual user override (API issue: ${errorMsg})`
             : 'Routed via manual user override checklist',
           source: 'manual',
           ts: Date.now()
