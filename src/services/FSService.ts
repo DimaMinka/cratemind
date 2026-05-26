@@ -80,6 +80,9 @@ export async function processFile(filepath: string): Promise<void> {
       addLog('SYSTEM', 'Context loaded: few-shot examples injected');
     }
 
+    // Compute hash now so we can overwrite the cache after user confirms final folders
+    const contextHash = CacheService.generateContextHash(meta.artist, meta.title);
+
     let llmResponse;
     let limitExceeded = false;
     let missingApiKey = false;
@@ -160,6 +163,18 @@ export async function processFile(filepath: string): Promise<void> {
       );
 
       await routeFile(filepath, selectedFolders);
+
+      // Always overwrite the cache with the user's FINAL decision.
+      // Without this, the cache stores the LLM's original suggestion and
+      // returns the wrong vibe on subsequent runs — even when the user
+      // manually picked something different via the override checklist.
+      CacheService.saveTrackCache(meta.artist, meta.title, contextHash, {
+        folders: selectedFolders,
+        reasoning: isApprovedSuggestion
+          ? llmResponse.reasoning
+          : 'Routed via manual user override checklist',
+        confidence: isApprovedSuggestion ? llmResponse.confidence : 1.0
+      });
 
       RAGService.addExample({
         artist: meta.artist,
