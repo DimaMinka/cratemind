@@ -27,6 +27,7 @@ export const useStore = create<AppState>((set) => ({
   log: [],
   override: null,
   playback: null,
+  isLLMAnalyzing: false,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -55,7 +56,8 @@ export const useStore = create<AppState>((set) => ({
       dailyRequestsUsed: stats.dailyRequestsUsed,
       dailyRequestsLimit: stats.dailyRequestsLimit,
       totalCacheHits: stats.totalCacheHits
-    })
+    }),
+  setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing })
 }));
 
 /**

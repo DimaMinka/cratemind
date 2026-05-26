@@ -15,6 +15,7 @@ interface HeaderProps {
   dailyRequestsUsed: number;
   dailyRequestsLimit: number;
   totalCacheHits: number;
+  isLLMAnalyzing: boolean;
 }
 
 /**
@@ -32,7 +33,8 @@ export function Header({
   ragStats,
   dailyRequestsUsed,
   dailyRequestsLimit,
-  totalCacheHits
+  totalCacheHits,
+  isLLMAnalyzing
 }: HeaderProps): React.JSX.Element {
   // Render RAG memory state badge with distinct colors
   let ragBadge = <Text color="yellow">* FIRST RUN (No Memory)</Text>;
@@ -61,6 +63,12 @@ export function Header({
           <Text color={engineStateColor} bold>
             {engineStateText}
           </Text>
+          {isLLMAnalyzing && (
+            <Text color="magentaBright" bold>
+              {' '}
+              [🤖 GEMINI ANALYZING...]
+            </Text>
+          )}
         </Box>
 
         {/* RAG Memory Info */}

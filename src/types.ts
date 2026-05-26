@@ -95,6 +95,7 @@ export type AppState = {
     offset: number;
     lastStartedAt: number;
   } | null;
+  isLLMAnalyzing: boolean;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
@@ -107,6 +108,7 @@ export type AppState = {
     dailyRequestsLimit: number;
     totalCacheHits: number;
   }) => void;
+  setLLMAnalyzing: (isAnalyzing: boolean) => void;
 };
 
 export type LLMResponse = {

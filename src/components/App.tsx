@@ -31,7 +31,8 @@ export function App(): React.JSX.Element {
     override,
     bootPrompt,
     ragStatus,
-    ragStats
+    ragStats,
+    isLLMAnalyzing
   } = useStore(
     useShallow((s) => ({
       status: s.status,
@@ -43,7 +44,8 @@ export function App(): React.JSX.Element {
       override: s.override,
       bootPrompt: s.bootPrompt,
       ragStatus: s.ragStatus,
-      ragStats: s.ragStats
+      ragStats: s.ragStats,
+      isLLMAnalyzing: s.isLLMAnalyzing
     }))
   );
 
@@ -78,6 +80,7 @@ export function App(): React.JSX.Element {
           dailyRequestsUsed={dailyRequestsUsed}
           dailyRequestsLimit={dailyRequestsLimit}
           totalCacheHits={totalCacheHits}
+          isLLMAnalyzing={isLLMAnalyzing}
         />
 
         {/* Main Panel split (Live stream vs Manual Override check boxes) */}

@@ -48,7 +48,7 @@ export async function initWatcher(): Promise<void> {
   const watcher = chokidar.watch(INCOMING_DIR, {
     ignored: /(^|[/\\])\../,
     persistent: true,
-    ignoreInitial: true,
+    ignoreInitial: false,
     awaitWriteFinish: {
       stabilityThreshold: 500,
       pollInterval: 100
@@ -117,14 +117,17 @@ export async function processFile(filepath: string): Promise<void> {
     let errorMsg = '';
 
     try {
+      useStore.getState().setLLMAnalyzing(true);
       llmResponse = await LLMService.classifyTrack(
         meta.artist,
         meta.title,
         ragContext,
         personalHints
       );
+      useStore.getState().setLLMAnalyzing(false);
       addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
     } catch (err) {
+      useStore.getState().setLLMAnalyzing(false);
       if (err instanceof LLMService.RequestLimitExceededError) {
         limitExceeded = true;
         errorMsg = 'Daily API request limit reached';
