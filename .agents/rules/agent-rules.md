@@ -87,3 +87,9 @@ Upon initialization, CrateMind executes the following detection and import pipel
   * Provide interactive verification scripts or sandbox CLI testing steps (e.g., temporary/mock database and directories) that the developer can easily execute themselves.
   * Print clear, formatted diagnostic logs or summaries during tests so the developer can visually confirm that SQLite, RAG, and UI state layers function perfectly.
   * Walk through the verification results step-by-step with the developer, explaining exactly how to run, observe, and validate the correct behavior.
+
+---
+
+## 6. GitHub MCP Integration & Token Conservation
+
+* **Tool Usage Optimization**: CrateMind utilizes the `github-mcp-server` plugin tools where applicable for repository operations, issue tracking, and metadata queries. This helps optimize token consumption inside Gemini by delegating specialized workflows to efficient MCP tools rather than executing general, expensive LLM semantic parsing/generation cycles.
