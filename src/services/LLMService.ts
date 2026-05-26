@@ -48,9 +48,10 @@ function getAIClient(): GoogleGenAI {
 export async function classifyTrack(
   artist: string,
   title: string,
-  ragContext = ''
+  ragContext = '',
+  personalHints = ''
 ): Promise<LLMResponse> {
-  const contextHash = CacheService.generateContextHash(artist, title);
+  const contextHash = CacheService.generateContextHash(artist, title, ragContext, personalHints);
 
   // 1. Check cache first
   const cachedResponse = CacheService.getTrackCache(artist, title, contextHash);
@@ -169,7 +170,8 @@ You MUST respond strictly with a valid JSON matching this schema:
   "folders": ["crate name 1", "crate name 2"],
   "reasoning": "A short, descriptive one-sentence analysis of the track vibes.",
   "confidence": 0.92
-}`;
+}
+${personalHints ? '\n' + personalHints : ''}`;
 
       const promptText = `Artist: ${artist}
 Title: ${title}

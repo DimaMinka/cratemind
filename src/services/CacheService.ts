@@ -125,10 +125,17 @@ function writeCache(cache: CacheStore): void {
  * Generates a SHA-256 hash of a combination of artist and title.
  * Normalizes strings to prevent minor whitespace or case differences from missing the cache.
  */
-export function generateContextHash(artist: string, title: string): string {
+export function generateContextHash(
+  artist: string,
+  title: string,
+  ragContext: string,
+  personalHints: string
+): string {
   const normalizedArtist = artist.trim().toLowerCase();
   const normalizedTitle = title.trim().toLowerCase();
-  const payload = `${normalizedArtist}|${normalizedTitle}`;
+  const ragHash = createHash('sha256').update(ragContext).digest('hex');
+  const hintsHash = createHash('sha256').update(personalHints).digest('hex');
+  const payload = `${normalizedArtist}|${normalizedTitle}|${ragHash}|${hintsHash}`;
   return createHash('sha256').update(payload).digest('hex');
 }
 

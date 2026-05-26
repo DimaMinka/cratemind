@@ -37,6 +37,7 @@ export type RagExample = {
   artist: string;
   title: string;
   folders: string[];
+  overriddenFolders?: string[];
   reasoning: string;
   source: 'auto' | 'manual' | 'scan' | 'engine-dj';
   ts: number;

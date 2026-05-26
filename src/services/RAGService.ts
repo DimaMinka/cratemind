@@ -30,6 +30,7 @@ const RagExampleSchema = z.object({
   artist: z.string(),
   title: z.string(),
   folders: z.array(z.string()),
+  overriddenFolders: z.array(z.string()).optional(),
   reasoning: z.string(),
   source: z.enum(['auto', 'manual', 'scan', 'engine-dj']),
   ts: z.number()
@@ -247,6 +248,16 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
   };
 }
 
+export function findExample(artist: string, title: string): RagExample | null {
+  const memory = loadMemory();
+  const found = memory.examples.find(
+    (ex) =>
+      ex.artist.toLowerCase() === artist.toLowerCase() &&
+      ex.title.toLowerCase() === title.toLowerCase()
+  );
+  return found ?? null;
+}
+
 export function addExample(example: RagExample): void {
   const memory = loadMemory();
   memory.examples = memory.examples.filter(
@@ -329,6 +340,95 @@ export function getContext(): string {
       '==================================================================================='
     );
   }
+
+  return sections.length > 0 ? sections.join('\n') : '';
+}
+
+export function getPersonalHints(): string {
+  const memory = loadMemory();
+
+  // 1. Recency Bias: Берем только свежие исправления (сортируем по убыванию ts, лимит 50)
+  const manualExamples = memory.examples
+    .filter((ex) => ex.source === 'manual')
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 50);
+
+  if (manualExamples.length === 0) {
+    return '';
+  }
+
+  // 2. Подсчет частоты подтверждений по папкам
+  const confirmedCounts: Record<string, number> = {};
+  for (const ex of manualExamples) {
+    for (const folder of ex.folders) {
+      confirmedCounts[folder] = (confirmedCounts[folder] ?? 0) + 1;
+    }
+  }
+
+  const topFolders = Object.entries(confirmedCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5) // топ-5
+    .map(([folder, count]) => `${folder} (${count})`)
+    .join(', ');
+
+  // 3. Точный Diff исправлений: llmFolder -> userFolder
+  const corrections: Record<string, Record<string, number>> = {};
+  for (const ex of manualExamples) {
+    if (ex.overriddenFolders && ex.overriddenFolders.length > 0) {
+      const rejectedFolders = ex.overriddenFolders.filter((f) => !ex.folders.includes(f));
+      const addedFolders = ex.folders.filter((f) => !ex.overriddenFolders!.includes(f));
+
+      for (const llmF of rejectedFolders) {
+        if (!corrections[llmF]) {
+          corrections[llmF] = {};
+        }
+        if (addedFolders.length === 0) {
+          // Пользователь просто удалил папку, не добавив замен
+          corrections[llmF]['none'] = (corrections[llmF]['none'] ?? 0) + 1;
+        } else {
+          for (const userF of addedFolders) {
+            corrections[llmF][userF] = (corrections[llmF][userF] ?? 0) + 1;
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Формирование и ограничение правил (Топ-10 по частоте)
+  interface CorrectionEntry {
+    llmFolder: string;
+    userFolder: string;
+    count: number;
+  }
+  const flatCorrections: CorrectionEntry[] = [];
+  for (const [llmF, targets] of Object.entries(corrections)) {
+    for (const [userF, count] of Object.entries(targets)) {
+      flatCorrections.push({ llmFolder: llmF, userFolder: userF, count });
+    }
+  }
+
+  flatCorrections.sort((a, b) => b.count - a.count);
+  const topCorrections = flatCorrections.slice(0, 10);
+
+  const correctionLines = topCorrections.map(({ llmFolder, userFolder, count }) => {
+    const times = count === 1 ? 'time' : 'times';
+    if (userFolder === 'none') {
+      return `- Avoid "${llmFolder}" → do not assign this folder (corrected ${count} ${times})`;
+    } else {
+      return `- Avoid "${llmFolder}" → prefer "${userFolder}" (corrected ${count} ${times})`;
+    }
+  });
+
+  const sections: string[] = [];
+  sections.push('=== Personal routing preferences (derived from your override history) ===');
+  if (topFolders) {
+    sections.push(`Top confirmed folders: ${topFolders}`);
+  }
+  if (correctionLines.length > 0) {
+    sections.push('Routing corrections — apply when instinct conflicts with user taste:');
+    sections.push(...correctionLines);
+  }
+  sections.push('========================================================================');
 
   return sections.length > 0 ? sections.join('\n') : '';
 }

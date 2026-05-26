@@ -75,13 +75,39 @@ export async function processFile(filepath: string): Promise<void> {
     const meta = await extractMetadata(filepath);
     addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
 
+    // Check RAG memory first to reuse existing sorting
+    const existingExample = RAGService.findExample(meta.artist, meta.title);
+    if (existingExample) {
+      addLog(
+        'RAG',
+        `Reusing vibe from memory -> /${existingExample.folders.join(' & /')}/${filename}`
+      );
+      await routeFile(filepath, existingExample.folders);
+
+      // Increment cache hit / request saved!
+      CacheService.incrementCacheHits();
+
+      incrementStat('processed');
+
+      // Sync cache hits and daily limits stats to the global Zustand store
+      const currentStats = CacheService.getStats();
+      useStore.getState().setLimitStats(currentStats);
+      return;
+    }
+
     const ragContext = RAGService.getContext();
-    if (ragContext) {
-      addLog('SYSTEM', 'Context loaded: few-shot examples injected');
+    const personalHints = RAGService.getPersonalHints();
+    if (ragContext || personalHints) {
+      addLog('SYSTEM', 'Context loaded: few-shot examples & personal preferences injected');
     }
 
     // Compute hash now so we can overwrite the cache after user confirms final folders
-    const contextHash = CacheService.generateContextHash(meta.artist, meta.title);
+    const contextHash = CacheService.generateContextHash(
+      meta.artist,
+      meta.title,
+      ragContext,
+      personalHints
+    );
 
     let llmResponse;
     let limitExceeded = false;
@@ -91,7 +117,12 @@ export async function processFile(filepath: string): Promise<void> {
     let errorMsg = '';
 
     try {
-      llmResponse = await LLMService.classifyTrack(meta.artist, meta.title, ragContext);
+      llmResponse = await LLMService.classifyTrack(
+        meta.artist,
+        meta.title,
+        ragContext,
+        personalHints
+      );
       addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
     } catch (err) {
       if (err instanceof LLMService.RequestLimitExceededError) {
@@ -180,6 +211,8 @@ export async function processFile(filepath: string): Promise<void> {
         artist: meta.artist,
         title: meta.title,
         folders: selectedFolders,
+        overriddenFolders:
+          !isApprovedSuggestion && llmResponse.folders.length > 0 ? llmResponse.folders : undefined,
         reasoning: isApprovedSuggestion
           ? llmResponse.reasoning
           : 'Routed via manual user override checklist',

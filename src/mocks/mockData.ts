@@ -70,6 +70,15 @@ export const MOCK_ENGINE_TRACKS: EngineTrack[] = [
 // 2. Mock few-shot memory examples used to seed the simulated RAG Service
 export const MOCK_RAG_EXAMPLES: RagExample[] = [
   {
+    artist: 'Stephan Bodzin',
+    title: 'Strand',
+    folders: ['galaxy trip'],
+    overriddenFolders: ['club party'],
+    reasoning: 'Routed via manual user override checklist',
+    source: 'manual',
+    ts: Date.now()
+  },
+  {
     artist: 'Recondite',
     title: 'Shun',
     folders: ['galaxy trip', 'iceland'],
