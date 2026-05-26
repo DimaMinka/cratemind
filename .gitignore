@@ -5,3 +5,5 @@ dist/
 Incoming
 cratemind.log
 cratemind-memory.json
+.cratemind-cache.json
+.cratemind-stats.json
