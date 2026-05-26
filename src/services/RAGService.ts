@@ -76,7 +76,7 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
 
     for (const track of dbTracks) {
       found++;
-      
+
       // Safety guard: skip invalid records that miss physical paths
       if (!track || !track.path) {
         continue;

@@ -121,9 +121,25 @@ export async function processFile(filepath: string): Promise<void> {
     let selectedFolders: string[] = [];
     const hasError = limitExceeded || missingApiKey || networkError || schemaError;
 
+    // Connect user approval hook if confidence is high
+    let approvedByUser = false;
     if (llmResponse.confidence >= 0.7 && !hasError) {
+      const setBootPrompt = useStore.getState().setBootPrompt;
+      approvedByUser = await new Promise<boolean>((resolve) => {
+        setBootPrompt({
+          message: `Gemini suggests: ${llmResponse.folders.join(' & ')}`,
+          detail: `Reason: "${llmResponse.reasoning}" (Confidence: ${(llmResponse.confidence * 100).toFixed(0)}%). Press [Y] to Approve, [N] for Manual checklist.`,
+          resolve: (val) => {
+            setBootPrompt(null);
+            resolve(val);
+          }
+        });
+      });
+    }
+
+    if (approvedByUser && !hasError) {
       selectedFolders = llmResponse.folders;
-      addLog('ROUTED', `Auto-routing -> /${selectedFolders.join(' & /')}/${filename}`);
+      addLog('ROUTED', `Auto-routing approved -> /${selectedFolders.join(' & /')}/${filename}`);
 
       await routeFile(filepath, selectedFolders);
 
@@ -138,7 +154,9 @@ export async function processFile(filepath: string): Promise<void> {
     } else {
       const reasonText = hasError
         ? `Error occurred (${errorMsg}). Prompting user override...`
-        : `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`;
+        : !approvedByUser && llmResponse.confidence >= 0.7
+          ? 'User declined Gemini suggestion. Prompting manual override...'
+          : `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`;
 
       addLog('NEEDS_MANUAL', reasonText);
       incrementStat('overrides');

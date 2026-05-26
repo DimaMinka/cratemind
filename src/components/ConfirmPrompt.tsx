@@ -52,12 +52,25 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
         </Box>
 
         <Box justifyContent="space-around" borderStyle="single" borderColor="gray" padding={1}>
-          <Text color="green" bold>
-            [Y] Yes, scan & load memory
-          </Text>
-          <Text color="red" bold>
-            [N] Skip, start clean
-          </Text>
+          {prompt.message.startsWith('Gemini suggests') ? (
+            <>
+              <Text color="green" bold>
+                [Y] Approve Suggestion
+              </Text>
+              <Text color="red" bold>
+                [N] Manual checklist
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text color="green" bold>
+                [Y] Yes, scan & load memory
+              </Text>
+              <Text color="red" bold>
+                [N] Skip, start clean
+              </Text>
+            </>
+          )}
         </Box>
       </Box>
     </Box>
