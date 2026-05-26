@@ -264,34 +264,73 @@ export function addExample(example: RagExample): void {
 }
 
 export function getContext(): string {
-  const memory = loadMemory(); // now returns in-memory cache — zero disk I/O on subsequent calls
+  const memory = loadMemory(); // returns in-memory cache — zero disk I/O on subsequent calls
   if (memory.examples.length === 0) {
     return '';
   }
 
-  const lines: string[] = [];
+  // Separate user-confirmed manual overrides from auto-classified examples.
+  // LLM receives explicit signals: manual choices carry much higher weight
+  // than engine-dj imports or auto-classifications.
+  const manualExamples = memory.examples.filter((ex) => ex.source === 'manual');
+  const autoExamples = memory.examples.filter((ex) => ex.source !== 'manual');
 
+  const userConfirmedLines: string[] = [];
+  const referenceLines: string[] = [];
+
+  // ── Block 1: User-confirmed choices (pinned, highest priority) ─────────────
+  // Group all manual picks by folder and label them explicitly.
+  // These directly represent the user's taste and override any LLM tendency.
   for (const folder of FOLDERS) {
-    const folderExamples = memory.examples
+    const confirmed = manualExamples
       .filter((ex) => ex.folders.includes(folder))
-      .sort((a, b) => b.ts - a.ts)
-      .slice(0, RAG_EXAMPLES_PER_FOLDER);
+      .sort((a, b) => b.ts - a.ts);
 
-    if (folderExamples.length > 0) {
-      const formattedTracks = folderExamples.map((ex) => `${ex.artist} - ${ex.title}`).join(' | ');
-      lines.push(`[${folder}]: ${formattedTracks}`);
+    if (confirmed.length > 0) {
+      const formatted = confirmed.map((ex) => `${ex.artist} - ${ex.title}`).join(' | ');
+      userConfirmedLines.push(`[${folder}]: ${formatted}`);
     }
   }
 
-  if (lines.length === 0) {
-    return '';
+  // ── Block 2: Reference examples (engine-dj / scan / auto) ──────────────────
+  // Fill up to RAG_EXAMPLES_PER_FOLDER slots per folder, preferring
+  // manual slots already consumed above (skip duplicates).
+  const manualKeys = new Set(
+    manualExamples.map((ex) => `${ex.artist.toLowerCase()}|${ex.title.toLowerCase()}`)
+  );
+
+  for (const folder of FOLDERS) {
+    const refs = autoExamples
+      .filter((ex) => ex.folders.includes(folder))
+      .filter((ex) => !manualKeys.has(`${ex.artist.toLowerCase()}|${ex.title.toLowerCase()}`))
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, RAG_EXAMPLES_PER_FOLDER);
+
+    if (refs.length > 0) {
+      const formatted = refs.map((ex) => `${ex.artist} - ${ex.title}`).join(' | ');
+      referenceLines.push(`[${folder}]: ${formatted}`);
+    }
   }
 
-  return [
-    '=== Memory of already sorted tracks (use as reference) ===',
-    ...lines,
-    '==========================================================='
-  ].join('\n');
+  const sections: string[] = [];
+
+  if (userConfirmedLines.length > 0) {
+    sections.push(
+      '=== [USER CONFIRMED] Tracks personally routed by the user — highest priority, match this taste ===',
+      ...userConfirmedLines,
+      '================================================================================================='
+    );
+  }
+
+  if (referenceLines.length > 0) {
+    sections.push(
+      '=== Reference tracks already sorted in the library (use as secondary context) ===',
+      ...referenceLines,
+      '==================================================================================='
+    );
+  }
+
+  return sections.length > 0 ? sections.join('\n') : '';
 }
 
 export function clear(): void {
