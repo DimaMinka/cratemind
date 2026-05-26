@@ -50,6 +50,10 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                 prefixColor = '#5599ff';
                 messageColor = '#5599ff';
                 break;
+              case 'SYSTEM':
+                prefixColor = 'cyan';
+                messageColor = 'cyan';
+                break;
               case 'LLM_REASONING':
                 prefixColor = 'yellow';
                 messageColor = 'yellow';

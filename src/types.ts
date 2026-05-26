@@ -1,5 +1,5 @@
 export type LogEntry = {
-  type: 'DETECTED' | 'ID3' | 'LLM_REASONING' | 'ROUTED' | 'ERROR' | 'NEEDS_MANUAL' | 'RAG';
+  type: 'DETECTED' | 'ID3' | 'LLM_REASONING' | 'ROUTED' | 'ERROR' | 'NEEDS_MANUAL' | 'RAG' | 'SYSTEM';
   message: string;
   ts: number;
 };

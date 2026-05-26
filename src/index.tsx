@@ -19,7 +19,7 @@ async function promptEngineDB(): Promise<boolean> {
   const addLog = useStore.getState().addLog;
   const setBootPrompt = useStore.getState().setBootPrompt;
 
-  addLog('RAG', 'Engine DJ SQLite library detected.');
+  addLog('SYSTEM', 'Engine DJ SQLite library detected.');
 
   return new Promise<boolean>((resolve) => {
     setBootPrompt({
@@ -28,9 +28,9 @@ async function promptEngineDB(): Promise<boolean> {
       resolve: (val) => {
         setBootPrompt(null);
         if (val) {
-          addLog('RAG', 'User accepted Engine DJ import.');
+          addLog('SYSTEM', 'User accepted Engine DJ import.');
         } else {
-          addLog('RAG', 'User skipped Engine DJ import. Falling back to folder scan.');
+          addLog('SYSTEM', 'User skipped Engine DJ import. Falling back to folder scan.');
         }
         resolve(val);
       }
@@ -49,9 +49,9 @@ async function promptManualScan(): Promise<boolean> {
       resolve: (val) => {
         setBootPrompt(null);
         if (val) {
-          addLog('RAG', 'User accepted local folder scan.');
+          addLog('SYSTEM', 'User accepted local folder scan.');
         } else {
-          addLog('RAG', 'User skipped memory bootstrap.');
+          addLog('SYSTEM', 'User skipped memory bootstrap.');
         }
         resolve(val);
       }
@@ -89,7 +89,7 @@ async function main() {
   const addLog = useStore.getState().addLog;
   const setRagStatus = useStore.getState().setRagStatus;
 
-  addLog('RAG', 'CrateMind starting up...');
+  addLog('SYSTEM', 'CrateMind starting up...');
   setRagStatus('scanning');
 
   let useEngineDB = false;
@@ -109,7 +109,7 @@ async function main() {
   if (useEngineDB || useManualScan) {
     await runBootstrap();
   } else {
-    addLog('RAG', 'Memory is empty. Starting fresh without RAG context.');
+    addLog('SYSTEM', 'Memory is empty. Starting fresh without RAG context.');
     setRagStatus('first-run');
   }
 

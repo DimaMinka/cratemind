@@ -22,23 +22,23 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
     if (input === ' ') {
       const nextStatus = status === 'listening' ? 'paused' : 'listening';
       setStatus(nextStatus);
-      addLog('RAG', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
+      addLog('SYSTEM', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
     } else if (keyLower === 'q') {
-      addLog('RAG', 'Shutting down CrateMind in 3 seconds. Goodbye!');
+      addLog('SYSTEM', 'Shutting down CrateMind in 3 seconds. Goodbye!');
       setTimeout(() => {
         exit();
         process.exit(0);
       }, 3000);
     } else if (keyLower === 'r') {
       addLog(
-        'RAG',
+        'SYSTEM',
         `Memory Status: [${ragStatus}] - Total Tracks: ${ragStats.total} across ${ragStats.folders} directories.`
       );
     } else if (keyLower === 'c' && MOCK_MODE) {
-      addLog('RAG', '[CHAOS] Simulating API cold start: Clearing cache...');
+      addLog('SYSTEM', '[CHAOS] Simulating API cold start: Clearing cache...');
       CacheService.clearCacheAndStats();
 
-      addLog('RAG', '[CHAOS] Simulating API Limit exhaustion: Maximizing daily requests...');
+      addLog('SYSTEM', '[CHAOS] Simulating API Limit exhaustion: Maximizing daily requests...');
       CacheService.forceLimitExhaustion();
 
       // Sync store
@@ -46,7 +46,7 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
       useStore.getState().setLimitStats(currentStats);
 
       addLog(
-        'RAG',
+        'SYSTEM',
         '[CHAOS] Chaos Mode initialized! Next discovered track will trigger ManualOverride.'
       );
     } else if (key.leftArrow) {

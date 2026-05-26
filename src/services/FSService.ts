@@ -34,7 +34,7 @@ export async function initWatcher(): Promise<void> {
   }
 
   if (MOCK_MODE) {
-    addLog('RAG', 'MOCK MODE active. Starting simulated track discovery loop...');
+    addLog('SYSTEM', 'MOCK MODE active. Starting simulated track discovery loop...');
 
     MOCK_DISCOVERIES.forEach((discovery) => {
       setTimeout(() => {
@@ -43,7 +43,7 @@ export async function initWatcher(): Promise<void> {
     });
   }
 
-  addLog('RAG', `Initializing file watcher inside ${INCOMING_DIR}...`);
+  addLog('SYSTEM', `Initializing file watcher inside ${INCOMING_DIR}...`);
 
   const watcher = chokidar.watch(INCOMING_DIR, {
     ignored: /(^|[/\\])\../,
@@ -79,7 +79,7 @@ export async function processFile(filepath: string): Promise<void> {
 
     const ragContext = RAGService.getContext();
     if (ragContext) {
-      addLog('RAG', 'Context loaded: few-shot examples injected');
+      addLog('SYSTEM', 'Context loaded: few-shot examples injected');
     }
 
     let llmResponse;
