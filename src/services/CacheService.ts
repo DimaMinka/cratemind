@@ -21,10 +21,10 @@ interface CacheStore {
  * Generates a SHA-256 hash of a combination of artist, title, and RAG context.
  * Normalizes strings to prevent minor whitespace or case differences from missing the cache.
  */
-export function generateContextHash(artist: string, title: string, ragContext: string): string {
+export function generateContextHash(artist: string, title: string): string {
   const normalizedArtist = artist.trim().toLowerCase();
   const normalizedTitle = title.trim().toLowerCase();
-  const payload = `${normalizedArtist}|${normalizedTitle}|${ragContext}`;
+  const payload = `${normalizedArtist}|${normalizedTitle}`;
   return createHash('sha256').update(payload).digest('hex');
 }
 

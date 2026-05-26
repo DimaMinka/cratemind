@@ -50,7 +50,7 @@ export async function classifyTrack(
   title: string,
   ragContext = ''
 ): Promise<LLMResponse> {
-  const contextHash = CacheService.generateContextHash(artist, title, ragContext);
+  const contextHash = CacheService.generateContextHash(artist, title);
 
   // 1. Check cache first
   const cachedResponse = CacheService.getTrackCache(artist, title, contextHash);
