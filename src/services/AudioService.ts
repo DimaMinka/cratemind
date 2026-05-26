@@ -41,7 +41,9 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
       }
     }
 
-    activeAudioProcess = spawn('ffplay', ['-nodisp', '-ss', String(offset), absolutePath], { stdio: 'ignore' });
+    activeAudioProcess = spawn('ffplay', ['-nodisp', '-ss', String(offset), absolutePath], {
+      stdio: 'ignore'
+    });
 
     activeAudioProcess.on('error', (err) => {
       addLog('ERROR', `ffplay launch failed: ${err.message}`);

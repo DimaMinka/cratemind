@@ -36,14 +36,14 @@ function readStats(): StatsStore {
   const defaultStats: StatsStore = {
     lastDate: today,
     dailyRequestsUsed: 0,
-    totalCacheHits: 0,
+    totalCacheHits: 0
   };
 
   try {
     if (fs.existsSync(STATS_FILE_PATH)) {
       const content = fs.readFileSync(STATS_FILE_PATH, 'utf-8');
       const stats = JSON.parse(content) as StatsStore;
-      
+
       // Reset if the date has changed
       if (stats.lastDate !== today) {
         stats.lastDate = today;
@@ -123,7 +123,7 @@ export function saveTrackCache(
   cache[contextHash] = {
     artist,
     title,
-    response,
+    response
   };
   writeCache(cache);
 }
@@ -134,19 +134,22 @@ export function saveTrackCache(
  * If limit not exceeded -> increments and returns success: true.
  * Else -> returns success: false.
  */
-export function checkAndIncrementLimits(): { success: boolean; stats: { used: number; limit: number } } {
+export function checkAndIncrementLimits(): {
+  success: boolean;
+  stats: { used: number; limit: number };
+} {
   const stats = readStats();
   if (stats.dailyRequestsUsed >= DAILY_REQUEST_LIMIT) {
     return {
       success: false,
-      stats: { used: stats.dailyRequestsUsed, limit: DAILY_REQUEST_LIMIT },
+      stats: { used: stats.dailyRequestsUsed, limit: DAILY_REQUEST_LIMIT }
     };
   }
   stats.dailyRequestsUsed++;
   writeStats(stats);
   return {
     success: true,
-    stats: { used: stats.dailyRequestsUsed, limit: DAILY_REQUEST_LIMIT },
+    stats: { used: stats.dailyRequestsUsed, limit: DAILY_REQUEST_LIMIT }
   };
 }
 
@@ -162,12 +165,16 @@ export function incrementCacheHits(): void {
 /**
  * Retrieves the current statistics (used for syncing UI on boot or processing completion).
  */
-export function getStats(): { dailyRequestsUsed: number; dailyRequestsLimit: number; totalCacheHits: number } {
+export function getStats(): {
+  dailyRequestsUsed: number;
+  dailyRequestsLimit: number;
+  totalCacheHits: number;
+} {
   const stats = readStats();
   return {
     dailyRequestsUsed: stats.dailyRequestsUsed,
     dailyRequestsLimit: DAILY_REQUEST_LIMIT,
-    totalCacheHits: stats.totalCacheHits,
+    totalCacheHits: stats.totalCacheHits
   };
 }
 

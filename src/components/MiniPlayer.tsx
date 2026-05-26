@@ -59,12 +59,24 @@ export function MiniPlayer(): React.JSX.Element | null {
       {/* Top Meta Row */}
       <Box justifyContent="space-between" marginBottom={1}>
         <Box>
-          <Text backgroundColor="green" color="black" bold> PLAYING </Text>
-          <Text color="white" bold> {playback.filename}</Text>
+          <Text backgroundColor="green" color="black" bold>
+            {' '}
+            PLAYING{' '}
+          </Text>
+          <Text color="white" bold>
+            {' '}
+            {playback.filename}
+          </Text>
         </Box>
         <Box>
-          <Text backgroundColor="green" color="black" bold> DURATION </Text>
-          <Text color="greenBright" bold> {formatTime(currentSecs)}</Text>
+          <Text backgroundColor="green" color="black" bold>
+            {' '}
+            DURATION{' '}
+          </Text>
+          <Text color="greenBright" bold>
+            {' '}
+            {formatTime(currentSecs)}
+          </Text>
           <Text color="gray"> / {formatTime(playback.duration)}</Text>
         </Box>
       </Box>
@@ -73,7 +85,9 @@ export function MiniPlayer(): React.JSX.Element | null {
       <Box justifyContent="space-between" alignItems="center">
         <Box marginRight={2}>
           <Text color="gray">[</Text>
-          <Text color="greenBright" bold>{progressBar}</Text>
+          <Text color="greenBright" bold>
+            {progressBar}
+          </Text>
           <Text color="gray">]</Text>
         </Box>
         <Box>

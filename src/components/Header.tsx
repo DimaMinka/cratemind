@@ -58,7 +58,9 @@ export function Header({
             {status === 'listening' ? '* ACTIVE LISTENER' : '[PAUSED] SYSTEM PAUSED'}
           </Text>
           <Text color="gray"> | Listening ./Incoming</Text>
-          <Text color={engineStateColor} bold>{engineStateText}</Text>
+          <Text color={engineStateColor} bold>
+            {engineStateText}
+          </Text>
         </Box>
 
         {/* RAG Memory Info */}
@@ -88,7 +90,7 @@ export function Header({
           <Text color="red">{stats.errors}</Text>
         </Box>
 
-        <Text color="gray"> |   </Text>
+        <Text color="gray"> | </Text>
 
         <Text color="white" bold>
           API Today:{' '}

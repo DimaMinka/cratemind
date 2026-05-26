@@ -93,7 +93,11 @@ export type AppState = {
   setRagStatus: (status: RagStatus, stats?: Partial<RagStats>) => void;
   setBootPrompt: (prompt: BootPromptState | null) => void;
   setPlayback: (playback: AppState['playback']) => void;
-  setLimitStats: (stats: { dailyRequestsUsed: number; dailyRequestsLimit: number; totalCacheHits: number }) => void;
+  setLimitStats: (stats: {
+    dailyRequestsUsed: number;
+    dailyRequestsLimit: number;
+    totalCacheHits: number;
+  }) => void;
 };
 
 export type LLMResponse = {

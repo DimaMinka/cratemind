@@ -64,20 +64,9 @@ export function App(): React.JSX.Element {
         />
 
         {/* Main Panel split (Live stream vs Manual Override check boxes) */}
-        <Box
-          flexDirection="row"
-          flexGrow={1}
-          minHeight={12}
-          width="100%"
-        >
+        <Box flexDirection="row" flexGrow={1} minHeight={12} width="100%">
           {/* Left panel: Live Stream Log with its own border */}
-          <Box
-            flexGrow={1}
-            borderStyle="single"
-            borderColor="gray"
-            padding={1}
-            overflow="hidden"
-          >
+          <Box flexGrow={1} borderStyle="single" borderColor="gray" padding={1} overflow="hidden">
             <LiveStream log={log} />
           </Box>
 

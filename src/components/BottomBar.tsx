@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { MOCK_MODE } from '../config.js';
 
 /**
  * BottomBar.tsx
@@ -9,27 +10,28 @@ import { Box, Text } from 'ink';
  */
 export function BottomBar(): React.JSX.Element {
   return (
-    <Box
-      flexDirection="row"
-      justifyContent="center"
-      marginTop={1}
-      paddingX={1}
-    >
+    <Box flexDirection="row" justifyContent="center" marginTop={1} paddingX={1}>
       <Text color="yellowBright" bold>
         [Space]
       </Text>
       <Text color="gray"> Pause/Resume</Text>
-      <Text color="gray">   |   </Text>
+      <Text color="gray"> | </Text>
       <Text color="greenBright" bold>
         [R]
       </Text>
       <Text color="gray"> Log RAG Stats</Text>
-      <Text color="gray">   |   </Text>
-      <Text color="cyan" bold>
-        [C]
-      </Text>
-      <Text color="gray"> Simulate Chaos</Text>
-      <Text color="gray">   |   </Text>
+
+      {MOCK_MODE ? (
+        <>
+          <Text color="gray"> | </Text>
+          <Text color="cyan" bold>
+            [C]
+          </Text>
+          <Text color="gray"> Simulate Chaos</Text>
+        </>
+      ) : null}
+
+      <Text color="gray"> | </Text>
       <Text color="red" bold>
         [Q]
       </Text>
