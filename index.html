@@ -283,6 +283,15 @@
             background: #1e1e1e;
         }
 
+        .override-reason-box {
+            border: 1px solid #ff4444;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 0.88em;
+        }
+
         .override-track {
             margin-bottom: 2px;
             font-size: 0.88em;
@@ -587,6 +596,9 @@
                 Processed: <span class="val">1</span>
                 &nbsp; Manual Overrides: <span class="val">1</span>
                 &nbsp; Errors: <span class="err">0</span>
+                &nbsp; <span class="sep">|</span> &nbsp;
+                API Today: <span class="val">1/5</span>
+                &nbsp; Cache Saved: <span class="val" style="color: #00ff00;">0</span>
             </div>
 
             <!-- Two-panel area -->
@@ -608,13 +620,17 @@
                     <div class="log log-rag">[RAG] Context loaded: few-shot examples injected</div>
                     <div class="log log-llm">[LLM_REASONING] Hypnotic melodic synth lead, deep hardware textures.
                         Borderline atmospheric.</div>
-                    <div class="log log-manual">[NEEDS_MANUAL] Confidence below threshold (0.65). Prompting user
+                    <div class="log log-manual">[NEEDS_MANUAL] Daily request limit exceeded. Prompting user
                         override...</div>
                 </div>
 
                 <!-- Manual Override -->
                 <aside class="tui-override-panel" aria-label="Manual override panel">
                     <div class="panel-title"><span class="star">* </span>MANUAL OVERRIDE</div>
+
+                    <div class="override-reason-box">
+                        ▲ DAILY API REQUEST LIMIT REACHED
+                    </div>
 
                     <div class="override-track">
                         <b>Track: Stephan Bodzin – Strand.flac</b>
@@ -672,6 +688,8 @@
                 <span class="key">[Space]</span> Pause/Resume
                 <span class="sep">|</span>
                 <span class="key-green">[R]</span> Log RAG Stats
+                <span class="sep">|</span>
+                <span class="key" style="color: #00ffff;">[C]</span> Simulate Chaos
                 <span class="sep">|</span>
                 <span class="key-red">[Q]</span> Exit Sorter
             </div>
