@@ -58,8 +58,8 @@ export async function classifyTrack(
     return cachedResponse;
   }
 
-  // 2. Validate API Key before incrementing limits
-  if (!process.env.GEMINI_API_KEY) {
+  // 2. Validate API Key before incrementing limits (only if not in MOCK_MODE)
+  if (!MOCK_MODE && !process.env.GEMINI_API_KEY) {
     throw new MissingApiKeyError();
   }
 
