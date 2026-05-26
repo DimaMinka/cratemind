@@ -1,6 +1,7 @@
 import { useInput, useApp } from 'ink';
 import { useStore } from '../services/UIService.js';
 import { seekPlayback } from '../services/AudioService.js';
+import * as CacheService from '../services/CacheService.js';
 
 export function useGlobalHotkeys(isOverlayActive: boolean): void {
   const { exit } = useApp();
@@ -32,6 +33,18 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         'RAG',
         `Memory Status: [${ragStatus}] - Total Tracks: ${ragStats.total} across ${ragStats.folders} directories.`
       );
+    } else if (keyLower === 'c') {
+      addLog('RAG', '[CHAOS] Simulating API cold start: Clearing cache...');
+      CacheService.clearCacheAndStats();
+      
+      addLog('RAG', '[CHAOS] Simulating API Limit exhaustion: Maximizing daily requests...');
+      CacheService.forceLimitExhaustion();
+      
+      // Sync store
+      const currentStats = CacheService.getStats();
+      useStore.getState().setLimitStats(currentStats);
+      
+      addLog('RAG', '[CHAOS] Chaos Mode initialized! Next discovered track will trigger ManualOverride.');
     } else if (key.leftArrow) {
       seekPlayback(-10);
     } else if (key.rightArrow) {

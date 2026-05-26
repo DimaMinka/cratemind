@@ -25,6 +25,11 @@ export function BottomBar(): React.JSX.Element {
       </Text>
       <Text color="gray"> Log RAG Stats</Text>
       <Text color="gray">   |   </Text>
+      <Text color="cyan" bold>
+        [C]
+      </Text>
+      <Text color="gray"> Simulate Chaos</Text>
+      <Text color="gray">   |   </Text>
       <Text color="red" bold>
         [Q]
       </Text>
