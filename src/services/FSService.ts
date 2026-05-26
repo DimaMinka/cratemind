@@ -12,7 +12,9 @@ import { MOCK_MODE, FOLDERS, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 import * as CacheService from './CacheService.js';
 
-const PQueueClass = (PQueue as any).default || PQueue;
+const PQueueClass = ('default' in PQueue
+  ? PQueue.default
+  : PQueue) as unknown as new (opts: { concurrency: number }) => { add: (fn: () => Promise<void>) => void };
 const queue = new PQueueClass({ concurrency: 1 });
 
 /**
