@@ -10,6 +10,7 @@ import { previewAudio, stopAudio } from './AudioService.js';
 import { routeFile } from './RoutingService.js';
 import { MOCK_MODE, FOLDERS, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
+import * as CacheService from './CacheService.js';
 
 const PQueueClass = (PQueue as any).default || PQueue;
 const queue = new PQueueClass({ concurrency: 1 });
@@ -79,12 +80,28 @@ export async function processFile(filepath: string): Promise<void> {
       addLog('RAG', 'Context loaded: few-shot examples injected');
     }
 
-    const llmResponse = await LLMService.classifyTrack(meta.artist, meta.title, ragContext);
-    addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
+    let llmResponse;
+    let limitExceeded = false;
+
+    try {
+      llmResponse = await LLMService.classifyTrack(meta.artist, meta.title, ragContext);
+      addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
+    } catch (err) {
+      if (err instanceof LLMService.RequestLimitExceededError) {
+        limitExceeded = true;
+        llmResponse = {
+          folders: [],
+          reasoning: 'Daily API request limit reached.',
+          confidence: 0
+        };
+      } else {
+        throw err;
+      }
+    }
 
     let selectedFolders: string[] = [];
 
-    if (llmResponse.confidence >= 0.7) {
+    if (llmResponse.confidence >= 0.7 && !limitExceeded) {
       selectedFolders = llmResponse.folders;
       addLog('ROUTED', `Auto-routing -> /${selectedFolders.join(' & /')}/${filename}`);
 
@@ -99,10 +116,11 @@ export async function processFile(filepath: string): Promise<void> {
         ts: Date.now()
       });
     } else {
-      addLog(
-        'NEEDS_MANUAL',
-        `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`
-      );
+      const reasonText = limitExceeded
+        ? 'Daily request limit exceeded. Prompting user override...'
+        : `Confidence below threshold (${llmResponse.confidence}). Prompting user override...`;
+
+      addLog('NEEDS_MANUAL', reasonText);
       incrementStat('overrides');
 
       selectedFolders = await new Promise<string[]>((resolve) => {
@@ -112,6 +130,7 @@ export async function processFile(filepath: string): Promise<void> {
           folders: [...FOLDERS],
           suggested: llmResponse.folders,
           selected: [],
+          reason: limitExceeded ? 'Daily API request limit reached' : undefined,
           resolve: (folders) => {
             setOverride(null);
             resolve(folders);
@@ -130,7 +149,9 @@ export async function processFile(filepath: string): Promise<void> {
           artist: meta.artist,
           title: meta.title,
           folders: selectedFolders,
-          reasoning: 'Routed via manual user override checklist',
+          reasoning: limitExceeded
+            ? 'Routed via manual user override (API limit reached)'
+            : 'Routed via manual user override checklist',
           source: 'manual',
           ts: Date.now()
         });
@@ -139,10 +160,18 @@ export async function processFile(filepath: string): Promise<void> {
 
     stopAudio();
     incrementStat('processed');
+    
+    // Sync cache hits and daily limits stats to the global Zustand store
+    const currentStats = CacheService.getStats();
+    useStore.getState().setLimitStats(currentStats);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     addLog('ERROR', `Failed processing: ${msg}`);
     incrementStat('errors');
     stopAudio();
+
+    // Sync stats in case limit count was incremented before failure
+    const currentStats = CacheService.getStats();
+    useStore.getState().setLimitStats(currentStats);
   }
 }

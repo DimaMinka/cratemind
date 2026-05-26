@@ -2,6 +2,14 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { LLMResponse } from '../types.js';
 import { MOCK_MODE, FOLDERS, LLM_MODEL } from '../config.js';
+import * as CacheService from './CacheService.js';
+
+export class RequestLimitExceededError extends Error {
+  constructor(message = 'Daily API request limit reached') {
+    super(message);
+    this.name = 'RequestLimitExceededError';
+  }
+}
 
 /**
  * LLMService.ts
@@ -33,37 +41,55 @@ export async function classifyTrack(
   title: string,
   ragContext = ''
 ): Promise<LLMResponse> {
+  const contextHash = CacheService.generateContextHash(artist, title, ragContext);
+
+  // 1. Check cache first
+  const cachedResponse = CacheService.getTrackCache(artist, title, contextHash);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  // 2. Check and increment limits
+  const limitCheck = CacheService.checkAndIncrementLimits();
+  if (!limitCheck.success) {
+    throw new RequestLimitExceededError();
+  }
+
   if (MOCK_MODE) {
     // Artificial latency to simulate Gemini API network calls
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const artistLower = artist.toLowerCase();
+    let result: LLMResponse;
 
     // Trigger Manual Override for Stephan Bodzin
     if (artistLower.includes('bodzin')) {
-      return {
+      result = {
         folders: ['galaxy trip'],
         reasoning: 'Hypnotic melodic synth lead, deep hardware textures. Borderline atmospheric.',
         confidence: 0.65 // Below 0.70 threshold -> triggers manual selection!
       };
     }
-
     // Auto-route Recondite
-    if (artistLower.includes('recondite')) {
-      return {
+    else if (artistLower.includes('recondite')) {
+      result = {
         folders: ['galaxy trip', 'iceland'],
         reasoning:
           'Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits perfectly.',
         confidence: 0.95
       };
     }
-
     // Default mock response for other tracks
-    return {
-      folders: ['mountain sunset'],
-      reasoning: 'Warm organic instrumentation, melancholic strings and emotional progression.',
-      confidence: 0.65 // Below 0.70 threshold to trigger manual override for testing!
-    };
+    else {
+      result = {
+        folders: ['mountain sunset'],
+        reasoning: 'Warm organic instrumentation, melancholic strings and emotional progression.',
+        confidence: 0.65 // Below 0.70 threshold to trigger manual override for testing!
+      };
+    }
+
+    CacheService.saveTrackCache(artist, title, contextHash, result);
+    return result;
   }
 
   // Real Gemini API Execution
@@ -128,6 +154,7 @@ ${ragContext}`;
       const parsedData = JSON.parse(responseText);
       const validatedResponse = LLMResponseSchema.parse(parsedData);
 
+      CacheService.saveTrackCache(artist, title, contextHash, validatedResponse);
       return validatedResponse;
     } catch (err) {
       attempts--;
