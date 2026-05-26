@@ -87,6 +87,7 @@ Upon initialization, CrateMind executes the following detection and import pipel
   * Provide interactive verification scripts or sandbox CLI testing steps (e.g., temporary/mock database and directories) that the developer can easily execute themselves.
   * Print clear, formatted diagnostic logs or summaries during tests so the developer can visually confirm that SQLite, RAG, and UI state layers function perfectly.
   * Walk through the verification results step-by-step with the developer, explaining exactly how to run, observe, and validate the correct behavior.
+* **TUI & index.html Synchronization**: Any visual or logical changes made to the CrateMind TUI components (e.g., Header, ManualOverride, BottomBar, player, or logs layouts) must AUTOMATICALLY and immediately be mirrored inside the static mockup and documentation within `index.html`. This ensures that the demo and documentation never drift from the live codebase.
 
 ---
 
