@@ -21,6 +21,9 @@ export function App(): React.JSX.Element {
   // Connect to global Zustand store
   const status = useStore((state) => state.status);
   const stats = useStore((state) => state.stats);
+  const dailyRequestsUsed = useStore((state) => state.dailyRequestsUsed);
+  const dailyRequestsLimit = useStore((state) => state.dailyRequestsLimit);
+  const totalCacheHits = useStore((state) => state.totalCacheHits);
   const log = useStore((state) => state.log);
   const override = useStore((state) => state.override);
   const bootPrompt = useStore((state) => state.bootPrompt);
@@ -50,7 +53,15 @@ export function App(): React.JSX.Element {
     >
       <Box flexDirection="column" paddingX={1} width="100%">
         {/* Top Status Header */}
-        <Header status={status} stats={stats} ragStatus={ragStatus} ragStats={ragStats} />
+        <Header
+          status={status}
+          stats={stats}
+          ragStatus={ragStatus}
+          ragStats={ragStats}
+          dailyRequestsUsed={dailyRequestsUsed}
+          dailyRequestsLimit={dailyRequestsLimit}
+          totalCacheHits={totalCacheHits}
+        />
 
         {/* Main Panel split (Live stream vs Manual Override check boxes) */}
         <Box

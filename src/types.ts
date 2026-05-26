@@ -60,6 +60,7 @@ export type OverrideState = {
   folders: string[];
   suggested: string[];
   selected: string[];
+  reason?: string;
   resolve: (folders: string[]) => void;
 };
 
@@ -70,6 +71,9 @@ export type AppState = {
     overrides: number;
     errors: number;
   };
+  dailyRequestsUsed: number;
+  dailyRequestsLimit: number;
+  totalCacheHits: number;
   ragStatus: RagStatus;
   ragStats: RagStats;
   bootPrompt: BootPromptState | null;
@@ -89,6 +93,7 @@ export type AppState = {
   setRagStatus: (status: RagStatus, stats?: Partial<RagStats>) => void;
   setBootPrompt: (prompt: BootPromptState | null) => void;
   setPlayback: (playback: AppState['playback']) => void;
+  setLimitStats: (stats: { dailyRequestsUsed: number; dailyRequestsLimit: number; totalCacheHits: number }) => void;
 };
 
 export type LLMResponse = {

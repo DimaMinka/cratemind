@@ -37,6 +37,14 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
         </Text>
       </Box>
 
+      {override.reason ? (
+        <Box marginBottom={1} borderStyle="single" borderColor="red" paddingX={1}>
+          <Text color="redBright" bold>
+            ⚠️ {override.reason.toUpperCase()}
+          </Text>
+        </Box>
+      ) : null}
+
       <Box marginBottom={1} flexDirection="column">
         <Text color="white" bold>
           Track: {override.filename} <Text color="greenBright" bold>[PLAYING]</Text>

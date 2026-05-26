@@ -5,15 +5,22 @@ import { logToFile } from './LoggerService.js';
 import { AppState } from '../types.js';
 import { LOG_MAX } from '../config.js';
 import { App } from '../components/App.js';
+import * as CacheService from './CacheService.js';
 
 /**
  * UIService.ts
  * Manages the global Zustand state store and mounts the Ink terminal render loop.
  */
 
+// Retrieve initial persist state on boot
+const initialStats = CacheService.getStats();
+
 export const useStore = create<AppState>((set) => ({
   status: 'listening',
   stats: { processed: 0, overrides: 0, errors: 0 },
+  dailyRequestsUsed: initialStats.dailyRequestsUsed,
+  dailyRequestsLimit: initialStats.dailyRequestsLimit,
+  totalCacheHits: initialStats.totalCacheHits,
   ragStatus: 'first-run',
   ragStats: { total: 0, folders: 0, scannedAt: null },
   bootPrompt: null,
@@ -42,7 +49,13 @@ export const useStore = create<AppState>((set) => ({
       ragStats: { ...state.ragStats, ...stats }
     })),
   setBootPrompt: (bootPrompt) => set({ bootPrompt }),
-  setPlayback: (playback) => set({ playback })
+  setPlayback: (playback) => set({ playback }),
+  setLimitStats: (stats) =>
+    set({
+      dailyRequestsUsed: stats.dailyRequestsUsed,
+      dailyRequestsLimit: stats.dailyRequestsLimit,
+      totalCacheHits: stats.totalCacheHits
+    })
 }));
 
 /**

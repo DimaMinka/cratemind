@@ -11,6 +11,9 @@ interface HeaderProps {
   };
   ragStatus: RagStatus;
   ragStats: RagStats;
+  dailyRequestsUsed: number;
+  dailyRequestsLimit: number;
+  totalCacheHits: number;
 }
 
 /**
@@ -21,7 +24,15 @@ interface HeaderProps {
  * Visual Layout:
  * * LISTENING ./Incoming  |  Processed: 12 Overrides: 2 Errors: 0  |  [RAG Status Badge]
  */
-export function Header({ status, stats, ragStatus, ragStats }: HeaderProps): React.JSX.Element {
+export function Header({
+  status,
+  stats,
+  ragStatus,
+  ragStats,
+  dailyRequestsUsed,
+  dailyRequestsLimit,
+  totalCacheHits
+}: HeaderProps): React.JSX.Element {
   // Render RAG memory state badge with distinct colors
   let ragBadge = <Text color="yellow">* FIRST RUN (No Memory)</Text>;
   if (ragStatus === 'scanning') {
@@ -68,7 +79,25 @@ export function Header({ status, stats, ragStatus, ragStats }: HeaderProps): Rea
         <Text color="white" bold>
           Errors:{' '}
         </Text>
-        <Text color="red">{stats.errors}</Text>
+        <Box marginRight={2}>
+          <Text color="red">{stats.errors}</Text>
+        </Box>
+
+        <Text color="gray"> |   </Text>
+
+        <Text color="white" bold>
+          API Today:{' '}
+        </Text>
+        <Box marginRight={2}>
+          <Text color={dailyRequestsUsed >= dailyRequestsLimit ? 'redBright' : 'cyan'}>
+            {dailyRequestsUsed}/{dailyRequestsLimit}
+          </Text>
+        </Box>
+
+        <Text color="white" bold>
+          Cache Saved:{' '}
+        </Text>
+        <Text color="greenBright">{totalCacheHits}</Text>
       </Box>
     </Box>
   );
