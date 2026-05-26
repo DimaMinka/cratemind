@@ -36,6 +36,11 @@ export const LOG_MAX = 200;
 export const LLM_MODEL = 'gemini-2.5-flash';
 export const CONFIDENCE_THRESHOLD = 0.7;
 
+// Caching and API limit configurations
+export const DAILY_REQUEST_LIMIT = 5;
+export const CACHE_FILE_PATH = './.cratemind-cache.json';
+export const STATS_FILE_PATH = './.cratemind-stats.json';
+
 // RAG configuration constants
 export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.wav', '.aiff', '.m4a', '.ogg'] as const;
 export const RAG_MEMORY_FILE = './cratemind-memory.json';
