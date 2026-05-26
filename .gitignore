@@ -3,6 +3,7 @@ dist/
 .env
 .DS_Store
 Incoming
+Sorted
 cratemind.log
 cratemind-memory.json
 .cratemind-cache.json
