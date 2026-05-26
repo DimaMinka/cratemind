@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { z } from 'zod';
 import { RagExample, RagMemory, BootstrapResult } from '../types.js';
 import {
   RAG_MEMORY_FILE,
@@ -16,24 +17,63 @@ import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
  * RAGService.ts
  *
  * Implements few-shot retrieval-augmented memory for vibe classification.
+ *
+ * Key optimizations (v4.6):
+ * - Module-level `_memoryCache` prevents repeated synchronous disk reads on every LLM call.
+ * - Zod schema validates the memory file on load to prevent silent corruption.
+ * - Fixed duplicate detection in filesystem bootstrap (was comparing artist to filename — broken).
  */
 
+// ── Zod Schema ─────────────────────────────────────────────────────────────
+
+const RagExampleSchema = z.object({
+  artist: z.string(),
+  title: z.string(),
+  folders: z.array(z.string()),
+  reasoning: z.string(),
+  source: z.enum(['auto', 'manual', 'scan', 'engine-dj']),
+  ts: z.number()
+});
+
+const RagMemorySchema = z.object({
+  version: z.literal(1),
+  examples: z.array(RagExampleSchema),
+  lastScanDir: z.string().nullable()
+});
+
+// ── In-memory Cache ─────────────────────────────────────────────────────────
+
+/**
+ * Module-level cache for RAG memory.
+ * Eliminates repeated `fs.readFileSync` calls on every `getContext()` invocation.
+ * Invalidated on every write via `saveMemory()`.
+ */
+let _memoryCache: RagMemory | null = null;
+
 function loadMemory(): RagMemory {
+  if (_memoryCache) return _memoryCache;
+
   try {
     if (fs.existsSync(RAG_MEMORY_FILE)) {
       const data = fs.readFileSync(RAG_MEMORY_FILE, 'utf8');
-      const parsed = JSON.parse(data) as RagMemory;
-      if (parsed && Array.isArray(parsed.examples)) {
-        return parsed;
+      const parsed: unknown = JSON.parse(data);
+      const result = RagMemorySchema.safeParse(parsed);
+      if (result.success) {
+        _memoryCache = result.data;
+        return _memoryCache;
       }
+      // Zod validation failed — fall through to fresh state
     }
   } catch {
     // Graceful recovery: return a fresh, empty structure
   }
-  return { version: 1, examples: [], lastScanDir: null };
+
+  _memoryCache = { version: 1, examples: [], lastScanDir: null };
+  return _memoryCache;
 }
 
 function saveMemory(memory: RagMemory): void {
+  _memoryCache = memory; // update in-memory cache first
   try {
     fs.writeFileSync(RAG_MEMORY_FILE, JSON.stringify(memory, null, 2), 'utf8');
   } catch {
@@ -41,14 +81,22 @@ function saveMemory(memory: RagMemory): void {
   }
 }
 
+/** Invalidates the in-memory cache, forcing the next read from disk. */
+export function invalidateCache(): void {
+  _memoryCache = null;
+}
+
 import * as EngineDBService from './EngineDBService.js';
 
 export async function bootstrap(sortedDir: string, useEngineDB = false): Promise<BootstrapResult> {
+  // Invalidate cache so bootstrap always reads a fresh state from disk
+  _memoryCache = null;
+
   const currentSortedDir = path.resolve(sortedDir);
 
   if (MOCK_MODE) {
-    const memory = {
-      version: 1 as const,
+    const memory: RagMemory = {
+      version: 1,
       examples: [...MOCK_RAG_EXAMPLES],
       lastScanDir: currentSortedDir
     };
@@ -138,6 +186,7 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
     };
   }
 
+  // 2. Filesystem scan path
   for (const folder of FOLDERS) {
     const folderPath = path.join(currentSortedDir, folder);
     if (!fs.existsSync(folderPath)) {
@@ -156,19 +205,20 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
       found++;
       const fullPath = path.join(folderPath, file);
 
+      // Extract metadata FIRST so we can do a proper artist+title duplicate check.
+      // This is the fix for the broken duplicate detection that was comparing
+      // ex.artist against the raw filename string (which never matched).
+      const meta = await extractMetadata(fullPath);
+
       const isDuplicate = memory.examples.some(
         (ex) =>
-          ex.artist.toLowerCase() === file.toLowerCase() ||
-          (ex.folders.includes(folder) &&
-            (ex.title.toLowerCase() === file.toLowerCase() ||
-              fullPath.toLowerCase().endsWith(ex.title.toLowerCase())))
+          ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
+          ex.title.toLowerCase() === meta.title.toLowerCase()
       );
 
       if (isDuplicate) {
         continue;
       }
-
-      const meta = await extractMetadata(fullPath);
 
       memory.examples.push({
         artist: meta.artist,
@@ -214,7 +264,7 @@ export function addExample(example: RagExample): void {
 }
 
 export function getContext(): string {
-  const memory = loadMemory();
+  const memory = loadMemory(); // now returns in-memory cache — zero disk I/O on subsequent calls
   if (memory.examples.length === 0) {
     return '';
   }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box } from 'ink';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../services/UIService.js';
 import { ConfirmPrompt } from './ConfirmPrompt.js';
 import { Header } from './Header.js';
@@ -18,17 +19,33 @@ import { useStdoutDimensions } from '../hooks/useStdoutDimensions.js';
  * horizontally and vertically inside the terminal window.
  */
 export function App(): React.JSX.Element {
-  // Connect to global Zustand store
-  const status = useStore((state) => state.status);
-  const stats = useStore((state) => state.stats);
-  const dailyRequestsUsed = useStore((state) => state.dailyRequestsUsed);
-  const dailyRequestsLimit = useStore((state) => state.dailyRequestsLimit);
-  const totalCacheHits = useStore((state) => state.totalCacheHits);
-  const log = useStore((state) => state.log);
-  const override = useStore((state) => state.override);
-  const bootPrompt = useStore((state) => state.bootPrompt);
-  const ragStatus = useStore((state) => state.ragStatus);
-  const ragStats = useStore((state) => state.ragStats);
+  // Single shallow-equal subscription — prevents 9 separate re-render cycles
+  // on every store update (e.g., frequent log writes during track processing).
+  const {
+    status,
+    stats,
+    dailyRequestsUsed,
+    dailyRequestsLimit,
+    totalCacheHits,
+    log,
+    override,
+    bootPrompt,
+    ragStatus,
+    ragStats
+  } = useStore(
+    useShallow((s) => ({
+      status: s.status,
+      stats: s.stats,
+      dailyRequestsUsed: s.dailyRequestsUsed,
+      dailyRequestsLimit: s.dailyRequestsLimit,
+      totalCacheHits: s.totalCacheHits,
+      log: s.log,
+      override: s.override,
+      bootPrompt: s.bootPrompt,
+      ragStatus: s.ragStatus,
+      ragStats: s.ragStats
+    }))
+  );
 
   // Capture global hotkeys
   const isOverlayActive = bootPrompt !== null || override !== null;

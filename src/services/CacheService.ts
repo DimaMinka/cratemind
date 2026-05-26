@@ -18,20 +18,35 @@ interface CacheStore {
 }
 
 /**
- * Generates a SHA-256 hash of a combination of artist, title, and RAG context.
- * Normalizes strings to prevent minor whitespace or case differences from missing the cache.
+ * CacheService.ts
+ *
+ * Manages persistent LLM response caching and daily request limits.
+ *
+ * Key optimization (v4.6):
+ * - `_cacheStore` and `_statsStore` are module-level singletons.
+ *   All read operations return the in-memory copy — zero disk I/O per track.
+ *   Write operations use a write-through pattern: update memory, then flush to disk.
+ * - `clearCacheAndStats()` also resets both singletons.
  */
-export function generateContextHash(artist: string, title: string): string {
-  const normalizedArtist = artist.trim().toLowerCase();
-  const normalizedTitle = title.trim().toLowerCase();
-  const payload = `${normalizedArtist}|${normalizedTitle}`;
-  return createHash('sha256').update(payload).digest('hex');
-}
 
-/**
- * Reads the stats store from disk or returns the default state if it doesn't exist.
- */
+// ── In-memory Singletons ────────────────────────────────────────────────────
+
+let _cacheStore: CacheStore | null = null;
+let _statsStore: StatsStore | null = null;
+
+// ── Stats Store ─────────────────────────────────────────────────────────────
+
 function readStats(): StatsStore {
+  if (_statsStore) {
+    // Reset counter if day has rolled over (check without disk read)
+    const today = new Date().toISOString().split('T')[0];
+    if (_statsStore.lastDate !== today) {
+      _statsStore.lastDate = today;
+      _statsStore.dailyRequestsUsed = 0;
+    }
+    return _statsStore;
+  }
+
   const today = new Date().toISOString().split('T')[0];
   const defaultStats: StatsStore = {
     lastDate: today,
@@ -49,18 +64,23 @@ function readStats(): StatsStore {
         stats.lastDate = today;
         stats.dailyRequestsUsed = 0;
       }
-      return stats;
+
+      _statsStore = stats;
+      return _statsStore;
     }
   } catch {
     // Graceful fallback to defaults
   }
-  return defaultStats;
+
+  _statsStore = defaultStats;
+  return _statsStore;
 }
 
 /**
- * Saves the stats store to disk.
+ * Write-through: update in-memory singleton, then flush to disk.
  */
 function writeStats(stats: StatsStore): void {
+  _statsStore = stats;
   try {
     fs.writeFileSync(STATS_FILE_PATH, JSON.stringify(stats, null, 2), 'utf-8');
   } catch {
@@ -68,25 +88,30 @@ function writeStats(stats: StatsStore): void {
   }
 }
 
-/**
- * Reads the cache store from disk or returns an empty object if it doesn't exist.
- */
+// ── Cache Store ─────────────────────────────────────────────────────────────
+
 function readCache(): CacheStore {
+  if (_cacheStore) return _cacheStore;
+
   try {
     if (fs.existsSync(CACHE_FILE_PATH)) {
       const content = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
-      return JSON.parse(content) as CacheStore;
+      _cacheStore = JSON.parse(content) as CacheStore;
+      return _cacheStore;
     }
   } catch {
     // Graceful fallback
   }
-  return {};
+
+  _cacheStore = {};
+  return _cacheStore;
 }
 
 /**
- * Saves the cache store to disk.
+ * Write-through: update in-memory singleton, then flush to disk.
  */
 function writeCache(cache: CacheStore): void {
+  _cacheStore = cache;
   try {
     fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
   } catch {
@@ -94,8 +119,22 @@ function writeCache(cache: CacheStore): void {
   }
 }
 
+// ── Public API ──────────────────────────────────────────────────────────────
+
+/**
+ * Generates a SHA-256 hash of a combination of artist and title.
+ * Normalizes strings to prevent minor whitespace or case differences from missing the cache.
+ */
+export function generateContextHash(artist: string, title: string): string {
+  const normalizedArtist = artist.trim().toLowerCase();
+  const normalizedTitle = title.trim().toLowerCase();
+  const payload = `${normalizedArtist}|${normalizedTitle}`;
+  return createHash('sha256').update(payload).digest('hex');
+}
+
 /**
  * Checks if a track response is cached under the specific context hash.
+ * Returns the cached LLMResponse or null. Cache lookup is O(1) in-memory.
  */
 export function getTrackCache(
   artist: string,
@@ -111,7 +150,7 @@ export function getTrackCache(
 }
 
 /**
- * Saves a track response to the local JSON cache.
+ * Saves a track response to the local JSON cache (in-memory + disk).
  */
 export function saveTrackCache(
   artist: string,
@@ -154,7 +193,7 @@ export function checkAndIncrementLimits(): {
 }
 
 /**
- * Increments the total cache hits count.
+ * Increments the total cache hits count (in-memory + disk).
  */
 export function incrementCacheHits(): void {
   const stats = readStats();
@@ -179,9 +218,11 @@ export function getStats(): {
 }
 
 /**
- * Clears both the cache and stats files (Simulating clean hotkey cold start).
+ * Clears both the cache and stats files, and resets in-memory singletons.
  */
 export function clearCacheAndStats(): void {
+  _cacheStore = null;
+  _statsStore = null;
   try {
     if (fs.existsSync(CACHE_FILE_PATH)) {
       fs.unlinkSync(CACHE_FILE_PATH);

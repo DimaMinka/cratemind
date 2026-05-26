@@ -106,9 +106,9 @@ export async function classifyTrack(
     return result;
   }
 
-  // Real Gemini API Execution
-  let attempts = 2;
-  while (attempts > 0) {
+  // Real Gemini API Execution — 2 attempts with 1s backoff between them
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const ai = getAIClient();
 
@@ -213,14 +213,13 @@ ${ragContext}`;
       CacheService.saveTrackCache(artist, title, contextHash, validatedResponse);
       return validatedResponse;
     } catch (err) {
-      attempts--;
-      if (attempts === 0) {
-        throw new Error('Gemini API classification failed after 2 attempts', { cause: err });
+      lastError = err;
+      if (attempt < 2) {
+        // Simple backoff before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-      // Simple exponential backoff delay before retrying
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
-  throw new Error('Unexpected execution flow in Gemini classifier');
+  throw new Error('Gemini API classification failed after 2 attempts', { cause: lastError });
 }

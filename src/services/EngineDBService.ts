@@ -10,6 +10,11 @@ import { MOCK_ENGINE_TRACKS } from '../mocks/mockData.js';
  * EngineDBService.ts
  *
  * READ-ONLY integration with Engine DJ's SQLite library (m.db).
+ *
+ * Key optimization (v4.6):
+ * - Lazy singleton connection: the database is opened once and reused across all queries.
+ *   Eliminates per-query open/close overhead and keeps connection warm for future extensions.
+ * - Connection is closed cleanly on process exit.
  */
 
 // Helper to resolve home directory tilde (~) in database path
@@ -20,6 +25,42 @@ function resolvePath(filePath: string): string {
   return path.resolve(filePath);
 }
 
+// ── Lazy Singleton Connection ───────────────────────────────────────────────
+
+let _db: Database.Database | null = null;
+
+/**
+ * Returns the lazy singleton read-only Database connection.
+ * Returns null if the database file does not exist or cannot be opened.
+ */
+function getDB(): Database.Database | null {
+  if (_db) return _db;
+
+  const resolvedPath = resolvePath(ENGINE_DB_PATH);
+  if (!fs.existsSync(resolvedPath)) {
+    return null;
+  }
+
+  try {
+    _db = new Database(resolvedPath, { readonly: true, timeout: 5000 });
+
+    // Register cleanup on process exit to ensure WAL/journal files are flushed
+    process.once('exit', () => {
+      try {
+        _db?.close();
+      } catch {
+        // Ignore close errors on exit
+      }
+    });
+
+    return _db;
+  } catch {
+    return null;
+  }
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
 /**
  * Checks if the Engine DJ database is available and can be successfully opened.
  * Returns false if the file does not exist or opening it fails.
@@ -28,39 +69,14 @@ export function isAvailable(): boolean {
   if (MOCK_MODE) {
     return true; // Mock mode overrides file check
   }
-  const resolvedPath = resolvePath(ENGINE_DB_PATH);
-  if (!fs.existsSync(resolvedPath)) {
-    return false;
-  }
-  try {
-    const db = new Database(resolvedPath, { readonly: true, timeout: 2000 });
-    db.close();
-    return true;
-  } catch {
-    return false;
-  }
-}
 
-/**
- * Helper to execute a read-only query safely and close the connection immediately.
- */
-function runQuery<T>(queryFn: (db: Database.Database) => T): T | [] {
   const resolvedPath = resolvePath(ENGINE_DB_PATH);
   if (!fs.existsSync(resolvedPath)) {
-    return [];
+    return false;
   }
-  let db: Database.Database | undefined;
-  try {
-    db = new Database(resolvedPath, { readonly: true, timeout: 5000 });
-    const result = queryFn(db);
-    return result;
-  } catch {
-    return [];
-  } finally {
-    if (db) {
-      db.close();
-    }
-  }
+
+  // Attempt to acquire the singleton — success means the DB is accessible
+  return getDB() !== null;
 }
 
 /**
@@ -71,9 +87,15 @@ export function getTracks(): EngineTrack[] {
   if (MOCK_MODE) {
     return MOCK_ENGINE_TRACKS;
   }
-  return runQuery((db) => {
+
+  const db = getDB();
+  if (!db) return [];
+
+  try {
     return db.prepare('SELECT id, path, filename, title, artist FROM Track').all() as EngineTrack[];
-  }) as EngineTrack[];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -89,10 +111,16 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
       path: path.join(dirPath, t.path)
     }));
   }
-  const normalizedDir = dirPath.endsWith(path.sep) ? dirPath : dirPath + path.sep;
-  return runQuery((db) => {
+
+  const db = getDB();
+  if (!db) return [];
+
+  try {
+    const normalizedDir = dirPath.endsWith(path.sep) ? dirPath : dirPath + path.sep;
     return db
       .prepare("SELECT id, path, filename, title, artist FROM Track WHERE path LIKE ? || '%'")
       .all(normalizedDir) as EngineTrack[];
-  }) as EngineTrack[];
+  } catch {
+    return [];
+  }
 }
