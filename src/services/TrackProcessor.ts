@@ -7,7 +7,8 @@ import { routeFile } from './RoutingService.js';
 import * as CacheService from './CacheService.js';
 import * as UserInteractionService from './UserInteractionService.js';
 import * as NetworkScoutService from './NetworkScoutService.js';
-import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD } from '../config.js';
+import * as EngineDBService from './EngineDBService.js';
+import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD, FOLDERS } from '../config.js';
 import { LLMResponse } from '../types.js';
 
 /**
@@ -68,6 +69,22 @@ export async function processTrack(filepath: string): Promise<void> {
       addLog('SYSTEM', 'Context loaded: few-shot examples & personal preferences injected');
     }
 
+    // Helper to clean metadata for accurate bridging
+    function cleanMetadataString(s: string): string {
+      return s
+        .replace(/\s*[\[\(](?:original|extended|radio|dub|club|official|lyric)?\s*(?:mix|edit|version|video|audio|track|remix)?[\])]/gi, '') // strips (Original Mix), [Extended Mix] etc
+        .replace(/\s*\[[^\]]+\]/gi, '') // strips label names like [Truesoul]
+        .replace(/\s*\([^)]+\)/gi, '') // strips remaining brackets
+        .replace(/\s*\|.+$/g, '') // strips label suffixes like " | Truesoul"
+        .trim();
+    }
+
+    function normalizeKey(art: string, ttl: string): string {
+      const cleanArtist = cleanMetadataString(art);
+      const cleanTitle = cleanMetadataString(ttl);
+      return `${cleanArtist.toLowerCase()}|${cleanTitle.toLowerCase()}`;
+    }
+
     // Step 3: YouTube Network Scout — search for playlist context
     let networkContext = '';
     if (YT_SCOUT_ENABLED) {
@@ -85,7 +102,38 @@ export async function processTrack(filepath: string): Promise<void> {
           const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');
           addLog('YT_HIT', `Found in YouTube mix: "${playlistNames}" — playlist saved to memory`);
         }
+        
         networkContext = NetworkScoutService.formatForPrompt(scoutResult);
+
+        // --- Live m.db Bridging Logic ---
+        if (EngineDBService.isAvailable()) {
+          const dbTracks = EngineDBService.getTracks();
+          const matches: string[] = [];
+
+          for (const neighbor of scoutResult.neighbors) {
+            const neighborKey = normalizeKey(neighbor.artist, neighbor.title);
+            const mdbMatch = dbTracks.find(t => 
+              normalizeKey(t.artist || 'Unknown', t.title || t.filename || 'Unknown') === neighborKey
+            );
+
+            if (mdbMatch) {
+              const pathParts = mdbMatch.path.toLowerCase().split(/[/\\]/);
+              const folder = FOLDERS.find(f => pathParts.includes(f.toLowerCase()));
+              if (folder) {
+                matches.push(`- Neighbor track "${neighbor.artist} - ${neighbor.title}" is already sorted in your library folder: "${folder}"`);
+              }
+            }
+          }
+
+          if (matches.length > 0) {
+            let dbMatchContext = '\n\n=== High-Priority Library Match Context (YouTube neighbors already sorted in your library) ===\n';
+            dbMatchContext += 'These tracks are in the same playlists/mixes as the target track on YouTube, and you have already manually sorted them in these vibe folders. Give these folders the HIGHEST priority:\n';
+            dbMatchContext += matches.join('\n');
+            dbMatchContext += '\n==================================================================================================';
+            networkContext += dbMatchContext;
+            addLog('SYSTEM', `Mapped ${matches.length} YouTube neighbor tracks directly to your library vibes!`);
+          }
+        }
       }
     }
 

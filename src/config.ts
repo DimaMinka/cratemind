@@ -33,8 +33,8 @@ export const FOLDERS = [
 export const INCOMING_DIR = './Incoming';
 export const SORTED_DIR = './Sorted';
 export const LOG_MAX = 200;
-export const LLM_MODEL = 'gemini-2.5-flash';
-export const CONFIDENCE_THRESHOLD = 0.7;
+export const LLM_MODEL = 'gemini-3.5-flash';
+export const CONFIDENCE_THRESHOLD = 0.99;
 
 // Caching and API limit configurations
 export const DAILY_REQUEST_LIMIT = 5;
