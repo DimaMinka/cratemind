@@ -64,9 +64,17 @@ export async function extractMetadata(
     }
   }
 
+  // Clean up track number prefixes (e.g., "17. ", "01 - ", "01 ") from artist and title
+  const cleanPrefix = (str: string): string => {
+    return str.replace(/^\d+[\s.-]+/, '').trim();
+  };
+
+  const finalArtist = cleanPrefix(artist || 'Unknown');
+  const finalTitle = cleanPrefix(title || 'Unknown');
+
   return {
-    artist: artist || 'Unknown',
-    title: title || 'Unknown',
+    artist: finalArtist || 'Unknown',
+    title: finalTitle || 'Unknown',
     duration
   };
 }
