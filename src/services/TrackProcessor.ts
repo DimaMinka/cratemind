@@ -1,81 +1,44 @@
 import * as path from 'path';
-import * as fs from 'fs';
-import chokidar from 'chokidar';
-import PQueue from 'p-queue';
 import { useStore } from './UIService.js';
 import * as RAGService from './RAGService.js';
 import * as LLMService from './LLMService.js';
 import { extractMetadata } from './ID3Service.js';
-import { previewAudio, stopAudio } from './AudioService.js';
 import { routeFile } from './RoutingService.js';
-import { MOCK_MODE, FOLDERS, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
-import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 import * as CacheService from './CacheService.js';
-
-const PQueueClass = ('default' in PQueue ? PQueue.default : PQueue) as unknown as new (opts: {
-  concurrency: number;
-}) => { add: (fn: () => Promise<void>) => void };
-const queue = new PQueueClass({ concurrency: 1 });
+import * as UserInteractionService from './UserInteractionService.js';
 
 /**
- * FSService.ts
+ * TrackProcessor.ts
  *
- * Manages file system watching (chokidar) and sequential task queue (p-queue).
+ * Business orchestrator: declarative linear pipeline for processing
+ * a single audio track from ID3 extraction through to final routing.
+ *
+ * Pipeline steps:
+ * 1. ID3 metadata extraction
+ * 2. RAG memory lookup (instant route on hit)
+ * 3. [Future: YouTube Network Scout — Phase 4]
+ * 4. LLM classification via Gemini
+ * 5. User interaction (ManualOverride)
+ * 6. File routing to vibe crates
+ * 7. RAG memory update
+ *
+ * Extracted from FSService to separate business logic from
+ * infrastructure concerns (chokidar, PQueue).
  */
 
-export async function initWatcher(): Promise<void> {
-  const addLog = useStore.getState().addLog;
-
-  if (!fs.existsSync(INCOMING_DIR)) {
-    fs.mkdirSync(INCOMING_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(SORTED_DIR)) {
-    fs.mkdirSync(SORTED_DIR, { recursive: true });
-  }
-
-  if (MOCK_MODE) {
-    addLog('SYSTEM', 'MOCK MODE active. Starting simulated track discovery loop...');
-
-    MOCK_DISCOVERIES.forEach((discovery) => {
-      setTimeout(() => {
-        queue.add(() => processFile(discovery.filepath));
-      }, discovery.delayMs);
-    });
-  }
-
-  addLog('SYSTEM', `Initializing file watcher inside ${INCOMING_DIR}...`);
-
-  const watcher = chokidar.watch(INCOMING_DIR, {
-    ignored: /(^|[/\\])\../,
-    persistent: true,
-    ignoreInitial: false,
-    awaitWriteFinish: {
-      stabilityThreshold: 500,
-      pollInterval: 100
-    }
-  });
-
-  watcher.on('add', (filepath) => {
-    const ext = path.extname(filepath).toLowerCase();
-    if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
-      queue.add(() => processFile(filepath));
-    }
-  });
-}
-
-export async function processFile(filepath: string): Promise<void> {
+export async function processTrack(filepath: string): Promise<void> {
   const addLog = useStore.getState().addLog;
   const incrementStat = useStore.getState().incrementStat;
-  const setOverride = useStore.getState().setOverride;
 
   try {
     const filename = path.basename(filepath);
     addLog('DETECTED', `Discovered track: ${filename}`);
 
+    // Step 1: Extract ID3 metadata
     const meta = await extractMetadata(filepath);
     addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
 
-    // Check RAG memory first to reuse existing sorting
+    // Step 2: Check RAG memory for existing classification
     const existingExample = RAGService.findExample(meta.artist, meta.title);
     if (existingExample) {
       addLog(
@@ -95,13 +58,15 @@ export async function processFile(filepath: string): Promise<void> {
       return;
     }
 
+    // Step 3: Gather context for LLM
     const ragContext = RAGService.getContext();
     const personalHints = RAGService.getPersonalHints();
     if (ragContext || personalHints) {
       addLog('SYSTEM', 'Context loaded: few-shot examples & personal preferences injected');
     }
 
-    // Compute hash now so we can overwrite the cache after user confirms final folders
+    // Compute hash AFTER all context is gathered (RAG + personal hints)
+    // Note: In Phase 4, networkContext will be added here after YouTube scout step
     const contextHash = CacheService.generateContextHash(
       meta.artist,
       meta.title,
@@ -109,6 +74,7 @@ export async function processFile(filepath: string): Promise<void> {
       personalHints
     );
 
+    // Step 4: LLM classification
     let llmResponse;
     let limitExceeded = false;
     let missingApiKey = false;
@@ -155,7 +121,7 @@ export async function processFile(filepath: string): Promise<void> {
       };
     }
 
-    let selectedFolders: string[] = [];
+    // Step 5: User interaction (ManualOverride)
     const hasError = limitExceeded || missingApiKey || networkError || schemaError;
 
     const reasonText = hasError
@@ -165,24 +131,15 @@ export async function processFile(filepath: string): Promise<void> {
     addLog('NEEDS_MANUAL', reasonText);
     incrementStat('overrides');
 
-    // Play audio only when human review is required
-    previewAudio(filepath, 0, meta.duration);
-
-    selectedFolders = await new Promise<string[]>((resolve) => {
-      setOverride({
-        filename: filename,
-        filepath: filepath,
-        folders: [...FOLDERS],
-        suggested: llmResponse.folders,
-        selected: [],
-        reason: hasError ? errorMsg : undefined,
-        resolve: (folders) => {
-          setOverride(null);
-          resolve(folders);
-        }
-      });
+    const selectedFolders = await UserInteractionService.requestOverride({
+      filename,
+      filepath,
+      suggested: llmResponse.folders,
+      reason: hasError ? errorMsg : undefined,
+      duration: meta.duration
     });
 
+    // Step 6: Route file and update memory
     if (selectedFolders.length === 0) {
       addLog('ROUTED', `Manual routing skipped: track left in Incoming`);
     } else {
@@ -210,6 +167,7 @@ export async function processFile(filepath: string): Promise<void> {
         confidence: isApprovedSuggestion ? llmResponse.confidence : 1.0
       });
 
+      // Step 7: Update RAG memory
       RAGService.addExample({
         artist: meta.artist,
         title: meta.title,
@@ -224,7 +182,6 @@ export async function processFile(filepath: string): Promise<void> {
       });
     }
 
-    stopAudio();
     incrementStat('processed');
 
     // Sync cache hits and daily limits stats to the global Zustand store
@@ -234,7 +191,6 @@ export async function processFile(filepath: string): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err);
     addLog('ERROR', `Failed processing: ${msg}`);
     incrementStat('errors');
-    stopAudio();
 
     // Sync stats in case limit count was incremented before failure
     const currentStats = CacheService.getStats();

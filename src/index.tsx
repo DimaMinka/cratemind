@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { startTUI, useStore } from './services/UIService.js';
 import * as EngineDBService from './services/EngineDBService.js';
 import * as RAGService from './services/RAGService.js';
-import { initWatcher } from './services/FSService.js';
+import { initWatcher } from './services/TrackWatcher.js';
 import { SORTED_DIR } from './config.js';
 
 // Load environment variables
