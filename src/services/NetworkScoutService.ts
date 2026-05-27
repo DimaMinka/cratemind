@@ -471,15 +471,15 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
         channelName
       };
 
-      cachePlaylist(playlist, parsedItems);
-      resultPlaylists.push(playlist);
-
       // Find matched index in parsed items to grab neighbors
       const matchedIdx = parsedItems.findIndex(
         (item) => normalizeKey(item.artist, item.title) === trackKey
       );
 
       if (matchedIdx !== -1) {
+        cachePlaylist(playlist, parsedItems);
+        resultPlaylists.push(playlist);
+
         logMsg += `Status:        ✅ Target track FOUND at index #${matchedIdx + 1}\n`;
         const neighbors = extractNeighbors(parsedItems, matchedIdx, YT_SCOUT_NEIGHBOR_RADIUS);
         allNeighbors.push(...neighbors);
