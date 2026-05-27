@@ -49,9 +49,16 @@ export async function classifyTrack(
   artist: string,
   title: string,
   ragContext = '',
-  personalHints = ''
+  personalHints = '',
+  networkContext = ''
 ): Promise<LLMResponse> {
-  const contextHash = CacheService.generateContextHash(artist, title, ragContext, personalHints);
+  const contextHash = CacheService.generateContextHash(
+    artist,
+    title,
+    ragContext,
+    personalHints,
+    networkContext
+  );
 
   // 1. Check cache first
   const cachedResponse = CacheService.getTrackCache(artist, title, contextHash);
@@ -176,7 +183,8 @@ ${personalHints ? '\n' + personalHints : ''}`;
       const promptText = `Artist: ${artist}
 Title: ${title}
 
-${ragContext}`;
+${ragContext}
+${networkContext ? '\n' + networkContext : ''}`;
 
       const response = await ai.models.generateContent({
         model: LLM_MODEL,

@@ -6,6 +6,8 @@ import { extractMetadata } from './ID3Service.js';
 import { routeFile } from './RoutingService.js';
 import * as CacheService from './CacheService.js';
 import * as UserInteractionService from './UserInteractionService.js';
+import * as NetworkScoutService from './NetworkScoutService.js';
+import { YT_SCOUT_ENABLED } from '../config.js';
 
 /**
  * TrackProcessor.ts
@@ -16,8 +18,8 @@ import * as UserInteractionService from './UserInteractionService.js';
  * Pipeline steps:
  * 1. ID3 metadata extraction
  * 2. RAG memory lookup (instant route on hit)
- * 3. [Future: YouTube Network Scout — Phase 4]
- * 4. LLM classification via Gemini
+ * 3. YouTube Network Scout (playlist context + neighbor tracks)
+ * 4. LLM classification via Gemini (enriched with YouTube context)
  * 5. User interaction (ManualOverride)
  * 6. File routing to vibe crates
  * 7. RAG memory update
@@ -65,13 +67,35 @@ export async function processTrack(filepath: string): Promise<void> {
       addLog('SYSTEM', 'Context loaded: few-shot examples & personal preferences injected');
     }
 
-    // Compute hash AFTER all context is gathered (RAG + personal hints)
-    // Note: In Phase 4, networkContext will be added here after YouTube scout step
+    // Step 3: YouTube Network Scout — search for playlist context
+    let networkContext = '';
+    if (YT_SCOUT_ENABLED) {
+      addLog('YT_SEARCH', `Searching YouTube context for ${meta.artist} - ${meta.title}...`);
+      const scoutResult = await NetworkScoutService.getTrackContext(meta.artist, meta.title);
+
+      if (scoutResult.playlists.length > 0) {
+        if (scoutResult.source === 'cache') {
+          const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');
+          addLog(
+            'YT_CACHE_HIT',
+            `Vibe matched from cached playlist: "${playlistNames}" (network saved)`
+          );
+        } else {
+          const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');
+          addLog('YT_HIT', `Found in YouTube mix: "${playlistNames}" — playlist saved to memory`);
+        }
+        networkContext = NetworkScoutService.formatForPrompt(scoutResult);
+      }
+    }
+
+    // Compute hash AFTER all context is gathered (RAG + personal hints + network)
+    // This ensures the cache key reflects the full context used for classification
     const contextHash = CacheService.generateContextHash(
       meta.artist,
       meta.title,
       ragContext,
-      personalHints
+      personalHints,
+      networkContext
     );
 
     // Step 4: LLM classification
@@ -88,7 +112,8 @@ export async function processTrack(filepath: string): Promise<void> {
         meta.artist,
         meta.title,
         ragContext,
-        personalHints
+        personalHints,
+        networkContext
       );
       useStore.getState().setLLMAnalyzing(false);
       addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);

@@ -129,13 +129,15 @@ export function generateContextHash(
   artist: string,
   title: string,
   ragContext: string,
-  personalHints: string
+  personalHints: string,
+  networkContext = ''
 ): string {
   const normalizedArtist = artist.trim().toLowerCase();
   const normalizedTitle = title.trim().toLowerCase();
   const ragHash = createHash('sha256').update(ragContext).digest('hex');
   const hintsHash = createHash('sha256').update(personalHints).digest('hex');
-  const payload = `${normalizedArtist}|${normalizedTitle}|${ragHash}|${hintsHash}`;
+  const networkHash = createHash('sha256').update(networkContext).digest('hex');
+  const payload = `${normalizedArtist}|${normalizedTitle}|${ragHash}|${hintsHash}|${networkHash}`;
   return createHash('sha256').update(payload).digest('hex');
 }
 
