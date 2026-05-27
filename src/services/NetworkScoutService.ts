@@ -13,6 +13,7 @@ import {
 } from '../config.js';
 import { MOCK_YOUTUBE_PLAYLISTS, MOCK_YOUTUBE_PLAYLIST_ITEMS } from '../mocks/mockData.js';
 import { getDB } from './LocalDBService.js';
+import { logToFile } from './LoggerService.js';
 
 /**
  * NetworkScoutService.ts
@@ -350,7 +351,35 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
   }
 
   if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
-    return buildResultFromCache(cachedPlaylistIds, trackKey);
+    const result = buildResultFromCache(cachedPlaylistIds, trackKey);
+    let logMsg = `\n================== YT SCOUT LOCAL CACHE HIT ==================\n`;
+    logMsg += `Target Track: [${artist} - ${title}]\n`;
+    logMsg += `Loaded ${result.playlists.length} playlists from SQLite database:\n`;
+    for (const pl of result.playlists) {
+      logMsg += `  • "${pl.title}" (https://youtu.be/${pl.id}) by "${pl.channelName}"\n`;
+      // Find track's position in this playlist
+      const cached = playlistCache.get(pl.id);
+      if (cached) {
+        const itemIdx = cached.items.findIndex(
+          (item) => normalizeKey(item.artist, item.title) === trackKey
+        );
+        logMsg += `    Track position: ${itemIdx !== -1 ? `#${itemIdx + 1}` : 'Unknown'}\n`;
+        // Log nearby neighbor tracks
+        const plNeighbors = result.neighbors.filter((n) =>
+          cached.items.some(
+            (item) =>
+              normalizeKey(item.artist, item.title) === normalizeKey(n.artist, n.title) &&
+              item.playlistId === pl.id
+          )
+        );
+        if (plNeighbors.length > 0) {
+          logMsg += `    Neighbors: ${plNeighbors.map((n) => `${n.artist} - ${n.title}`).join(' | ')}\n`;
+        }
+      }
+    }
+    logMsg += `=============================================================`;
+    logToFile('YT_SCOUT_CACHE', logMsg);
+    return result;
   }
 
   // 2. Quit if no API key provided
@@ -365,6 +394,10 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
 
     const searchRes = await globalThis.fetch(searchUrl);
     if (!searchRes.ok) {
+      logToFile(
+        'YT_SCOUT_ERROR',
+        `Search request failed: Status ${searchRes.status} ${searchRes.statusText}`
+      );
       return { playlists: [], neighbors: [], source: 'network' };
     }
     const searchData = (await searchRes.json()) as { items?: { id?: { videoId?: string } }[] };
@@ -376,6 +409,7 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
       .join(',');
 
     if (!videoIds) {
+      logToFile('YT_SCOUT_MISS', `No video IDs returned for query: "${artist} ${title} mix"`);
       return { playlists: [], neighbors: [], source: 'network' };
     }
 
@@ -383,6 +417,10 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
     const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
     const detailsRes = await globalThis.fetch(detailsUrl);
     if (!detailsRes.ok) {
+      logToFile(
+        'YT_SCOUT_ERROR',
+        `Details request failed: Status ${detailsRes.status} ${detailsRes.statusText}`
+      );
       return { playlists: [], neighbors: [], source: 'network' };
     }
     const detailsData = (await detailsRes.json()) as {
@@ -400,19 +438,35 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
     const resultPlaylists: YouTubePlaylist[] = [];
     const allNeighbors: YouTubePlaylistItem[] = [];
 
+    // Beautiful detailed search log block
+    let logMsg = `\n================== YT SCOUT NETWORK SEARCH ==================\n`;
+    logMsg += `Target Track: [${artist} - ${title}]\n`;
+    logMsg += `Search Query: "${artist} ${title} mix"\n`;
+    logMsg += `Found ${videos.length} potential mix videos.\n\n`;
+
     // 5. Parse descriptions and warm caches
     for (const video of videos) {
       const id = video.id;
-      const title = video.snippet?.title || '';
+      const vTitle = video.snippet?.title || '';
       const description = video.snippet?.description || '';
       const channelName = video.snippet?.channelTitle || '';
 
       const parsedItems = parseTracklist(description, id);
-      if (parsedItems.length === 0) continue;
+
+      logMsg += `Video Title:   "${vTitle}"\n`;
+      logMsg += `Video Link:    https://youtu.be/${id}\n`;
+      logMsg += `Channel Name:  "${channelName}"\n`;
+      logMsg += `Parsed Tracks: ${parsedItems.length}\n`;
+
+      if (parsedItems.length === 0) {
+        logMsg += `Status:        ❌ No tracklist parsed from description.\n`;
+        logMsg += `-------------------------------------------------------------\n`;
+        continue;
+      }
 
       const playlist: YouTubePlaylist = {
         id,
-        title,
+        title: vTitle,
         description,
         channelName
       };
@@ -424,10 +478,28 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
       const matchedIdx = parsedItems.findIndex(
         (item) => normalizeKey(item.artist, item.title) === trackKey
       );
+
       if (matchedIdx !== -1) {
+        logMsg += `Status:        ✅ Target track FOUND at index #${matchedIdx + 1}\n`;
         const neighbors = extractNeighbors(parsedItems, matchedIdx, YT_SCOUT_NEIGHBOR_RADIUS);
         allNeighbors.push(...neighbors);
+
+        logMsg += `Parsed Tracklist Snippet around target:\n`;
+        parsedItems.forEach((item, idx) => {
+          const isTarget = idx === matchedIdx;
+          const isNeighbor = Math.abs(idx - matchedIdx) <= YT_SCOUT_NEIGHBOR_RADIUS && !isTarget;
+          if (isTarget || isNeighbor) {
+            logMsg += `  ${isTarget ? '👉' : '  '} [#${item.index + 1}] ${item.artist} - ${item.title}\n`;
+          }
+        });
+      } else {
+        logMsg += `Status:        ❓ Target track not directly listed in parsed description.\n`;
+        logMsg += `All Parsed Tracks:\n`;
+        parsedItems.forEach((item) => {
+          logMsg += `     [#${item.index + 1}] ${item.artist} - ${item.title}\n`;
+        });
       }
+      logMsg += `-------------------------------------------------------------\n`;
     }
 
     const seen = new Set<string>();
@@ -439,12 +511,23 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
       return true;
     });
 
+    logMsg += `Summary:\n`;
+    logMsg += `  Matched Playlists: ${resultPlaylists.length}\n`;
+    logMsg += `  Unique Neighbor Tracks Discovered: ${uniqueNeighbors.length}\n`;
+    if (uniqueNeighbors.length > 0) {
+      logMsg += `  Neighbors: ${uniqueNeighbors.map((n) => `${n.artist} - ${n.title}`).join(' | ')}\n`;
+    }
+    logMsg += `=============================================================`;
+    logToFile('YT_SCOUT_NETWORK', logMsg);
+
     return {
       playlists: resultPlaylists.slice(0, YT_SCOUT_MAX_PLAYLISTS),
       neighbors: uniqueNeighbors,
       source: 'network'
     };
-  } catch {
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logToFile('YT_SCOUT_ERROR', `Fatal error during YouTube search: ${errMsg}`);
     return { playlists: [], neighbors: [], source: 'network' };
   }
 }
