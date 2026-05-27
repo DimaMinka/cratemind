@@ -8,9 +8,11 @@ import {
   MOCK_MODE,
   YT_SCOUT_NETWORK_DELAY_MS,
   YT_SCOUT_MAX_PLAYLISTS,
-  YT_SCOUT_NEIGHBOR_RADIUS
+  YT_SCOUT_NEIGHBOR_RADIUS,
+  YOUTUBE_API_KEY
 } from '../config.js';
 import { MOCK_YOUTUBE_PLAYLISTS, MOCK_YOUTUBE_PLAYLIST_ITEMS } from '../mocks/mockData.js';
+import { getDB } from './LocalDBService.js';
 
 /**
  * NetworkScoutService.ts
@@ -19,22 +21,15 @@ import { MOCK_YOUTUBE_PLAYLISTS, MOCK_YOUTUBE_PLAYLIST_ITEMS } from '../mocks/mo
  * Returns playlists where the track appears and neighboring tracks within those mixes.
  *
  * Core concept — Playlist Memory Effect:
- * When a track is found in a playlist, the ENTIRE playlist is cached in memory.
+ * When a track is found in a playlist, the ENTIRE playlist is cached in local SQLite cratemind.db.
  * All other tracks from that mix will resolve instantly on subsequent lookups,
  * eliminating redundant network requests. This is critical for surviving within
  * YouTube Data API v3 free tier quota (10,000 units/day, ~100 searches/day).
- *
- * Architecture:
- * - MOCK_MODE: searches against MOCK_YOUTUBE_PLAYLISTS with simulated network delay
- * - Real mode: stub for future YouTube Data API v3 integration
  */
 
 // ── In-memory Playlist Cache ────────────────────────────────────────────────
 
-/** Stores full playlist data keyed by playlist ID */
 const playlistCache = new Map<string, CachedPlaylist>();
-
-/** Reverse index: normalized "artist|title" → Set of playlist IDs for instant lookups */
 const trackIndex = new Map<string, Set<string>>();
 
 function normalizeKey(artist: string, title: string): string {
@@ -44,9 +39,7 @@ function normalizeKey(artist: string, title: string): string {
 // ── Cache Operations ────────────────────────────────────────────────────────
 
 /**
- * Warms the cache with an entire playlist and indexes all its tracks.
- * This is the core of the Playlist Memory Effect — one network hit
- * pre-populates lookups for every track in the playlist.
+ * Warms the cache with an entire playlist and indexes all its tracks in-memory + SQLite.
  */
 function cachePlaylist(playlist: YouTubePlaylist, items: YouTubePlaylistItem[]): void {
   if (playlistCache.has(playlist.id)) return;
@@ -57,13 +50,105 @@ function cachePlaylist(playlist: YouTubePlaylist, items: YouTubePlaylistItem[]):
     cachedAt: Date.now()
   });
 
-  // Index every track in this playlist for instant reverse lookups
+  // Index every track in this playlist for instant reverse lookups in memory
   for (const item of items) {
     const key = normalizeKey(item.artist, item.title);
     if (!trackIndex.has(key)) {
       trackIndex.set(key, new Set());
     }
     trackIndex.get(key)!.add(playlist.id);
+  }
+
+  // Write through to SQLite cratemind.db
+  const db = getDB();
+  try {
+    db.prepare(
+      `
+      INSERT OR REPLACE INTO yt_playlists (id, title, description, channel_name, cached_at)
+      VALUES (?, ?, ?, ?, ?)
+    `
+    ).run(playlist.id, playlist.title, playlist.description, playlist.channelName, Date.now());
+
+    const insertItem = db.prepare(`
+      INSERT OR REPLACE INTO yt_playlist_items (playlist_id, track_index, artist, title)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    const transaction = db.transaction((playlistItems: YouTubePlaylistItem[]) => {
+      for (const item of playlistItems) {
+        insertItem.run(item.playlistId, item.index, item.artist, item.title);
+      }
+    });
+
+    transaction(items);
+  } catch {
+    // Ignore SQLite write errors
+  }
+}
+
+/**
+ * Lazy loads a playlist from cratemind.db into the in-memory cache singleton.
+ */
+function loadPlaylistFromDB(playlistId: string): void {
+  if (playlistCache.has(playlistId)) return;
+
+  const db = getDB();
+  try {
+    const plRow = db
+      .prepare('SELECT id, title, description, channel_name FROM yt_playlists WHERE id = ?')
+      .get(playlistId) as
+      | {
+          id: string;
+          title: string;
+          description: string | null;
+          channel_name: string | null;
+        }
+      | undefined;
+
+    if (!plRow) return;
+
+    const itemRows = db
+      .prepare(
+        'SELECT playlist_id, track_index, artist, title FROM yt_playlist_items WHERE playlist_id = ? ORDER BY track_index ASC'
+      )
+      .all(playlistId) as {
+      playlist_id: string;
+      track_index: number;
+      artist: string;
+      title: string;
+    }[];
+
+    const playlist: YouTubePlaylist = {
+      id: plRow.id,
+      title: plRow.title,
+      description: plRow.description || '',
+      channelName: plRow.channel_name || ''
+    };
+
+    const items: YouTubePlaylistItem[] = itemRows.map((r) => ({
+      playlistId: r.playlist_id,
+      index: r.track_index,
+      artist: r.artist,
+      title: r.title
+    }));
+
+    // Warm memory cache
+    playlistCache.set(playlist.id, {
+      playlist,
+      items,
+      cachedAt: Date.now()
+    });
+
+    // Populate trackIndex
+    for (const item of items) {
+      const key = normalizeKey(item.artist, item.title);
+      if (!trackIndex.has(key)) {
+        trackIndex.set(key, new Set());
+      }
+      trackIndex.get(key)!.add(playlist.id);
+    }
+  } catch {
+    // Ignore db load errors
   }
 }
 
@@ -78,72 +163,6 @@ function extractNeighbors(
   const start = Math.max(0, targetIndex - radius);
   const end = Math.min(items.length - 1, targetIndex + radius);
   return items.filter((_, i) => i >= start && i <= end && i !== targetIndex);
-}
-
-// ── Mock Implementation ─────────────────────────────────────────────────────
-
-async function getMockContext(artist: string, title: string): Promise<NetworkScoutResult> {
-  const trackKey = normalizeKey(artist, title);
-
-  // 1. Check if we already have this track cached (instant, no network)
-  const cachedPlaylistIds = trackIndex.get(trackKey);
-  if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
-    return buildResultFromCache(cachedPlaylistIds, trackKey);
-  }
-
-  // 2. Simulate network delay (YouTube API call)
-  await new Promise((resolve) => setTimeout(resolve, YT_SCOUT_NETWORK_DELAY_MS));
-
-  // 3. Search through mock playlists
-  const matchingItems = MOCK_YOUTUBE_PLAYLIST_ITEMS.filter(
-    (item) => normalizeKey(item.artist, item.title) === trackKey
-  );
-
-  if (matchingItems.length === 0) {
-    return { playlists: [], neighbors: [], source: 'network' };
-  }
-
-  // 4. Playlist Memory Effect: cache the ENTIRE playlist for each match
-  const resultPlaylists: YouTubePlaylist[] = [];
-  const allNeighbors: YouTubePlaylistItem[] = [];
-
-  for (const matchedItem of matchingItems) {
-    const playlist = MOCK_YOUTUBE_PLAYLISTS.find((p) => p.id === matchedItem.playlistId);
-    if (!playlist) continue;
-
-    // Get all items for this playlist
-    const playlistItems = MOCK_YOUTUBE_PLAYLIST_ITEMS.filter(
-      (item) => item.playlistId === playlist.id
-    ).sort((a, b) => a.index - b.index);
-
-    // Cache the entire playlist (warms all tracks in it)
-    cachePlaylist(playlist, playlistItems);
-
-    resultPlaylists.push(playlist);
-
-    // Extract neighbors around the matched track
-    const neighbors = extractNeighbors(playlistItems, matchedItem.index, YT_SCOUT_NEIGHBOR_RADIUS);
-    allNeighbors.push(...neighbors);
-  }
-
-  // Limit playlists returned
-  const limitedPlaylists = resultPlaylists.slice(0, YT_SCOUT_MAX_PLAYLISTS);
-
-  // Deduplicate neighbors by artist|title
-  const seen = new Set<string>();
-  seen.add(trackKey); // exclude the track itself
-  const uniqueNeighbors = allNeighbors.filter((n) => {
-    const key = normalizeKey(n.artist, n.title);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  return {
-    playlists: limitedPlaylists,
-    neighbors: uniqueNeighbors,
-    source: 'network'
-  };
 }
 
 // ── Cache Result Builder ────────────────────────────────────────────────────
@@ -185,14 +204,249 @@ function buildResultFromCache(playlistIds: Set<string>, trackKey: string): Netwo
   };
 }
 
-// ── Real YouTube API (Future) ───────────────────────────────────────────────
+// ── Mock Implementation ─────────────────────────────────────────────────────
 
-async function getRealYouTubeContext(_artist: string, _title: string): Promise<NetworkScoutResult> {
-  // TODO: Implement YouTube Data API v3 search
-  // 1. Search: GET /youtube/v3/search?q={artist}+{title}+mix&type=video (100 units)
-  // 2. Parse video descriptions for tracklists
-  // 3. Cache entire playlist via cachePlaylist()
-  return { playlists: [], neighbors: [], source: 'network' };
+async function getMockContext(artist: string, title: string): Promise<NetworkScoutResult> {
+  const trackKey = normalizeKey(artist, title);
+
+  // 1. Check in-memory cache
+  let cachedPlaylistIds = trackIndex.get(trackKey);
+
+  // 2. If memory cache miss, check SQLite database
+  if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
+    const db = getDB();
+    try {
+      const rows = db
+        .prepare(
+          'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
+        )
+        .all(artist.toLowerCase().trim(), title.toLowerCase().trim()) as { playlist_id: string }[];
+      if (rows.length > 0) {
+        for (const row of rows) {
+          loadPlaylistFromDB(row.playlist_id);
+        }
+        cachedPlaylistIds = trackIndex.get(trackKey);
+      }
+    } catch {
+      // Ignore SQLite read errors
+    }
+  }
+
+  // 3. Return cache hit if found
+  if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
+    return buildResultFromCache(cachedPlaylistIds, trackKey);
+  }
+
+  // 4. Simulate network latency
+  await new Promise((resolve) => setTimeout(resolve, YT_SCOUT_NETWORK_DELAY_MS));
+
+  // 5. Search mock playlist corpus
+  const matchingItems = MOCK_YOUTUBE_PLAYLIST_ITEMS.filter(
+    (item) => normalizeKey(item.artist, item.title) === trackKey
+  );
+
+  if (matchingItems.length === 0) {
+    return { playlists: [], neighbors: [], source: 'network' };
+  }
+
+  // 6. Warm database and in-memory caches
+  const resultPlaylists: YouTubePlaylist[] = [];
+  const allNeighbors: YouTubePlaylistItem[] = [];
+
+  for (const matchedItem of matchingItems) {
+    const playlist = MOCK_YOUTUBE_PLAYLISTS.find((p) => p.id === matchedItem.playlistId);
+    if (!playlist) continue;
+
+    const playlistItems = MOCK_YOUTUBE_PLAYLIST_ITEMS.filter(
+      (item) => item.playlistId === playlist.id
+    ).sort((a, b) => a.index - b.index);
+
+    cachePlaylist(playlist, playlistItems);
+    resultPlaylists.push(playlist);
+
+    const neighbors = extractNeighbors(playlistItems, matchedItem.index, YT_SCOUT_NEIGHBOR_RADIUS);
+    allNeighbors.push(...neighbors);
+  }
+
+  const seen = new Set<string>();
+  seen.add(trackKey);
+  const uniqueNeighbors = allNeighbors.filter((n) => {
+    const key = normalizeKey(n.artist, n.title);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return {
+    playlists: resultPlaylists.slice(0, YT_SCOUT_MAX_PLAYLISTS),
+    neighbors: uniqueNeighbors,
+    source: 'network'
+  };
+}
+
+// ── Real YouTube API Search & Description Regex Parser ───────────────────────────
+
+/**
+ * Parses full video descriptions using specialized regexes to reconstruct tracklists.
+ */
+function parseTracklist(description: string, playlistId: string): YouTubePlaylistItem[] {
+  const lines = description.split('\n');
+  const items: YouTubePlaylistItem[] = [];
+  let index = 0;
+
+  // Regex 1: captures timestamps e.g. "01:23 Lane 8 - Keep On" or "12.34 Ben Böhmer - Beyond Beliefs"
+  const timestampRegex = /(\d{1,2}[:.]\d{2})\s+([^-\n]+)\s*-\s*([^\n]+)/;
+  // Regex 2: captures structured lists e.g. "1. Lane 8 - Keep On" or "Lane 8 - Keep On"
+  const listRegex = /^(?:\d+[\s.-]+)?([^-\n\d]+[^-\n]*)\s*-\s*([^\n]+)$/;
+
+  for (const line of lines) {
+    const cleanLine = line.trim();
+    if (!cleanLine) continue;
+
+    let match = cleanLine.match(timestampRegex);
+    if (match) {
+      const artist = match[2].trim();
+      const title = match[3].trim();
+      if (artist && title) {
+        items.push({ playlistId, index: index++, artist, title });
+      }
+      continue;
+    }
+
+    match = cleanLine.match(listRegex);
+    if (match) {
+      const artist = match[1].trim();
+      const title = match[2].trim();
+      if (artist && title) {
+        items.push({ playlistId, index: index++, artist, title });
+      }
+    }
+  }
+  return items;
+}
+
+async function getRealYouTubeContext(artist: string, title: string): Promise<NetworkScoutResult> {
+  const trackKey = normalizeKey(artist, title);
+
+  // 1. Check memory cache and SQLite first
+  let cachedPlaylistIds = trackIndex.get(trackKey);
+  if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
+    const db = getDB();
+    try {
+      const rows = db
+        .prepare(
+          'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
+        )
+        .all(artist.toLowerCase().trim(), title.toLowerCase().trim()) as { playlist_id: string }[];
+      if (rows.length > 0) {
+        for (const row of rows) {
+          loadPlaylistFromDB(row.playlist_id);
+        }
+        cachedPlaylistIds = trackIndex.get(trackKey);
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+
+  if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
+    return buildResultFromCache(cachedPlaylistIds, trackKey);
+  }
+
+  // 2. Quit if no API key provided
+  if (!YOUTUBE_API_KEY) {
+    return { playlists: [], neighbors: [], source: 'network' };
+  }
+
+  try {
+    // 3. Search videos (mixes) on YouTube
+    const searchQuery = encodeURIComponent(`${artist} ${title} mix`);
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${searchQuery}&type=video&maxResults=3&key=${YOUTUBE_API_KEY}`;
+
+    const searchRes = await globalThis.fetch(searchUrl);
+    if (!searchRes.ok) {
+      return { playlists: [], neighbors: [], source: 'network' };
+    }
+    const searchData = (await searchRes.json()) as { items?: { id?: { videoId?: string } }[] };
+    const items = searchData.items || [];
+
+    const videoIds = items
+      .map((item) => item.id?.videoId)
+      .filter(Boolean)
+      .join(',');
+
+    if (!videoIds) {
+      return { playlists: [], neighbors: [], source: 'network' };
+    }
+
+    // 4. Fetch full descriptions to retrieve tracklists
+    const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+    const detailsRes = await globalThis.fetch(detailsUrl);
+    if (!detailsRes.ok) {
+      return { playlists: [], neighbors: [], source: 'network' };
+    }
+    const detailsData = (await detailsRes.json()) as {
+      items?: {
+        id: string;
+        snippet?: {
+          title?: string;
+          description?: string;
+          channelTitle?: string;
+        };
+      }[];
+    };
+    const videos = detailsData.items || [];
+
+    const resultPlaylists: YouTubePlaylist[] = [];
+    const allNeighbors: YouTubePlaylistItem[] = [];
+
+    // 5. Parse descriptions and warm caches
+    for (const video of videos) {
+      const id = video.id;
+      const title = video.snippet?.title || '';
+      const description = video.snippet?.description || '';
+      const channelName = video.snippet?.channelTitle || '';
+
+      const parsedItems = parseTracklist(description, id);
+      if (parsedItems.length === 0) continue;
+
+      const playlist: YouTubePlaylist = {
+        id,
+        title,
+        description,
+        channelName
+      };
+
+      cachePlaylist(playlist, parsedItems);
+      resultPlaylists.push(playlist);
+
+      // Find matched index in parsed items to grab neighbors
+      const matchedIdx = parsedItems.findIndex(
+        (item) => normalizeKey(item.artist, item.title) === trackKey
+      );
+      if (matchedIdx !== -1) {
+        const neighbors = extractNeighbors(parsedItems, matchedIdx, YT_SCOUT_NEIGHBOR_RADIUS);
+        allNeighbors.push(...neighbors);
+      }
+    }
+
+    const seen = new Set<string>();
+    seen.add(trackKey);
+    const uniqueNeighbors = allNeighbors.filter((n) => {
+      const key = normalizeKey(n.artist, n.title);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return {
+      playlists: resultPlaylists.slice(0, YT_SCOUT_MAX_PLAYLISTS),
+      neighbors: uniqueNeighbors,
+      source: 'network'
+    };
+  } catch {
+    return { playlists: [], neighbors: [], source: 'network' };
+  }
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
