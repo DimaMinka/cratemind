@@ -7,7 +7,8 @@ import { routeFile } from './RoutingService.js';
 import * as CacheService from './CacheService.js';
 import * as UserInteractionService from './UserInteractionService.js';
 import * as NetworkScoutService from './NetworkScoutService.js';
-import { YT_SCOUT_ENABLED } from '../config.js';
+import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD } from '../config.js';
+import { LLMResponse } from '../types.js';
 
 /**
  * TrackProcessor.ts
@@ -99,70 +100,104 @@ export async function processTrack(filepath: string): Promise<void> {
     );
 
     // Step 4: LLM classification
-    let llmResponse;
+    let llmResponse: LLMResponse;
     let limitExceeded = false;
     let missingApiKey = false;
     let networkError = false;
     let schemaError = false;
+    let bypassed = false;
     let errorMsg = '';
 
-    try {
-      useStore.getState().setLLMAnalyzing(true);
-      llmResponse = await LLMService.classifyTrack(
-        meta.artist,
-        meta.title,
-        ragContext,
-        personalHints,
-        networkContext
-      );
-      useStore.getState().setLLMAnalyzing(false);
-      addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
-    } catch (err) {
-      useStore.getState().setLLMAnalyzing(false);
-      if (err instanceof LLMService.RequestLimitExceededError) {
-        limitExceeded = true;
-        errorMsg = 'Daily API request limit reached';
-      } else if (err instanceof LLMService.MissingApiKeyError) {
-        missingApiKey = true;
-        errorMsg = 'Configuration: GEMINI_API_KEY is missing';
-      } else if (
-        err instanceof Error &&
-        (err.name === 'ZodError' ||
-          err.message.includes('JSON') ||
-          err.message.includes('parsing') ||
-          err.message.includes('validation'))
-      ) {
-        schemaError = true;
-        errorMsg = 'Error: Invalid schema response format';
-      } else {
-        networkError = true;
-        errorMsg = 'Network Error: Google Gemini API unreachable';
-      }
+    const hasYouTubeContext = networkContext.trim().length > 0;
 
+    if (!hasYouTubeContext) {
+      bypassed = true;
+      addLog(
+        'SYSTEM',
+        'No YouTube playlist context found. Bypassing Gemini to avoid inaccurate guesses.'
+      );
       llmResponse = {
         folders: [],
-        reasoning: errorMsg,
+        reasoning: 'No YouTube context available. Forced manual routing to ensure precision.',
         confidence: 0
       };
+    } else {
+      try {
+        useStore.getState().setLLMAnalyzing(true);
+        llmResponse = await LLMService.classifyTrack(
+          meta.artist,
+          meta.title,
+          ragContext,
+          personalHints,
+          networkContext
+        );
+        useStore.getState().setLLMAnalyzing(false);
+        addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
+      } catch (err) {
+        useStore.getState().setLLMAnalyzing(false);
+        if (err instanceof LLMService.RequestLimitExceededError) {
+          limitExceeded = true;
+          errorMsg = 'Daily API request limit reached';
+        } else if (err instanceof LLMService.MissingApiKeyError) {
+          missingApiKey = true;
+          errorMsg = 'Configuration: GEMINI_API_KEY is missing';
+        } else if (
+          err instanceof Error &&
+          (err.name === 'ZodError' ||
+            err.message.includes('JSON') ||
+            err.message.includes('parsing') ||
+            err.message.includes('validation'))
+        ) {
+          schemaError = true;
+          errorMsg = 'Error: Invalid schema response format';
+        } else {
+          networkError = true;
+          errorMsg = 'Network Error: Google Gemini API unreachable';
+        }
+
+        llmResponse = {
+          folders: [],
+          reasoning: errorMsg,
+          confidence: 0
+        };
+      }
     }
 
-    // Step 5: User interaction (ManualOverride)
+    // Step 5: Route track automatically if confidence is high, or prompt ManualOverride
     const hasError = limitExceeded || missingApiKey || networkError || schemaError;
+    const shouldAutoRoute =
+      !bypassed && !hasError && llmResponse.confidence >= CONFIDENCE_THRESHOLD;
 
-    const reasonText = hasError
-      ? `Error occurred (${errorMsg}). Prompting user override...`
-      : `New track discovered. Reviewing suggestions...`;
+    let selectedFolders: string[] = [];
 
-    addLog('NEEDS_MANUAL', reasonText);
-    incrementStat('overrides');
+    if (shouldAutoRoute) {
+      addLog(
+        'RAG',
+        `High LLM confidence (${llmResponse.confidence}): automatically routing -> /${llmResponse.folders.join(' & /')}`
+      );
+      selectedFolders = llmResponse.folders;
+    } else {
+      const reasonText = hasError
+        ? `Error occurred (${errorMsg}). Prompting user override...`
+        : bypassed
+          ? 'No context signal (RAG miss + YouTube miss). Prompting manual override...'
+          : `Low LLM confidence (${llmResponse.confidence} < ${CONFIDENCE_THRESHOLD}). Prompting user override...`;
 
-    const selectedFolders = await UserInteractionService.requestOverride({
-      filename,
-      filepath,
-      suggested: llmResponse.folders,
-      reason: hasError ? errorMsg : undefined,
-      duration: meta.duration
-    });
+      addLog('NEEDS_MANUAL', reasonText);
+      incrementStat('overrides');
+
+      selectedFolders = await UserInteractionService.requestOverride({
+        filename,
+        filepath,
+        suggested: llmResponse.folders,
+        reason: hasError
+          ? errorMsg
+          : bypassed
+            ? 'No context signals'
+            : `Low confidence (${llmResponse.confidence})`,
+        duration: meta.duration
+      });
+    }
 
     // Step 6: Route file and update memory
     if (selectedFolders.length === 0) {
@@ -170,6 +205,7 @@ export async function processTrack(filepath: string): Promise<void> {
     } else {
       const isApprovedSuggestion =
         !hasError &&
+        !bypassed &&
         selectedFolders.length === llmResponse.folders.length &&
         selectedFolders.every((f) => llmResponse.folders.includes(f));
 
@@ -181,9 +217,6 @@ export async function processTrack(filepath: string): Promise<void> {
       await routeFile(filepath, selectedFolders);
 
       // Always overwrite the cache with the user's FINAL decision.
-      // Without this, the cache stores the LLM's original suggestion and
-      // returns the wrong vibe on subsequent runs — even when the user
-      // manually picked something different via the override checklist.
       CacheService.saveTrackCache(meta.artist, meta.title, contextHash, {
         folders: selectedFolders,
         reasoning: isApprovedSuggestion
