@@ -22,7 +22,11 @@ export async function extractMetadata(
   if (fileExists) {
     try {
       const metadata = await mm.parseFile(filepath);
-      artist = metadata.common.artist;
+      artist =
+        metadata.common.artist ||
+        metadata.common.albumartist ||
+        (metadata.common.artists && metadata.common.artists.join(', ')) ||
+        undefined;
       title = metadata.common.title;
       if (metadata.format.duration) {
         duration = Math.round(metadata.format.duration);
