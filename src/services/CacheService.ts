@@ -287,3 +287,17 @@ export function forceLimitExhaustion(): void {
   stats.dailyRequestsUsed = DAILY_REQUEST_LIMIT;
   writeStats(stats);
 }
+
+/**
+ * Resets the daily request count for today to 0.
+ */
+export function resetDailyLimits(): void {
+  _statsStore = null;
+  const db = getDB();
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    db.prepare('INSERT OR REPLACE INTO api_stats (date, count) VALUES (?, 0)').run(today);
+  } catch {
+    // Ignore errors
+  }
+}

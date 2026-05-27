@@ -34,6 +34,11 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         'SYSTEM',
         `Memory Status: [${ragStatus}] - Total Tracks: ${ragStats.total} across ${ragStats.folders} directories.`
       );
+    } else if (keyLower === 'l') {
+      CacheService.resetDailyLimits();
+      const currentStats = CacheService.getStats();
+      useStore.getState().setLimitStats(currentStats);
+      addLog('SYSTEM', 'Daily requests counter has been reset to 0.');
     } else if (keyLower === 'c' && MOCK_MODE) {
       addLog('SYSTEM', '[CHAOS] Simulating API cold start: Clearing cache...');
       CacheService.clearCacheAndStats();

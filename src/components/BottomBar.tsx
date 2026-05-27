@@ -20,6 +20,11 @@ export function BottomBar(): React.JSX.Element {
         [R]
       </Text>
       <Text color="gray"> Log RAG Stats</Text>
+      <Text color="gray"> | </Text>
+      <Text color="cyan" bold>
+        [L]
+      </Text>
+      <Text color="gray"> Reset Limits</Text>
 
       {MOCK_MODE ? (
         <>
