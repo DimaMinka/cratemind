@@ -67,6 +67,20 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                 messageColor = 'yellow';
                 isBold = true;
                 break;
+              case 'YT_SEARCH':
+                prefixColor = '#ff6b6b';
+                messageColor = '#ff8787';
+                break;
+              case 'YT_HIT':
+                prefixColor = '#a855f7';
+                messageColor = '#c084fc';
+                isBold = true;
+                break;
+              case 'YT_CACHE_HIT':
+                prefixColor = '#3b82f6';
+                messageColor = '#60a5fa';
+                isBold = true;
+                break;
               case 'ERROR':
                 prefixColor = 'red';
                 messageColor = 'red';
