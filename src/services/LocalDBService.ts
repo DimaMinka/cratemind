@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as fs from 'fs';
 
 /**
  * LocalDBService.ts
@@ -26,6 +27,22 @@ export function getDB(): Database.Database {
   // Enable WAL mode for high concurrency TUI updates
   _db.pragma('journal_mode = WAL');
 
+  // Cleanup obsolete JSON files on startup if they exist
+  const obsoleteFiles = [
+    path.resolve('cratemind-memory.json'),
+    path.resolve('.cratemind-cache.json'),
+    path.resolve('.cratemind-stats.json')
+  ];
+  for (const file of obsoleteFiles) {
+    try {
+      if (fs.existsSync(file)) {
+        fs.unlinkSync(file);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   // Initialize DB tables
   _db.exec(`
     CREATE TABLE IF NOT EXISTS rag_examples (
@@ -46,12 +63,18 @@ export function getDB(): Database.Database {
       title TEXT NOT NULL,
       folders TEXT NOT NULL, -- JSON string array
       reasoning TEXT NOT NULL,
+      confidence REAL NOT NULL DEFAULT 1.0,
       ts INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS api_stats (
       date TEXT PRIMARY KEY,
       count INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
     );
 
     CREATE TABLE IF NOT EXISTS yt_playlists (
@@ -82,4 +105,31 @@ export function getDB(): Database.Database {
   });
 
   return _db;
+}
+
+/**
+ * Retrieves a string value from the settings table.
+ */
+export function getSetting(key: string): string | null {
+  const db = getDB();
+  try {
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined;
+    return row ? row.value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Inserts or replaces a key-value setting.
+ */
+export function setSetting(key: string, value: string): void {
+  const db = getDB();
+  try {
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
+  } catch {
+    // Ignore setting write errors
+  }
 }

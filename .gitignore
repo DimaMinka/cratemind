@@ -9,3 +9,4 @@ cratemind-memory.json
 .cratemind-cache.json
 .cratemind-stats.json
 m.db
+cratemind.db*

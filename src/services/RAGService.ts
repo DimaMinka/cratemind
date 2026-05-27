@@ -1,9 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { z } from 'zod';
 import { RagExample, RagMemory, BootstrapResult } from '../types.js';
 import {
-  RAG_MEMORY_FILE,
   RAG_EXAMPLES_PER_FOLDER,
   RAG_MAX_STORED,
   FOLDERS,
@@ -12,6 +10,7 @@ import {
 } from '../config.js';
 import { extractMetadata } from './ID3Service.js';
 import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
+import { getDB, getSetting, setSetting } from './LocalDBService.js';
 
 /**
  * RAGService.ts
@@ -19,66 +18,85 @@ import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
  * Implements few-shot retrieval-augmented memory for vibe classification.
  *
  * Key optimizations (v4.6):
- * - Module-level `_memoryCache` prevents repeated synchronous disk reads on every LLM call.
- * - Zod schema validates the memory file on load to prevent silent corruption.
- * - Fixed duplicate detection in filesystem bootstrap (was comparing artist to filename — broken).
+ * - Module-level cache prevents repeated SQLite lookups on every LLM call.
+ * - SQLite backend cratemind.db replaces RAG_MEMORY_FILE for fast transactions.
  */
-
-// ── Zod Schema ─────────────────────────────────────────────────────────────
-
-const RagExampleSchema = z.object({
-  artist: z.string(),
-  title: z.string(),
-  folders: z.array(z.string()),
-  overriddenFolders: z.array(z.string()).optional(),
-  reasoning: z.string(),
-  source: z.enum(['auto', 'manual', 'scan', 'engine-dj']),
-  ts: z.number()
-});
-
-const RagMemorySchema = z.object({
-  version: z.literal(1),
-  examples: z.array(RagExampleSchema),
-  lastScanDir: z.string().nullable()
-});
 
 // ── In-memory Cache ─────────────────────────────────────────────────────────
 
-/**
- * Module-level cache for RAG memory.
- * Eliminates repeated `fs.readFileSync` calls on every `getContext()` invocation.
- * Invalidated on every write via `saveMemory()`.
- */
 let _memoryCache: RagMemory | null = null;
 
 function loadMemory(): RagMemory {
   if (_memoryCache) return _memoryCache;
 
+  const db = getDB();
   try {
-    if (fs.existsSync(RAG_MEMORY_FILE)) {
-      const data = fs.readFileSync(RAG_MEMORY_FILE, 'utf8');
-      const parsed: unknown = JSON.parse(data);
-      const result = RagMemorySchema.safeParse(parsed);
-      if (result.success) {
-        _memoryCache = result.data;
-        return _memoryCache;
-      }
-      // Zod validation failed — fall through to fresh state
-    }
+    const rows = db
+      .prepare(
+        'SELECT artist, title, folders, overridden_folders, reasoning, source, ts FROM rag_examples ORDER BY ts ASC'
+      )
+      .all() as {
+      artist: string;
+      title: string;
+      folders: string;
+      overridden_folders: string | null;
+      reasoning: string;
+      source: string;
+      ts: number;
+    }[];
+    const examples: RagExample[] = rows.map((r) => ({
+      artist: r.artist,
+      title: r.title,
+      folders: JSON.parse(r.folders) as string[],
+      overriddenFolders: r.overridden_folders
+        ? (JSON.parse(r.overridden_folders) as string[])
+        : undefined,
+      reasoning: r.reasoning,
+      source: r.source as RagExample['source'],
+      ts: r.ts
+    }));
+    const lastScanDir = getSetting('lastScanDir');
+    _memoryCache = { version: 1, examples, lastScanDir };
+    return _memoryCache;
   } catch {
-    // Graceful recovery: return a fresh, empty structure
+    _memoryCache = { version: 1, examples: [], lastScanDir: null };
+    return _memoryCache;
   }
-
-  _memoryCache = { version: 1, examples: [], lastScanDir: null };
-  return _memoryCache;
 }
 
 function saveMemory(memory: RagMemory): void {
-  _memoryCache = memory; // update in-memory cache first
+  _memoryCache = memory;
+  const db = getDB();
   try {
-    fs.writeFileSync(RAG_MEMORY_FILE, JSON.stringify(memory, null, 2), 'utf8');
+    const insertStmt = db.prepare(`
+      INSERT OR REPLACE INTO rag_examples (artist, title, folders, overridden_folders, reasoning, source, ts)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const transaction = db.transaction((examples: RagExample[]) => {
+      db.prepare('DELETE FROM rag_examples').run();
+      for (const ex of examples) {
+        insertStmt.run(
+          ex.artist,
+          ex.title,
+          JSON.stringify(ex.folders),
+          ex.overriddenFolders ? JSON.stringify(ex.overriddenFolders) : null,
+          ex.reasoning,
+          ex.source,
+          ex.ts
+        );
+      }
+    });
+
+    transaction(memory.examples);
+
+    if (memory.lastScanDir) {
+      setSetting('lastScanDir', memory.lastScanDir);
+    } else {
+      db.prepare("DELETE FROM settings WHERE key = 'lastScanDir'").run();
+    }
   } catch {
-    // Ignore save errors, or handle gracefully
+    // Ignore database write errors
   }
 }
 

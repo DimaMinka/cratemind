@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import { createHash } from 'crypto';
 import { LLMResponse } from '../types.js';
-import { CACHE_FILE_PATH, STATS_FILE_PATH, DAILY_REQUEST_LIMIT } from '../config.js';
+import { DAILY_REQUEST_LIMIT } from '../config.js';
+import { getDB, getSetting, setSetting } from './LocalDBService.js';
 
 interface StatsStore {
   lastDate: string;
@@ -20,13 +20,12 @@ interface CacheStore {
 /**
  * CacheService.ts
  *
- * Manages persistent LLM response caching and daily request limits.
+ * Manages persistent LLM response caching and daily request limits using cratemind.db local SQLite.
  *
  * Key optimization (v4.6):
  * - `_cacheStore` and `_statsStore` are module-level singletons.
  *   All read operations return the in-memory copy — zero disk I/O per track.
- *   Write operations use a write-through pattern: update memory, then flush to disk.
- * - `clearCacheAndStats()` also resets both singletons.
+ *   Write operations use a write-through pattern: update memory, then flush to SQLite.
  */
 
 // ── In-memory Singletons ────────────────────────────────────────────────────
@@ -34,12 +33,16 @@ interface CacheStore {
 let _cacheStore: CacheStore | null = null;
 let _statsStore: StatsStore | null = null;
 
+function getTodayString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
 // ── Stats Store ─────────────────────────────────────────────────────────────
 
 function readStats(): StatsStore {
   if (_statsStore) {
-    // Reset counter if day has rolled over (check without disk read)
-    const today = new Date().toISOString().split('T')[0];
+    // Reset counter if day has rolled over
+    const today = getTodayString();
     if (_statsStore.lastDate !== today) {
       _statsStore.lastDate = today;
       _statsStore.dailyRequestsUsed = 0;
@@ -47,44 +50,45 @@ function readStats(): StatsStore {
     return _statsStore;
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const defaultStats: StatsStore = {
-    lastDate: today,
-    dailyRequestsUsed: 0,
-    totalCacheHits: 0
-  };
+  const today = getTodayString();
+  const db = getDB();
+  let dailyRequestsUsed = 0;
+  let totalCacheHits = 0;
 
   try {
-    if (fs.existsSync(STATS_FILE_PATH)) {
-      const content = fs.readFileSync(STATS_FILE_PATH, 'utf-8');
-      const stats = JSON.parse(content) as StatsStore;
-
-      // Reset if the date has changed
-      if (stats.lastDate !== today) {
-        stats.lastDate = today;
-        stats.dailyRequestsUsed = 0;
-      }
-
-      _statsStore = stats;
-      return _statsStore;
+    const row = db.prepare('SELECT count FROM api_stats WHERE date = ?').get(today) as
+      | { count: number }
+      | undefined;
+    if (row) {
+      dailyRequestsUsed = row.count;
+    }
+    const hitsVal = getSetting('totalCacheHits');
+    if (hitsVal) {
+      totalCacheHits = parseInt(hitsVal, 10);
     }
   } catch {
-    // Graceful fallback to defaults
+    // Fallback to defaults
   }
 
-  _statsStore = defaultStats;
+  _statsStore = {
+    lastDate: today,
+    dailyRequestsUsed,
+    totalCacheHits
+  };
   return _statsStore;
 }
 
-/**
- * Write-through: update in-memory singleton, then flush to disk.
- */
 function writeStats(stats: StatsStore): void {
   _statsStore = stats;
+  const db = getDB();
   try {
-    fs.writeFileSync(STATS_FILE_PATH, JSON.stringify(stats, null, 2), 'utf-8');
+    db.prepare('INSERT OR REPLACE INTO api_stats (date, count) VALUES (?, ?)').run(
+      stats.lastDate,
+      stats.dailyRequestsUsed
+    );
+    setSetting('totalCacheHits', stats.totalCacheHits.toString());
   } catch {
-    // Ignore write errors to prevent system crash
+    // Ignore write errors
   }
 }
 
@@ -93,27 +97,60 @@ function writeStats(stats: StatsStore): void {
 function readCache(): CacheStore {
   if (_cacheStore) return _cacheStore;
 
+  const db = getDB();
+  const cache: CacheStore = {};
   try {
-    if (fs.existsSync(CACHE_FILE_PATH)) {
-      const content = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
-      _cacheStore = JSON.parse(content) as CacheStore;
-      return _cacheStore;
+    const rows = db
+      .prepare('SELECT context_hash, artist, title, folders, reasoning, confidence FROM llm_cache')
+      .all() as {
+      context_hash: string;
+      artist: string;
+      title: string;
+      folders: string;
+      reasoning: string;
+      confidence: number;
+    }[];
+    for (const r of rows) {
+      cache[r.context_hash] = {
+        artist: r.artist,
+        title: r.title,
+        response: {
+          folders: JSON.parse(r.folders),
+          reasoning: r.reasoning,
+          confidence: r.confidence
+        }
+      };
     }
+    _cacheStore = cache;
+    return _cacheStore;
   } catch {
-    // Graceful fallback
+    _cacheStore = {};
+    return _cacheStore;
   }
-
-  _cacheStore = {};
-  return _cacheStore;
 }
 
-/**
- * Write-through: update in-memory singleton, then flush to disk.
- */
-function writeCache(cache: CacheStore): void {
-  _cacheStore = cache;
+function writeCacheItem(
+  contextHash: string,
+  artist: string,
+  title: string,
+  response: LLMResponse
+): void {
+  const db = getDB();
   try {
-    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cache, null, 2), 'utf-8');
+    db.prepare(
+      `
+      INSERT OR REPLACE INTO llm_cache (context_hash, artist, title, folders, reasoning, confidence, ts)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      contextHash,
+      artist,
+      title,
+      JSON.stringify(response.folders),
+      response.reasoning,
+      response.confidence,
+      Date.now()
+    );
   } catch {
     // Ignore write errors
   }
@@ -159,7 +196,7 @@ export function getTrackCache(
 }
 
 /**
- * Saves a track response to the local JSON cache (in-memory + disk).
+ * Saves a track response to the cratemind.db local SQLite cache (in-memory + DB).
  */
 export function saveTrackCache(
   artist: string,
@@ -173,7 +210,7 @@ export function saveTrackCache(
     title,
     response
   };
-  writeCache(cache);
+  writeCacheItem(contextHash, artist, title, response);
 }
 
 /**
@@ -202,7 +239,7 @@ export function checkAndIncrementLimits(): {
 }
 
 /**
- * Increments the total cache hits count (in-memory + disk).
+ * Increments the total cache hits count (in-memory + DB).
  */
 export function incrementCacheHits(): void {
   const stats = readStats();
@@ -227,18 +264,16 @@ export function getStats(): {
 }
 
 /**
- * Clears both the cache and stats files, and resets in-memory singletons.
+ * Clears both the cache and stats tables in cratemind.db, and resets in-memory singletons.
  */
 export function clearCacheAndStats(): void {
   _cacheStore = null;
   _statsStore = null;
+  const db = getDB();
   try {
-    if (fs.existsSync(CACHE_FILE_PATH)) {
-      fs.unlinkSync(CACHE_FILE_PATH);
-    }
-    if (fs.existsSync(STATS_FILE_PATH)) {
-      fs.unlinkSync(STATS_FILE_PATH);
-    }
+    db.prepare('DELETE FROM llm_cache').run();
+    db.prepare('DELETE FROM api_stats').run();
+    db.prepare("DELETE FROM settings WHERE key = 'totalCacheHits'").run();
   } catch {
     // Ignore errors
   }
