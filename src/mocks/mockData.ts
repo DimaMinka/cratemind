@@ -1,4 +1,4 @@
-import { EngineTrack, RagExample } from '../types.js';
+import { EngineTrack, RagExample, YouTubePlaylist, YouTubePlaylistItem } from '../types.js';
 
 /**
  * mockData.ts
