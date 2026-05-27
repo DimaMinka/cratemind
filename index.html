@@ -1,762 +1,842 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CrateMind — Vibe Sorter | v0.1</title>
 
     <!-- Primary SEO -->
-    <meta name="description"
-        content="CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM + RAG memory to automatically organize your music library by mood and genre.">
-    <meta name="keywords"
-        content="CrateMind, vibe sorter, audio router, music organizer, typescript audio tool, node.js audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music">
-    <meta name="author" content="CrateMind Team">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://dimaminka.github.io/cratemind/">
+    <meta
+      name="description"
+      content="CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM + RAG memory to automatically organize your music library by mood and genre."
+    />
+    <meta
+      name="keywords"
+      content="CrateMind, vibe sorter, audio router, music organizer, typescript audio tool, node.js audio tool, AI audio sorting, Gemini Pro, terminal music sorter, TUI, LLM music"
+    />
+    <meta name="author" content="CrateMind Team" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://dimaminka.github.io/cratemind/" />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="CrateMind — Vibe Sorter">
-    <meta property="og:description"
-        content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM. A TypeScript/Node.js TUI tool for music lovers.">
-    <meta property="og:url" content="https://dimaminka.github.io/cratemind/">
-    <meta property="og:site_name" content="CrateMind">
-    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CrateMind — Vibe Sorter" />
+    <meta
+      property="og:description"
+      content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM. A TypeScript/Node.js TUI tool for music lovers."
+    />
+    <meta property="og:url" content="https://dimaminka.github.io/cratemind/" />
+    <meta property="og:site_name" content="CrateMind" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter / X Card -->
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="CrateMind — Vibe Sorter">
-    <meta name="twitter:description"
-        content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM.">
-    <meta name="twitter:site" content="@cratemind">
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="CrateMind — Vibe Sorter" />
+    <meta
+      name="twitter:description"
+      content="Automatically sort and route your music library by vibe and genre using Gemini Pro LLM."
+    />
+    <meta name="twitter:site" content="@cratemind" />
 
     <!-- Browser / Safari theme color -->
-    <meta name="theme-color" content="#222222">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#222222" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "CrateMind",
-      "operatingSystem": "Windows, macOS, Linux",
-      "applicationCategory": "MultimediaApplication",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "description": "CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.",
-      "softwareVersion": "0.1",
-      "author": { "@type": "Organization", "name": "CrateMind Team" }
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "CrateMind",
+        "operatingSystem": "Windows, macOS, Linux",
+        "applicationCategory": "MultimediaApplication",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "CrateMind is a TypeScript/Node.js-based vibe sorter and audio router leveraging Gemini Pro LLM to automatically organize your music library by mood and genre.",
+        "softwareVersion": "0.1",
+        "author": { "@type": "Organization", "name": "CrateMind Team" }
+      }
     </script>
 
     <style>
-        /* ── Reset & Base ─────────────────────────────────────────── */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background: #222222;
-            color: #c8c8c8;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            line-height: 1.45;
-            padding: 24px 20px 40px;
-        }
-
-        /* ── Page wrapper ─────────────────────────────────────────── */
-        .page-wrap {
-            max-width: 980px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 28px;
-        }
-
-        /* ── About section ────────────────────────────────────────── */
-        .about-box {
-            border: 1px solid #444444;
-            border-left: 3px solid #5599ff;
-            background: #181818;
-            padding: 24px 28px;
-            border-radius: 4px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-        }
-
-        .about-box h1 {
-            font-size: 1.1em;
-            color: #ffffff;
-            font-weight: bold;
-            margin-bottom: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .about-box p {
-            color: #aaaaaa;
-            margin-bottom: 12px;
-            line-height: 1.5;
-            font-size: 0.92em;
-        }
-
-        .about-box p:last-child {
-            margin-bottom: 0;
-        }
-
-        .about-box h2 {
-            font-size: 0.95em;
-            color: #ffffff;
-            margin: 20px 0 10px;
-            font-weight: bold;
-            letter-spacing: 0.05em;
-        }
-
-        .about-box ul {
-            padding-left: 18px;
-            color: #aaaaaa;
-        }
-
-        .about-box li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-            font-size: 0.9em;
-        }
-
-        .about-box b {
-            color: #ffffff;
-        }
-
-        .about-box code {
-            background: #111111;
-            padding: 2px 6px;
-            border: 1px solid #333333;
-            color: #cc88ff;
-            font-size: 0.88em;
-            border-radius: 3px;
-        }
-
-        /* ── TUI frame ────────────────────────────────────────────── */
-        .tui {
-            border: 1px solid #444444;
-            background: #1a1a1a;
-        }
-
-        /* ── Top status bar ───────────────────────────────────────── */
-        .tui-topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1a1a1a;
-            border-bottom: 1px solid #444444;
-            padding: 5px 12px;
-        }
-
-        .tui-topbar-left {
-            color: #c8c8c8;
-            font-weight: bold;
-        }
-
-        .tui-topbar-left .star {
-            color: #ffff00;
-        }
-
-        .tui-topbar-left .label {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        .tui-topbar-left .sep {
-            color: #444;
-            margin: 0 6px;
-        }
-
-        .tui-topbar-left .path {
-            color: #888;
-        }
-
-        .tui-topbar-right {
-            color: #00ff00;
-            font-size: 0.92em;
-        }
-
-        .tui-topbar-right .star {
-            color: #00ff00;
-        }
-
-        .tui-topbar-right .mem-val-primary {
-            color: #00ff00;
-        }
-
-        .tui-topbar-right .mem-val-secondary {
-            color: #00ff00;
-        }
-
-        /* ── Stats row ────────────────────────────────────────────── */
-        .tui-stats-row {
-            padding: 4px 12px;
-            border-bottom: 1px solid #333333;
-            color: #888;
-            font-size: 0.88em;
-        }
-
-        .tui-stats-row .val {
-            color: #c8c8c8;
-        }
-
-        .tui-stats-row .err {
-            color: #888;
-        }
-
-        /* ── Main two-panel area ──────────────────────────────────── */
-        .tui-main {
-            display: flex;
-            gap: 0;
-        }
-
-        /* ── Stream panel (left) ──────────────────────────────────── */
-        .tui-stream-panel {
-            flex: 1 1 60%;
-            border-right: 1px solid #444444;
-            padding: 10px 12px 12px;
-            min-width: 0;
-        }
-
-        .panel-title {
-            color: #ffff00;
-            font-weight: bold;
-            font-size: 0.9em;
-            margin-bottom: 8px;
-            letter-spacing: 0.05em;
-        }
-
-        .panel-title .star {
-            color: #ffff00;
-        }
-
-        /* Log lines */
-        .log {
-            white-space: pre-wrap;
-            word-break: break-word;
-            margin: 1px 0;
-        }
-
-        .log-detect {
-            color: #aaaaaa;
-        }
-
-        .log-id3 {
-            color: #cc88ff;
-        }
-
-        .log-rag {
-            color: #5599ff;
-        }
-
-        .log-system {
-            color: #00ffff;
-        }
-
-        .log-llm {
-            color: #ffff00a8;
-            font-weight: bold;
-        }
-
-        .log-routed {
-            color: #888888;
-        }
-
-        .log-manual {
-            color: #ffff00a8;
-            font-weight: bold;
-        }
-
-        .log-dots {
-            color: #333;
-        }
-
-        /* ── Override panel (right) ───────────────────────────────── */
-        .tui-override-panel {
-            flex: 0 0 310px;
-            border: 1px solid #444444;
-            margin: 8px;
-            padding: 10px 12px 12px;
-            background: #1e1e1e;
-        }
-
-        .override-reason-box {
-            border: 1px solid #ff4444;
-            padding: 4px 8px;
-            margin-bottom: 8px;
-            color: #ff4444;
-            font-weight: bold;
-            font-size: 0.88em;
-        }
-
-        .override-track {
-            margin-bottom: 2px;
-            font-size: 0.88em;
-            color: #888;
-        }
-
-        .override-track b {
-            color: #c8c8c8;
-        }
-
-        .override-track .playing-badge {
-            color: #00ff00;
-            font-weight: bold;
-            margin-left: 4px;
-        }
-
-        .override-suggest-box {
-            border: 1px solid #00ffff;
-            background: #111e25;
-            padding: 6px;
-            margin: 8px 0;
-            font-size: 0.88em;
-        }
-
-        .override-suggest-box .title {
-            color: #00ffff;
-            font-weight: bold;
-            font-size: 0.85em;
-            margin-bottom: 2px;
-        }
-
-        .override-suggest-box .val {
-            color: #ffffff;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .override-suggest-box .reason {
-            color: #888888;
-            font-style: italic;
-            font-size: 0.9em;
-            margin-bottom: 4px;
-        }
-
-        .override-suggest-box .action {
-            color: #00ffff;
-            font-weight: bold;
-        }
-
-        .override-sub {
-            color: #555;
-            font-size: 0.82em;
-            margin-bottom: 8px;
-        }
-
-        .override-list {
-            list-style: none;
-        }
-
-        .override-list li {
-            font-size: 0.88em;
-            color: #aaaaaa;
-            padding: 1px 0;
-        }
-
-        .override-list li.cursor {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        .override-list li.cursor::before {
-            content: '> ';
-        }
-
-        .override-list li:not(.cursor)::before {
-            content: '  ';
-        }
-
-        .override-selected-count {
-            margin-top: 10px;
-            font-size: 0.85em;
-            color: #555;
-        }
-
-        .override-selected-count .count {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        /* ── MiniPlayer ───────────────────────────────────────────── */
-        .tui-player {
-            border-top: 1px solid #444444;
-            padding: 8px 12px 6px;
-        }
-
-        .player-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .player-badge {
-            background: #006600;
-            color: #00ff00;
-            font-weight: bold;
-            font-size: 0.8em;
-            padding: 1px 6px;
-            margin-right: 8px;
-        }
-
-        .player-title {
-            color: #e8e8e8;
-            font-size: 0.9em;
-        }
-
-        .player-duration-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.82em;
-            color: #888;
-        }
-
-        .player-duration-badge {
-            background: #006600;
-            border: 1px solid #008800;
-            color: #00ff00;
-            font-size: 0.8em;
-            padding: 1px 6px;
-            font-weight: bold;
-            letter-spacing: 0.05em;
-        }
-
-        .player-time-current {
-            color: #00ff00;
-        }
-
-        .player-time-total {
-            color: #c8c8c8;
-        }
-
-        /* Progress bar */
-        .player-progress-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-        }
-
-        .player-progress-track {
-            flex: 1;
-            height: 6px;
-            background: #1e1e1e;
-            border: 1px solid #2e2e2e;
-            position: relative;
-        }
-
-        .player-progress-fill {
-            height: 100%;
-            background: #00cc66;
-            width: 9%;
-            /* 0:16 / 3:00 ≈ 9% */
-        }
-
-        .player-progress-thumb {
-            position: absolute;
-            top: 50%;
-            left: 9%;
-            transform: translate(-50%, -50%);
-            width: 9px;
-            height: 9px;
-            background: #00cc66;
-            border-radius: 50%;
-        }
-
-        .player-bracket {
-            color: #666666;
-            font-size: 0.9em;
-        }
-
-        .player-seek-hint {
-            text-align: right;
-            font-size: 0.78em;
-            color: #666666;
-        }
-
-        /* ── Hotkeys bar ──────────────────────────────────────────── */
-        .tui-hotkeys {
-            border-top: 1px solid #333333;
-            padding: 8px 12px;
-            text-align: center;
-            color: #888888;
-            font-size: 0.88em;
-        }
-
-        .tui-hotkeys .key {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        .tui-hotkeys .key-green {
-            color: #00ff00;
-            font-weight: bold;
-        }
-
-        .tui-hotkeys .key-red {
-            color: #ff4444;
-            font-weight: bold;
-        }
-
-        .tui-hotkeys .sep {
-            color: #444444;
-            margin: 0 10px;
-        }
-
-        /* ── Footer ───────────────────────────────────────────────── */
-        .site-footer {
-            border-top: 1px solid #333333;
-            padding-top: 20px;
-            margin-top: 12px;
-            text-align: center;
-            color: #666666;
-            font-size: 0.8em;
-            letter-spacing: 0.05em;
-        }
-
-        .site-footer a {
-            color: #5599ff;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .site-footer a:hover {
-            color: #00ff00;
-            text-decoration: none;
-        }
-
-        /* ── Blink animation ──────────────────────────────────────── */
-        @keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
-
-        .blink {
-            animation: blink 1.2s step-end infinite;
-        }
+      /* ── Reset & Base ─────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #222222;
+        color: #c8c8c8;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        padding: 24px 20px 40px;
+      }
+
+      /* ── Page wrapper ─────────────────────────────────────────── */
+      .page-wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      /* ── About section ────────────────────────────────────────── */
+      .about-box {
+        border: 1px solid #444444;
+        border-left: 3px solid #5599ff;
+        background: #181818;
+        padding: 24px 28px;
+        border-radius: 4px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      .about-box h1 {
+        font-size: 1.1em;
+        color: #ffffff;
+        font-weight: bold;
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .about-box p {
+        color: #aaaaaa;
+        margin-bottom: 12px;
+        line-height: 1.5;
+        font-size: 0.92em;
+      }
+
+      .about-box p:last-child {
+        margin-bottom: 0;
+      }
+
+      .about-box h2 {
+        font-size: 0.95em;
+        color: #ffffff;
+        margin: 20px 0 10px;
+        font-weight: bold;
+        letter-spacing: 0.05em;
+      }
+
+      .about-box ul {
+        padding-left: 18px;
+        color: #aaaaaa;
+      }
+
+      .about-box li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+        font-size: 0.9em;
+      }
+
+      .about-box b {
+        color: #ffffff;
+      }
+
+      .about-box code {
+        background: #111111;
+        padding: 2px 6px;
+        border: 1px solid #333333;
+        color: #cc88ff;
+        font-size: 0.88em;
+        border-radius: 3px;
+      }
+
+      /* ── TUI frame ────────────────────────────────────────────── */
+      .tui {
+        border: 1px solid #444444;
+        background: #1a1a1a;
+      }
+
+      /* ── Top status bar ───────────────────────────────────────── */
+      .tui-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #1a1a1a;
+        border-bottom: 1px solid #444444;
+        padding: 5px 12px;
+      }
+
+      .tui-topbar-left {
+        color: #c8c8c8;
+        font-weight: bold;
+      }
+
+      .tui-topbar-left .star {
+        color: #ffff00;
+      }
+
+      .tui-topbar-left .label {
+        color: #ffff00;
+        font-weight: bold;
+      }
+
+      .tui-topbar-left .sep {
+        color: #444;
+        margin: 0 6px;
+      }
+
+      .tui-topbar-left .path {
+        color: #888;
+      }
+
+      .tui-topbar-right {
+        color: #00ff00;
+        font-size: 0.92em;
+      }
+
+      .tui-topbar-right .star {
+        color: #00ff00;
+      }
+
+      .tui-topbar-right .mem-val-primary {
+        color: #00ff00;
+      }
+
+      .tui-topbar-right .mem-val-secondary {
+        color: #00ff00;
+      }
+
+      /* ── Stats row ────────────────────────────────────────────── */
+      .tui-stats-row {
+        padding: 4px 12px;
+        border-bottom: 1px solid #333333;
+        color: #888;
+        font-size: 0.88em;
+      }
+
+      .tui-stats-row .val {
+        color: #c8c8c8;
+      }
+
+      .tui-stats-row .err {
+        color: #888;
+      }
+
+      /* ── Main two-panel area ──────────────────────────────────── */
+      .tui-main {
+        display: flex;
+        gap: 0;
+      }
+
+      /* ── Stream panel (left) ──────────────────────────────────── */
+      .tui-stream-panel {
+        flex: 1 1 60%;
+        border-right: 1px solid #444444;
+        padding: 10px 12px 12px;
+        min-width: 0;
+      }
+
+      .panel-title {
+        color: #ffff00;
+        font-weight: bold;
+        font-size: 0.9em;
+        margin-bottom: 8px;
+        letter-spacing: 0.05em;
+      }
+
+      .panel-title .star {
+        color: #ffff00;
+      }
+
+      /* Log lines */
+      .log {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 1px 0;
+      }
+
+      .log-detect {
+        color: #aaaaaa;
+      }
+
+      .log-id3 {
+        color: #cc88ff;
+      }
+
+      .log-rag {
+        color: #5599ff;
+      }
+
+      .log-system {
+        color: #00ffff;
+      }
+
+      .log-llm {
+        color: #ffff00a8;
+        font-weight: bold;
+      }
+
+      .log-routed {
+        color: #888888;
+      }
+
+      .log-manual {
+        color: #ffff00a8;
+        font-weight: bold;
+      }
+
+      .log-yt-search {
+        color: #ff8787;
+      }
+
+      .log-yt-hit {
+        color: #c084fc;
+        font-weight: bold;
+      }
+
+      .log-yt-cache-hit {
+        color: #60a5fa;
+        font-weight: bold;
+      }
+
+      .log-dots {
+        color: #333;
+      }
+
+      /* ── Override panel (right) ───────────────────────────────── */
+      .tui-override-panel {
+        flex: 0 0 310px;
+        border: 1px solid #444444;
+        margin: 8px;
+        padding: 10px 12px 12px;
+        background: #1e1e1e;
+      }
+
+      .override-reason-box {
+        border: 1px solid #ff4444;
+        padding: 4px 8px;
+        margin-bottom: 8px;
+        color: #ff4444;
+        font-weight: bold;
+        font-size: 0.88em;
+      }
+
+      .override-track {
+        margin-bottom: 2px;
+        font-size: 0.88em;
+        color: #888;
+      }
+
+      .override-track b {
+        color: #c8c8c8;
+      }
+
+      .override-track .playing-badge {
+        color: #00ff00;
+        font-weight: bold;
+        margin-left: 4px;
+      }
+
+      .override-suggest-box {
+        border: 1px solid #00ffff;
+        background: #111e25;
+        padding: 6px;
+        margin: 8px 0;
+        font-size: 0.88em;
+      }
+
+      .override-suggest-box .title {
+        color: #00ffff;
+        font-weight: bold;
+        font-size: 0.85em;
+        margin-bottom: 2px;
+      }
+
+      .override-suggest-box .val {
+        color: #ffffff;
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+
+      .override-suggest-box .reason {
+        color: #888888;
+        font-style: italic;
+        font-size: 0.9em;
+        margin-bottom: 4px;
+      }
+
+      .override-suggest-box .action {
+        color: #00ffff;
+        font-weight: bold;
+      }
+
+      .override-sub {
+        color: #555;
+        font-size: 0.82em;
+        margin-bottom: 8px;
+      }
+
+      .override-list {
+        list-style: none;
+      }
+
+      .override-list li {
+        font-size: 0.88em;
+        color: #aaaaaa;
+        padding: 1px 0;
+      }
+
+      .override-list li.cursor {
+        color: #ffff00;
+        font-weight: bold;
+      }
+
+      .override-list li.cursor::before {
+        content: '> ';
+      }
+
+      .override-list li:not(.cursor)::before {
+        content: '  ';
+      }
+
+      .override-selected-count {
+        margin-top: 10px;
+        font-size: 0.85em;
+        color: #555;
+      }
+
+      .override-selected-count .count {
+        color: #ffff00;
+        font-weight: bold;
+      }
+
+      /* ── MiniPlayer ───────────────────────────────────────────── */
+      .tui-player {
+        border-top: 1px solid #444444;
+        padding: 8px 12px 6px;
+      }
+
+      .player-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+
+      .player-badge {
+        background: #006600;
+        color: #00ff00;
+        font-weight: bold;
+        font-size: 0.8em;
+        padding: 1px 6px;
+        margin-right: 8px;
+      }
+
+      .player-title {
+        color: #e8e8e8;
+        font-size: 0.9em;
+      }
+
+      .player-duration-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82em;
+        color: #888;
+      }
+
+      .player-duration-badge {
+        background: #006600;
+        border: 1px solid #008800;
+        color: #00ff00;
+        font-size: 0.8em;
+        padding: 1px 6px;
+        font-weight: bold;
+        letter-spacing: 0.05em;
+      }
+
+      .player-time-current {
+        color: #00ff00;
+      }
+
+      .player-time-total {
+        color: #c8c8c8;
+      }
+
+      /* Progress bar */
+      .player-progress-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      .player-progress-track {
+        flex: 1;
+        height: 6px;
+        background: #1e1e1e;
+        border: 1px solid #2e2e2e;
+        position: relative;
+      }
+
+      .player-progress-fill {
+        height: 100%;
+        background: #00cc66;
+        width: 9%;
+        /* 0:16 / 3:00 ≈ 9% */
+      }
+
+      .player-progress-thumb {
+        position: absolute;
+        top: 50%;
+        left: 9%;
+        transform: translate(-50%, -50%);
+        width: 9px;
+        height: 9px;
+        background: #00cc66;
+        border-radius: 50%;
+      }
+
+      .player-bracket {
+        color: #666666;
+        font-size: 0.9em;
+      }
+
+      .player-seek-hint {
+        text-align: right;
+        font-size: 0.78em;
+        color: #666666;
+      }
+
+      /* ── Hotkeys bar ──────────────────────────────────────────── */
+      .tui-hotkeys {
+        border-top: 1px solid #333333;
+        padding: 8px 12px;
+        text-align: center;
+        color: #888888;
+        font-size: 0.88em;
+      }
+
+      .tui-hotkeys .key {
+        color: #ffff00;
+        font-weight: bold;
+      }
+
+      .tui-hotkeys .key-green {
+        color: #00ff00;
+        font-weight: bold;
+      }
+
+      .tui-hotkeys .key-red {
+        color: #ff4444;
+        font-weight: bold;
+      }
+
+      .tui-hotkeys .sep {
+        color: #444444;
+        margin: 0 10px;
+      }
+
+      /* ── Footer ───────────────────────────────────────────────── */
+      .site-footer {
+        border-top: 1px solid #333333;
+        padding-top: 20px;
+        margin-top: 12px;
+        text-align: center;
+        color: #666666;
+        font-size: 0.8em;
+        letter-spacing: 0.05em;
+      }
+
+      .site-footer a {
+        color: #5599ff;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .site-footer a:hover {
+        color: #00ff00;
+        text-decoration: none;
+      }
+
+      /* ── Blink animation ──────────────────────────────────────── */
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .blink {
+        animation: blink 1.2s step-end infinite;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-wrap">
+      <!-- ── About ─────────────────────────────────────────────────── -->
+      <section class="about-box" aria-label="About CrateMind">
+        <h1>About CrateMind</h1>
+        <p>
+          CrateMind is a local TypeScript/Node.js-based vibe sorter and audio router that leverages
+          Gemini LLM to automatically categorize and sort your music files.
+        </p>
+        <p>
+          It runs directly in your terminal using a beautiful React-based TUI (powered by Ink 4
+          &amp; Zustand), making it the perfect tool for DJs and music collectors to curate their
+          libraries with zero manual friction.
+        </p>
+        <p>
+          A built-in <b>RAG (Retrieval-Augmented Generation)</b> memory layer accumulates every past
+          routing decision and injects few-shot examples into each new Gemini prompt — so the more
+          tracks you sort, the smarter and more consistent the vibe classification becomes.
+        </p>
+        <p>
+          CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests,
+          the user decides. Every action touching your collection requires explicit confirmation.
+        </p>
+      </section>
 
-        <!-- ── About ─────────────────────────────────────────────────── -->
-        <section class="about-box" aria-label="About CrateMind">
-            <h1>About CrateMind</h1>
-            <p>CrateMind is a local TypeScript/Node.js-based vibe sorter and audio router that leverages Gemini LLM to
-                automatically categorize and sort your music files.</p>
-            <p>It runs directly in your terminal using a beautiful React-based TUI (powered by Ink 4 &amp; Zustand),
-                making it the perfect tool for DJs and music collectors to curate their libraries with zero manual
-                friction.</p>
-            <p>A built-in <b>RAG (Retrieval-Augmented Generation)</b> memory layer accumulates every past routing
-                decision and injects few-shot examples into each new Gemini prompt — so the more tracks you sort, the
-                smarter and more consistent the vibe classification becomes.</p>
-            <p>CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests, the user
-                decides. Every action touching your collection requires explicit confirmation.</p>
-        </section>
+      <!-- ── TUI Demo ───────────────────────────────────────────────── -->
+      <main id="tui-app" class="tui" role="main" aria-label="CrateMind TUI preview">
+        <!-- Top status bar -->
+        <div class="tui-topbar">
+          <div class="tui-topbar-left">
+            <span class="star">*</span>
+            <span class="label"> ACTIVE LISTENER</span>
+            <span class="sep">|</span>
+            <span class="path">Listening ./Incoming</span>
+            <span style="color: #00ffff; font-weight: bold"> [SIMULATOR]</span>
+            <span style="color: #ff00ff; font-weight: bold"> [🤖 GEMINI ANALYZING...]</span>
+          </div>
+          <div class="tui-topbar-right">
+            <span class="star">* </span>MEMORY: <span class="mem-val-primary">4 tracks</span>
+            <span class="mem-val-secondary">(4/21 vibes)</span>
+          </div>
+        </div>
 
-        <!-- ── TUI Demo ───────────────────────────────────────────────── -->
-        <main id="tui-app" class="tui" role="main" aria-label="CrateMind TUI preview">
+        <!-- Stats row -->
+        <div class="tui-stats-row">
+          Processed: <span class="val">1</span> &nbsp; Manual Overrides:
+          <span class="val">1</span> &nbsp; Errors: <span class="err">0</span> &nbsp;
+          <span class="sep">|</span> &nbsp; API Today: <span class="val">1/5</span> &nbsp; Cache
+          Saved: <span class="val" style="color: #00ff00">0</span>
+        </div>
 
-            <!-- Top status bar -->
-            <div class="tui-topbar">
-                <div class="tui-topbar-left">
-                    <span class="star">*</span>
-                    <span class="label"> ACTIVE LISTENER</span>
-                    <span class="sep">|</span>
-                    <span class="path">Listening ./Incoming</span>
-                    <span style="color: #00ffff; font-weight: bold;"> [SIMULATOR]</span>
-                    <span style="color: #ff00ff; font-weight: bold;"> [🤖 GEMINI ANALYZING...]</span>
-                </div>
-                <div class="tui-topbar-right">
-                    <span class="star">* </span>MEMORY:
-                    <span class="mem-val-primary">4 tracks</span> <span class="mem-val-secondary">(4/21 vibes)</span>
-                </div>
+        <!-- Two-panel area -->
+        <div class="tui-main">
+          <!-- Live Stream log -->
+          <div class="tui-stream-panel" aria-label="Live stream log">
+            <div class="panel-title"><span class="star">* </span>LIVE STREAM log</div>
+
+            <div class="log log-system">[SYSTEM] CrateMind starting up...</div>
+            <div class="log log-system">[SYSTEM] Engine DJ SQLite library detected.</div>
+            <div class="log log-detect">[DETECTED] Discovered track: Recondite – Shun.mp3</div>
+            <div class="log log-id3">[ID3] Tags: Recondite – Shun</div>
+            <div class="log log-system">[SYSTEM] Context loaded: few-shot examples injected</div>
+            <div class="log log-llm">
+              [LLM_REASONING] Deep, dark, cold minimal techno with spacious acoustic reverbs. Fits
+              perfectly.
+            </div>
+            <div class="log log-routed">
+              [ROUTED] Auto-routing -&gt; /galaxy trip &amp; /iceland/Recondite – Shun.mp3
+            </div>
+            <div class="log log-detect">
+              [DETECTED] Discovered track: Stephan Bodzin – Strand.flac
+            </div>
+            <div class="log log-id3">[ID3] Tags: Stephan Bodzin – Strand</div>
+            <div class="log log-system">[SYSTEM] Context loaded: few-shot examples injected</div>
+            <div class="log log-yt-search">
+              [YT_SEARCH] Searching YouTube context for Stephan Bodzin - Strand...
+            </div>
+            <div class="log log-yt-hit">
+              [YT_HIT] Found in YouTube mix: "Melodic Sunset 2026 | Deep Progressive Mix" — playlist
+              saved to memory
+            </div>
+            <div class="log log-llm">
+              [LLM_REASONING] Hypnotic melodic synth lead, deep hardware textures. Borderline
+              atmospheric. Enriched with YouTube playlist companion tracks: Ben Böhmer - Beyond
+              Beliefs, Lane 8 - Keep On.
+            </div>
+            <div class="log log-manual">
+              [NEEDS_MANUAL] Daily request limit exceeded. Prompting user override...
+            </div>
+          </div>
+
+          <!-- Manual Override -->
+          <aside class="tui-override-panel" aria-label="Manual override panel">
+            <div class="panel-title"><span class="star">* </span>MANUAL OVERRIDE</div>
+
+            <div class="override-reason-box">▲ DAILY API REQUEST LIMIT REACHED</div>
+
+            <div class="override-track">
+              <b>Track: Stephan Bodzin – Strand.flac</b>
+              <span class="playing-badge">[PLAYING]</span>
             </div>
 
-            <!-- Stats row -->
-            <div class="tui-stats-row">
-                Processed: <span class="val">1</span>
-                &nbsp; Manual Overrides: <span class="val">1</span>
-                &nbsp; Errors: <span class="err">0</span>
-                &nbsp; <span class="sep">|</span> &nbsp;
-                API Today: <span class="val">1/5</span>
-                &nbsp; Cache Saved: <span class="val" style="color: #00ff00;">0</span>
+            <div class="override-suggest-box">
+              <div class="title">🤖 GEMINI RECOMMENDATION:</div>
+              <div class="val">galaxy trip & iceland</div>
+              <div class="reason">
+                "Hypnotic melodic synth lead, deep hardware textures. Borderline atmospheric."
+              </div>
+              <div class="action">Press [A] to Approve suggestion & route</div>
             </div>
 
-            <!-- Two-panel area -->
-            <div class="tui-main">
+            <div class="override-sub">Select vibes to copy (showing 1-10 of 21)</div>
 
-                <!-- Live Stream log -->
-                <div class="tui-stream-panel" aria-label="Live stream log">
-                    <div class="panel-title"><span class="star">* </span>LIVE STREAM log</div>
-
-                    <div class="log log-system">[SYSTEM] CrateMind starting up...</div>
-                    <div class="log log-system">[SYSTEM] Engine DJ SQLite library detected.</div>
-                    <div class="log log-detect">[DETECTED] Discovered track: Recondite – Shun.mp3</div>
-                    <div class="log log-id3">[ID3] Tags: Recondite – Shun</div>
-                    <div class="log log-system">[SYSTEM] Context loaded: few-shot examples injected</div>
-                    <div class="log log-llm">[LLM_REASONING] Deep, dark, cold minimal techno with spacious acoustic
-                        reverbs. Fits perfectly.</div>
-                    <div class="log log-routed">[ROUTED] Auto-routing -&gt; /galaxy trip &amp; /iceland/Recondite –
-                        Shun.mp3</div>
-                    <div class="log log-detect">[DETECTED] Discovered track: Stephan Bodzin – Strand.flac</div>
-                    <div class="log log-id3">[ID3] Tags: Stephan Bodzin – Strand</div>
-                    <div class="log log-system">[SYSTEM] Context loaded: few-shot examples injected</div>
-                    <div class="log log-llm">[LLM_REASONING] Hypnotic melodic synth lead, deep hardware textures.
-                        Borderline atmospheric.</div>
-                    <div class="log log-manual">[NEEDS_MANUAL] Daily request limit exceeded. Prompting user
-                        override...</div>
-                </div>
-
-                <!-- Manual Override -->
-                <aside class="tui-override-panel" aria-label="Manual override panel">
-                    <div class="panel-title"><span class="star">* </span>MANUAL OVERRIDE</div>
-
-                    <div class="override-reason-box">
-                        ▲ DAILY API REQUEST LIMIT REACHED
-                    </div>
-
-                    <div class="override-track">
-                        <b>Track: Stephan Bodzin – Strand.flac</b>
-                        <span class="playing-badge">[PLAYING]</span>
-                    </div>
-
-                    <div class="override-suggest-box">
-                        <div class="title">🤖 GEMINI RECOMMENDATION:</div>
-                        <div class="val">galaxy trip & iceland</div>
-                        <div class="reason">"Hypnotic melodic synth lead, deep hardware textures. Borderline atmospheric."</div>
-                        <div class="action">Press [A] to Approve suggestion & route</div>
-                    </div>
-
-                    <div class="override-sub">Select vibes to copy (showing 1-10 of 21)</div>
-
-                    <ul class="override-list" aria-label="Vibe folder list">
-                        <li class="cursor">[ ] galaxy trip (cursor)</li>
-                        <li>[ ] iceland</li>
-                        <li>[ ] beach party</li>
-                        <li>[ ] club party</li>
-                        <li>[ ] desert vibe</li>
-                        <li>[ ] drum 'n' bass</li>
-                        <li>[ ] earth</li>
-                        <li>[ ] epic</li>
-                        <li>[ ] intro outro</li>
-                        <li>[ ] magic forest</li>
-                    </ul>
-
-                    <div class="override-selected-count">
-                        Selected: <span class="count">1</span> crates
-                    </div>
-                </aside>
-            </div>
-
-            <!-- MiniPlayer -->
-            <div class="tui-player" aria-label="Audio player">
-                <div class="player-top">
-                    <div>
-                        <span class="player-badge">PLAYING</span>
-                        <span class="player-title">Stephan Bodzin – Strand.flac</span>
-                    </div>
-                    <div class="player-duration-wrap">
-                        <span class="player-duration-badge">DURATION</span>
-                        <span class="player-time-current">0:16</span> <span class="player-time-total">/ 3:00</span>
-                    </div>
-                </div>
-
-                <div class="player-progress-wrap">
-                    <span class="player-bracket">[</span>
-                    <div class="player-progress-track" role="progressbar" aria-valuenow="16" aria-valuemin="0"
-                        aria-valuemax="180" aria-label="Playback position">
-                        <div class="player-progress-fill"></div>
-                        <div class="player-progress-thumb"></div>
-                    </div>
-                    <span class="player-bracket">]</span>
-                </div>
-
-                <div class="player-seek-hint">Use [-]/[+] to seek 10s</div>
-            </div>
-
-            <!-- Hotkeys -->
-            <div class="tui-hotkeys">
-                <span class="key">[Space]</span> Pause/Resume
-                <span class="sep">|</span>
-                <span class="key-green">[R]</span> Log RAG Stats
-                <span class="sep">|</span>
-                <span class="key" style="color: #00ffff;">[C]</span> Simulate Chaos
-                <span class="sep">|</span>
-                <span class="key-red">[Q]</span> Exit Sorter
-            </div>
-
-        </main>
-
-        <!-- ── Details ───────────────────────────────────────────────── -->
-        <section class="about-box" aria-label="Technical Details">
-            <h2>Technical Architecture:</h2>
-            <ul>
-                <li><b>FSService:</b> Chokidar file watcher &amp; sequential queue manager (p-queue). Fully integrated
-                    with Mock Mode simulation.</li>
-                <li><b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful fallback in
-                    simulated states).</li>
-                <li><b>RAGService:</b> Few-shot memory layer — persists routing history to
-                    <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
-                </li>
-                <li><b>CacheService:</b> Handles persistent offline SHA-256 caching in
-                    <code>.cratemind-cache.json</code> and daily API request counts in <code>.cratemind-stats.json</code>.
-                </li>
-                <li><b>LLMService:</b> Gemini API integration with structured Zod schema validation, local cache lookup, and limit checks (simulated in Mock Mode).</li>
-                <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
+            <ul class="override-list" aria-label="Vibe folder list">
+              <li class="cursor">[ ] galaxy trip (cursor)</li>
+              <li>[ ] iceland</li>
+              <li>[ ] beach party</li>
+              <li>[ ] club party</li>
+              <li>[ ] desert vibe</li>
+              <li>[ ] drum 'n' bass</li>
+              <li>[ ] earth</li>
+              <li>[ ] epic</li>
+              <li>[ ] intro outro</li>
+              <li>[ ] magic forest</li>
             </ul>
 
-            <h2>Key Features:</h2>
-            <ul>
-                <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
-                <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
-                <li><b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not just artist
-                    name.</li>
-                <li><b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your manual overrides, generating inline system instruction corrections to align Gemini's routing with your precise music taste over time.</li>
-                <li><b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM latency/charges, paired with daily request limits to avoid API overspending.</li>
-                <li><b>User-first:</b> Bootstrap scan, collection change, and memory clear all require explicit
-                    <code>[Y/n]</code> confirmation.
-                </li>
-                <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
-                <li>Native OS audio preview via <code>ffplay</code> with precise seeking support.</li>
-                <li><b>Mock Mode:</b> Complete sandboxed offline simulation (via <code>.env</code> toggle) to test base
-                    SQLite DB, file watchers, Gemini classifications, and physical routing without real dependencies.
-                </li>
-            </ul>
+            <div class="override-selected-count">Selected: <span class="count">1</span> crates</div>
+          </aside>
+        </div>
 
-            <h2>Future Integration Ideas:</h2>
-            <ul>
-                <li><b>Model Context Protocol (MCP) Server:</b> Expose CrateMind's RAG memory and vibe-routing logic as
-                    an MCP server. This allows IDE agents (like Claude or Antigravity) to query your library's
-                    organization rules, analyze track metadata, and suggest playlists directly inside your coding/chat
-                    environments.</li>
-                <li><b>Antigravity SDK (AGY CLI) Integration:</b> Integrate CrateMind with the AGY CLI to orchestrate
-                    autonomous multi-agent music curations. For example, let one subagent scour streaming platforms or
-                    charts for new releases, while CrateMind acts as the local routing agent to seamlessly classify them
-                    into your physical crates.</li>
-            </ul>
-        </section>
+        <!-- MiniPlayer -->
+        <div class="tui-player" aria-label="Audio player">
+          <div class="player-top">
+            <div>
+              <span class="player-badge">PLAYING</span>
+              <span class="player-title">Stephan Bodzin – Strand.flac</span>
+            </div>
+            <div class="player-duration-wrap">
+              <span class="player-duration-badge">DURATION</span>
+              <span class="player-time-current">0:16</span>
+              <span class="player-time-total">/ 3:00</span>
+            </div>
+          </div>
 
-        <!-- ── Footer ─────────────────────────────────────────────────── -->
-        <footer class="site-footer" id="main-footer">
-            <p>&copy; 2026 <a href="https://github.com/DimaMinka/cratemind" target="_blank"
-                    rel="noopener">CrateMind</a>. Built with Node.js, TypeScript &amp; Gemini API. All rights reserved.
-            </p>
-        </footer>
+          <div class="player-progress-wrap">
+            <span class="player-bracket">[</span>
+            <div
+              class="player-progress-track"
+              role="progressbar"
+              aria-valuenow="16"
+              aria-valuemin="0"
+              aria-valuemax="180"
+              aria-label="Playback position"
+            >
+              <div class="player-progress-fill"></div>
+              <div class="player-progress-thumb"></div>
+            </div>
+            <span class="player-bracket">]</span>
+          </div>
 
+          <div class="player-seek-hint">Use [-]/[+] to seek 10s</div>
+        </div>
+
+        <!-- Hotkeys -->
+        <div class="tui-hotkeys">
+          <span class="key">[Space]</span> Pause/Resume
+          <span class="sep">|</span>
+          <span class="key-green">[R]</span> Log RAG Stats
+          <span class="sep">|</span>
+          <span class="key" style="color: #00ffff">[C]</span> Simulate Chaos
+          <span class="sep">|</span>
+          <span class="key-red">[Q]</span> Exit Sorter
+        </div>
+      </main>
+
+      <!-- ── Details ───────────────────────────────────────────────── -->
+      <section class="about-box" aria-label="Technical Details">
+        <h2>Technical Architecture:</h2>
+        <ul>
+          <li>
+            <b>TrackWatcher:</b> Chokidar file watcher &amp; sequential queue manager (p-queue).
+            Spawns the processing pipeline for incoming audio files.
+          </li>
+          <li>
+            <b>TrackProcessor:</b> Core linear pipeline orchestrator handling metadata extraction,
+            RAG checks, YouTube scouting, LLM classification, and user interaction/routing.
+          </li>
+          <li>
+            <b>NetworkScoutService:</b> YouTube playlist context finder with in-memory playlist
+            cache ("playlist memory effect") to discover neighboring tracks in live mixes and warm
+            the cache.
+          </li>
+          <li>
+            <b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful
+            fallback in simulated states).
+          </li>
+          <li>
+            <b>RAGService:</b> Few-shot memory layer — persists routing history to
+            <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
+          </li>
+          <li>
+            <b>CacheService:</b> Handles persistent offline SHA-256 caching in
+            <code>.cratemind-cache.json</code> and daily API request counts in
+            <code>.cratemind-stats.json</code>.
+          </li>
+          <li>
+            <b>LLMService:</b> Gemini API integration with structured Zod schema validation, local
+            cache lookup, and limit checks (simulated in Mock Mode).
+          </li>
+          <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
+        </ul>
+
+        <h2>Key Features:</h2>
+        <ul>
+          <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
+          <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
+          <li>
+            <b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not
+            just artist name.
+          </li>
+          <li>
+            <b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your
+            manual overrides, generating inline system instruction corrections to align Gemini's
+            routing with your precise music taste over time.
+          </li>
+          <li>
+            <b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM
+            latency/charges, paired with daily request limits to avoid API overspending.
+          </li>
+          <li>
+            <b>User-first:</b> Bootstrap scan, collection change, and memory clear all require
+            explicit <code>[Y/n]</code> confirmation.
+          </li>
+          <li>Beautiful multi-select checkbox TUI for low-confidence Manual Overrides.</li>
+          <li>Native OS audio preview via <code>ffplay</code> with precise seeking support.</li>
+          <li>
+            <b>Mock Mode:</b> Complete sandboxed offline simulation (via <code>.env</code> toggle)
+            to test base SQLite DB, file watchers, Gemini classifications, and physical routing
+            without real dependencies.
+          </li>
+        </ul>
+
+        <h2>Future Integration Ideas:</h2>
+        <ul>
+          <li>
+            <b>Model Context Protocol (MCP) Server:</b> Expose CrateMind's RAG memory and
+            vibe-routing logic as an MCP server. This allows IDE agents (like Claude or Antigravity)
+            to query your library's organization rules, analyze track metadata, and suggest
+            playlists directly inside your coding/chat environments.
+          </li>
+          <li>
+            <b>Antigravity SDK (AGY CLI) Integration:</b> Integrate CrateMind with the AGY CLI to
+            orchestrate autonomous multi-agent music curations. For example, let one subagent scour
+            streaming platforms or charts for new releases, while CrateMind acts as the local
+            routing agent to seamlessly classify them into your physical crates.
+          </li>
+        </ul>
+      </section>
+
+      <!-- ── Footer ─────────────────────────────────────────────────── -->
+      <footer class="site-footer" id="main-footer">
+        <p>
+          &copy; 2026
+          <a href="https://github.com/DimaMinka/cratemind" target="_blank" rel="noopener"
+            >CrateMind</a
+          >. Built with Node.js, TypeScript &amp; Gemini API. All rights reserved.
+        </p>
+      </footer>
     </div>
-</body>
-
+  </body>
 </html>
