@@ -48,3 +48,10 @@ export const RAG_EXAMPLES_PER_FOLDER = 2;
 export const RAG_MAX_STORED = 500;
 export const RAG_SCAN_ON_BOOT = true;
 export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Library/Database2/m.db';
+
+// YouTube Network Scout configuration
+export const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
+export const YT_SCOUT_ENABLED = true;
+export const YT_SCOUT_NETWORK_DELAY_MS = 1200;
+export const YT_SCOUT_MAX_PLAYLISTS = 3;
+export const YT_SCOUT_NEIGHBOR_RADIUS = 5;

@@ -7,7 +7,10 @@ export type LogEntry = {
     | 'ERROR'
     | 'NEEDS_MANUAL'
     | 'RAG'
-    | 'SYSTEM';
+    | 'SYSTEM'
+    | 'YT_SEARCH'
+    | 'YT_HIT'
+    | 'YT_CACHE_HIT';
   message: string;
   ts: number;
 };
@@ -17,6 +20,7 @@ export type TrackMeta = {
   filename: string;
   artist: string;
   title: string;
+  duration: number;
 };
 
 export type RagStatus = 'first-run' | 'scanning' | 'ready';
@@ -115,4 +119,36 @@ export type LLMResponse = {
   folders: string[];
   reasoning: string;
   confidence: number;
+};
+
+// ── YouTube Network Scout Types ────────────────────────────────────────────
+
+/** YouTube playlist/mix metadata */
+export type YouTubePlaylist = {
+  id: string;
+  title: string;
+  description: string;
+  channelName: string;
+};
+
+/** A single track's appearance inside a YouTube playlist */
+export type YouTubePlaylistItem = {
+  playlistId: string;
+  index: number;
+  artist: string;
+  title: string;
+};
+
+/** Result of network scouting for a specific track */
+export type NetworkScoutResult = {
+  playlists: YouTubePlaylist[];
+  neighbors: YouTubePlaylistItem[];
+  source: 'cache' | 'network';
+};
+
+/** In-memory cached playlist entry */
+export type CachedPlaylist = {
+  playlist: YouTubePlaylist;
+  items: YouTubePlaylistItem[];
+  cachedAt: number;
 };
