@@ -24,7 +24,7 @@ async function startLocalServerAndAuthorize(clientId: string): Promise<string> {
   const redirectUri = 'http://127.0.0.1:8888/callback';
   const authorizeUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
     redirectUri
-  )}&scope=user-read-private`;
+  )}&scope=user-read-private%20user-library-read`;
 
   console.log('\n========================================================');
   console.log('         SPOTIFY OAUTH USER AUTHORIZATION REQUIRED      ');
