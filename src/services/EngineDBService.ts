@@ -161,3 +161,44 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
     return [];
   }
 }
+
+/**
+ * Retrieves a single track by its artist and title using a fast SQLite index lookup.
+ */
+export function getTrackByMeta(artist: string, title: string): EngineTrack | null {
+  if (MOCK_MODE) {
+    return MOCK_ENGINE_TRACKS.find(
+      (t) =>
+        t.artist.toLowerCase() === artist.toLowerCase() &&
+        t.title.toLowerCase() === title.toLowerCase()
+    ) || null;
+  }
+
+  const db = getDB();
+  if (!db) return null;
+
+  try {
+    const row = db
+      .prepare(
+        'SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track WHERE LOWER(artist) = ? AND LOWER(title) = ? LIMIT 1'
+      )
+      .get(artist.toLowerCase().trim(), title.toLowerCase().trim()) as any;
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      path: row.path,
+      filename: row.filename,
+      title: row.title || row.filename || 'Unknown Title',
+      artist: row.artist || 'Unknown Artist',
+      bpm: row.bpm ? Math.round(row.bpm) : undefined,
+      key: convertKeyToCamelot(row.keyVal),
+      genre: row.genre || undefined,
+      comment: row.comment || undefined,
+      label: row.label || undefined
+    };
+  } catch {
+    return null;
+  }
+}
