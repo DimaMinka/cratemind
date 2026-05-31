@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
-import { LLMResponse } from '../types.js';
+import { LLMResponse, VectorNeighbor } from '../types.js';
 import { MOCK_MODE, FOLDERS, LLM_MODEL } from '../config.js';
 import * as CacheService from './CacheService.js';
 
@@ -45,6 +45,27 @@ function getAIClient(): GoogleGenAI {
   return aiClient;
 }
 
+/**
+ * Formats the vector neighbor search results into a prompt-ready context block.
+ * Gives the LLM explicit ground-truth anchors from the user's personal library.
+ */
+function formatVectorNeighborsContext(neighbors: VectorNeighbor[]): string {
+  if (neighbors.length === 0) return '';
+
+  const lines = neighbors.map(
+    (n, i) =>
+      `${i + 1}. ${n.artist} - ${n.title} (Similarity: ${n.similarity.toFixed(2)}) → Folder: /${n.folder}`
+  );
+
+  return [
+    '=== Vector Similarity Search: Nearest neighbors from your sorted library (HIGHEST PRIORITY) ===',
+    'These tracks are the most musically similar to the incoming track, already sorted by you.',
+    'Their folders are the strongest signal available — match them unless physical data clearly contradicts.',
+    ...lines,
+    '============================================================================================'
+  ].join('\n');
+}
+
 export async function classifyTrack(
   artist: string,
   title: string,
@@ -52,8 +73,11 @@ export async function classifyTrack(
   personalHints = '',
   networkContext = '',
   physicalContext = '',
-  spotifyContext = ''
+  spotifyContext = '',
+  vectorNeighbors: VectorNeighbor[] = []
 ): Promise<LLMResponse> {
+  const vectorContext = formatVectorNeighborsContext(vectorNeighbors);
+
   const contextHash = CacheService.generateContextHash(
     artist,
     title,
@@ -61,7 +85,8 @@ export async function classifyTrack(
     personalHints,
     networkContext,
     physicalContext,
-    spotifyContext
+    spotifyContext,
+    vectorContext
   );
 
   // 1. Check cache first
@@ -193,7 +218,7 @@ ${personalHints ? '\n' + personalHints : ''}`;
       const promptText = `Artist: ${artist}
 Title: ${title}
 
-${physicalContext ? physicalContext + '\n' : ''}${spotifyContext ? spotifyContext + '\n' : ''}
+${physicalContext ? physicalContext + '\n' : ''}${spotifyContext ? spotifyContext + '\n' : ''}${vectorContext ? '\n' + vectorContext + '\n' : ''}
 ${ragContext}
 ${networkContext ? '\n' + networkContext : ''}`;
 

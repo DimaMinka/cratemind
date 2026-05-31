@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { RagExample, RagMemory, BootstrapResult } from '../types.js';
+import { RagExample, RagMemory, BootstrapResult, VectorNeighbor, TrackMeta } from '../types.js';
 import {
   RAG_EXAMPLES_PER_FOLDER,
   RAG_MAX_STORED,
@@ -11,6 +11,10 @@ import {
 import { extractMetadata } from './ID3Service.js';
 import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
 import { getDB, getSetting, setSetting } from './LocalDBService.js';
+import { SpotifyAudioFeatures } from './SpotifyService.js';
+import * as EmbeddingService from './EmbeddingService.js';
+import { buildPassport } from './TrackPassportService.js';
+import { YouTubePlaylist } from '../types.js';
 
 /**
  * RAGService.ts
@@ -473,4 +477,36 @@ export function getPersonalHints(): string {
 
 export function clear(): void {
   saveMemory({ version: 1, examples: [], lastScanDir: null });
+}
+
+// ── Vector Context ─────────────────────────────────────────────────────────
+
+/**
+ * Builds the track passport and performs a vector similarity search against
+ * all sorted library tracks stored in track_vectors.
+ *
+ * Returns the TOP-K nearest neighbors along with the passport text used
+ * for the query, or an empty array if the Gemini API is unavailable.
+ *
+ * @param artist  - Track artist
+ * @param title   - Track title
+ * @param meta    - Full TrackMeta (BPM, key, duration, label, genre, etc.)
+ * @param spotify - Optional Spotify audio features (genres, energy, etc.)
+ * @param ytPlaylists - Optional YouTube playlists found for this track
+ * @param releaseYear - Optional release year override
+ */
+export async function getVectorContext(
+  artist: string,
+  title: string,
+  meta: TrackMeta,
+  spotify?: SpotifyAudioFeatures | null,
+  ytPlaylists?: YouTubePlaylist[],
+  releaseYear?: number
+): Promise<{ neighbors: VectorNeighbor[]; passport: string }> {
+  const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear });
+
+  const excludeKey = `${artist.toLowerCase()}|${title.toLowerCase()}`;
+  const neighbors = await EmbeddingService.findNeighbors(passport.text, 5, excludeKey);
+
+  return { neighbors, passport: passport.text };
 }

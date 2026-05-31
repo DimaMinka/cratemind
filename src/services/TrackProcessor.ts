@@ -9,8 +9,9 @@ import * as UserInteractionService from './UserInteractionService.js';
 import * as NetworkScoutService from './NetworkScoutService.js';
 import * as EngineDBService from './EngineDBService.js';
 import * as SpotifyService from './SpotifyService.js';
+import * as EmbeddingService from './EmbeddingService.js';
 import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD, FOLDERS } from '../config.js';
-import { LLMResponse } from '../types.js';
+import { LLMResponse, VectorNeighbor } from '../types.js';
 
 /**
  * TrackProcessor.ts
@@ -68,8 +69,9 @@ export async function processTrack(filepath: string): Promise<void> {
 
     // Query Spotify Audio Features if configured
     let spotifyProfile = '';
+    let spotifyFeatures: Awaited<ReturnType<typeof SpotifyService.getTrackFeatures>> = null;
     try {
-      const spotifyFeatures = await SpotifyService.getTrackFeatures(meta.artist, meta.title);
+      spotifyFeatures = await SpotifyService.getTrackFeatures(meta.artist, meta.title);
       if (spotifyFeatures) {
         addLog(
           'SYSTEM',
@@ -143,9 +145,10 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
 
     // Step 3: YouTube Network Scout — search for playlist context
     let networkContext = '';
+    let scoutResult: Awaited<ReturnType<typeof NetworkScoutService.getTrackContext>> | null = null;
     if (YT_SCOUT_ENABLED) {
       addLog('YT_SEARCH', `Searching YouTube context for ${meta.artist} - ${meta.title}...`);
-      const scoutResult = await NetworkScoutService.getTrackContext(meta.artist, meta.title);
+      scoutResult = await NetworkScoutService.getTrackContext(meta.artist, meta.title);
 
       if (scoutResult.playlists.length > 0) {
         if (scoutResult.source === 'cache') {
@@ -203,6 +206,38 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       }
     }
 
+    // Step 2.5: Vector similarity search — find nearest neighbors from sorted library
+    let vectorNeighbors: VectorNeighbor[] = [];
+    const vectorCount = EmbeddingService.getVectorCount();
+    if (vectorCount > 0 && process.env.GEMINI_API_KEY) {
+      try {
+        // Gather YouTube playlists for passport assembly
+        const ytPlaylistsForPassport = scoutResult?.playlists ?? [];
+        const vectorResult = await RAGService.getVectorContext(
+          meta.artist,
+          meta.title,
+          meta,
+          spotifyFeatures,
+          ytPlaylistsForPassport
+        );
+        vectorNeighbors = vectorResult.neighbors;
+
+        if (vectorNeighbors.length > 0) {
+          const topFolders = [...new Set(vectorNeighbors.slice(0, 3).map((n) => n.folder))].join(
+            ', '
+          );
+          addLog(
+            'SYSTEM',
+            `Vector search: ${vectorNeighbors.length} neighbors found → folders: ${topFolders}`
+          );
+        } else {
+          addLog('SYSTEM', `Vector search: no vectors in DB yet (run bootstrap to index library)`);
+        }
+      } catch {
+        // Non-fatal: vector search failure does not block classification
+      }
+    }
+
     // Compute hash AFTER all context is gathered (RAG + personal hints + network + physical + Spotify)
     // This ensures the cache key reflects the full context used for classification
     const contextHash = CacheService.generateContextHash(
@@ -249,7 +284,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           personalHints,
           networkContext,
           physicalProfile,
-          spotifyProfile
+          spotifyProfile,
+          vectorNeighbors
         );
         useStore.getState().setLLMAnalyzing(false);
         addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
@@ -358,6 +394,21 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         source: isApprovedSuggestion ? 'auto' : 'manual',
         ts: Date.now()
       });
+
+      // Step 8: Store vector for future similarity searches
+      // Runs asynchronously — does not block routing or UI updates
+      if (process.env.GEMINI_API_KEY) {
+        EmbeddingService.storeTrackVector(
+          meta.artist,
+          meta.title,
+          selectedFolders[0], // Primary folder used as the vibe label
+          meta,
+          spotifyFeatures,
+          scoutResult?.playlists ?? []
+        ).catch(() => {
+          // Non-fatal: vector storage failure is silently ignored
+        });
+      }
     }
 
     incrementStat('processed');

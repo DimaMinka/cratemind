@@ -16,8 +16,8 @@ export type LogEntry = {
 };
 
 export type TrackMeta = {
-  filepath: string;
-  filename: string;
+  filepath?: string;
+  filename?: string;
   artist: string;
   title: string;
   duration: number;
@@ -161,4 +161,66 @@ export type CachedPlaylist = {
   playlist: YouTubePlaylist;
   items: YouTubePlaylistItem[];
   cachedAt: number;
+};
+
+// ── Embedding Pipeline Types ───────────────────────────────────────────────
+
+/**
+ * Standardized semantic passport assembled from Engine DJ, Spotify, and YouTube data.
+ * This plain-text representation is passed to text-embedding-004 for vectorization.
+ */
+export type TrackPassport = {
+  /** Full formatted passport string ready for embedding */
+  text: string;
+  /** Schema version — bump when passport format changes to invalidate old vectors */
+  version: number;
+  /** Individual field values for diagnostics and debugging */
+  fields: {
+    artist: string;
+    title: string;
+    bpm?: number;
+    key?: string;
+    durationFormatted?: string;
+    year?: number;
+    label?: string;
+    genreTags: string[];
+    ytVibeContext: string[];
+  };
+};
+
+/**
+ * A single result from the vector similarity search —
+ * a track already sorted by the user that is musically close to the query.
+ */
+export type VectorNeighbor = {
+  artist: string;
+  title: string;
+  folder: string;
+  /** Cosine similarity score, 0.0–1.0 (higher = more similar) */
+  similarity: number;
+  /** Passport text of the neighbor, for diagnostics */
+  passport?: string;
+};
+
+/** Energy + mood profile of a single structural phase inside a track */
+export type TrackSegment = {
+  phase: 'Intro' | 'Build-up' | 'Peak-time' | 'Outro';
+  /** 0.0 (ambient/quiet) → 1.0 (full peak-time energy) */
+  energyLevel: number;
+  /** 0.0 (dark/minor/melancholy) → 1.0 (bright/major/joyful) */
+  emotionalValence: number;
+  /** Key sonic elements active during this phase, e.g. ["kick drum", "synth lead"] */
+  dominantElements: string[];
+};
+
+/** Extended LLM response that includes segment-level structural analysis */
+export type LLMDetailedResponse = {
+  suggestedCrate: string;
+  confidence: number;
+  reasoning: string;
+  technicalProfile: {
+    estimatedBPM: number;
+    estimatedKey: string;
+  };
+  segments: TrackSegment[];
 };

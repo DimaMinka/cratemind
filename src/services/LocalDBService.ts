@@ -107,6 +107,18 @@ export function getDB(): Database.Database {
       cached_at INTEGER NOT NULL,
       PRIMARY KEY (artist, title)
     );
+
+    CREATE TABLE IF NOT EXISTS track_vectors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      artist TEXT NOT NULL,
+      title TEXT NOT NULL,
+      folder TEXT NOT NULL,
+      passport TEXT NOT NULL,          -- full passport text used to generate this embedding
+      embedding BLOB NOT NULL,         -- Float32Array serialized as raw bytes (768 * 4 bytes)
+      passport_version INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      UNIQUE(artist, title) ON CONFLICT REPLACE
+    );
   `);
 
   // Clean exit handling

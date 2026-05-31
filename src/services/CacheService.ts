@@ -169,7 +169,8 @@ export function generateContextHash(
   personalHints: string,
   networkContext = '',
   physicalContext = '',
-  spotifyContext = ''
+  spotifyContext = '',
+  vectorContext = ''
 ): string {
   const normalizedArtist = artist.trim().toLowerCase();
   const normalizedTitle = title.trim().toLowerCase();
@@ -178,7 +179,8 @@ export function generateContextHash(
   const networkHash = createHash('sha256').update(networkContext).digest('hex');
   const physicalHash = createHash('sha256').update(physicalContext).digest('hex');
   const spotifyHash = createHash('sha256').update(spotifyContext).digest('hex');
-  const payload = `${normalizedArtist}|${normalizedTitle}|${ragHash}|${hintsHash}|${networkHash}|${physicalHash}|${spotifyHash}`;
+  const vectorHash = createHash('sha256').update(vectorContext).digest('hex');
+  const payload = `${normalizedArtist}|${normalizedTitle}|${ragHash}|${hintsHash}|${networkHash}|${physicalHash}|${spotifyHash}|${vectorHash}`;
   return createHash('sha256').update(payload).digest('hex');
 }
 
