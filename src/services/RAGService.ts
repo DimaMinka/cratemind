@@ -132,10 +132,20 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
     memory.examples = [];
   }
 
-  // 1. If Engine DJ DB import is requested, query database tracks and extract vibe from path
+  // 1. If Engine DJ DB import is requested, query database tracks and extract vibe from path or playlists
   if (useEngineDB) {
     const dbTracks = EngineDBService.getTracks();
     const folderVibeSet = new Set<string>();
+
+    // Fetch track playlist vibes to resolve vibes using Denon DJ playlists
+    const playlistVibes = EngineDBService.getTrackPlaylistVibes();
+    const trackPlaylistMap = new Map<number, string[]>();
+    for (const pv of playlistVibes) {
+      if (!trackPlaylistMap.has(pv.trackId)) {
+        trackPlaylistMap.set(pv.trackId, []);
+      }
+      trackPlaylistMap.get(pv.trackId)!.push(pv.vibe);
+    }
 
     // Track count per vibe folder to enforce a strict import limit
     const vibeCounts: Record<string, number> = {};
@@ -151,10 +161,20 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
 
       // Determine if track path matches any of our atmospheric vibe folders
       const pathParts = track.path.toLowerCase().split(/[/\\]/);
-      const matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+      let matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+
+      // Secondary channel: check if the track is present in a playlist named after the vibe
+      if (!matchedVibe) {
+        const trackVibes = trackPlaylistMap.get(track.id);
+        if (trackVibes) {
+          matchedVibe = FOLDERS.find((vibe) =>
+            trackVibes.some((tv) => tv.toLowerCase() === vibe.toLowerCase())
+          );
+        }
+      }
 
       if (!matchedVibe) {
-        continue; // Path doesn't belong to any known vibe folders
+        continue; // Path/playlist doesn't belong to any known vibe folders
       }
 
       // Enforce per-vibe limit to keep RAG memory lightweight

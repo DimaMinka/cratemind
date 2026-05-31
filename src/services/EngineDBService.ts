@@ -204,3 +204,30 @@ export function getTrackByMeta(artist: string, title: string): EngineTrack | nul
     return null;
   }
 }
+
+/**
+ * Retrieves track ID mappings to playlist titles for playlist-based RAG bootstrapping.
+ */
+export function getTrackPlaylistVibes(): { trackId: number; vibe: string }[] {
+  if (MOCK_MODE) {
+    return [];
+  }
+
+  const db = getDB();
+  if (!db) return [];
+
+  try {
+    const rows = db
+      .prepare(
+        `
+      SELECT pe.trackId, p.title AS vibe
+      FROM PlaylistEntity pe
+      JOIN Playlist p ON pe.listId = p.id
+    `
+      )
+      .all() as { trackId: number; vibe: string }[];
+    return rows;
+  } catch {
+    return [];
+  }
+}
