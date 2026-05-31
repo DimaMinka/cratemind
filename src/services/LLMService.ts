@@ -50,14 +50,18 @@ export async function classifyTrack(
   title: string,
   ragContext = '',
   personalHints = '',
-  networkContext = ''
+  networkContext = '',
+  physicalContext = '',
+  spotifyContext = ''
 ): Promise<LLMResponse> {
   const contextHash = CacheService.generateContextHash(
     artist,
     title,
     ragContext,
     personalHints,
-    networkContext
+    networkContext,
+    physicalContext,
+    spotifyContext
   );
 
   // 1. Check cache first
@@ -123,7 +127,13 @@ export async function classifyTrack(
       const systemInstruction = `You are CrateMind, an elite audio classification system designed to organize music libraries into atmospheric, vibe-based folders ("crates") rather than traditional, generic genres.
 
 Task:
-Analyze the artist and track title. Propose 1 to 2 folders (crates) for the track based on its musical character, texture, and physical sonic architecture. Utilize the provided Few-Shot RAG memory of already sorted tracks to align with the user's specific library style.
+Analyze the artist and track title along with their physical and digital audio blueprint signals (BPM, key, genre, label, Spotify audio features). Propose 1 to 2 folders (crates) for the track based on its musical character, texture, and physical sonic architecture. Utilize the provided Few-Shot RAG memory of already sorted tracks to align with the user's specific library style.
+
+Interpretation of Physical & Spotify blueprints:
+1. Spotify Energy (0 to 1): High values (>0.75) represent intensive drive, massive drums, or aggressive textures -> suggests 'club party', 'psy', or high peak-time 'mountain sunset'. Low values (<0.4) indicate ambient, slow, or soft vibes -> 'nargila vibe', 'mantra', or 'iceland'.
+2. Spotify Acousticness (0 to 1): High values (>0.6) indicate real instruments, raw vocals, wooden plucks -> suggests 'earth' or 'magic forest'. Low values (<0.25) indicate highly electronic, digital, or spacey synths -> 'galaxy trip', 'club party', 'robotic'.
+3. Spotify Valence (0 to 1): High values (>0.6) indicate joyful, bright energy -> 'new day vibe', 'beach party', or 'retro'. Low values (<0.3) represent melancholia, coldness, or dark moods -> 'iceland', 'nargila vibe', or 'mountain sunset'.
+4. BPM & Key: High BPM (>135) suggests high-energy crates like 'psy' or 'drum 'n' bass'. Minor keys (ending in A, e.g. 08A) represent reflective, mysterious, or dark atmospheres. Major keys (ending in B, e.g. 08B) are uplifting and bright.
 
 Step-by-Step Analysis (Perform this mental process before outputting):
 1. Conceptual Markers: Assess the track name and label background. The artist's usual branding MUST NOT override the physical sound. If an Afterlife artist produces an Italo-disco or retro-groove track, give absolute priority to the actual acoustic character of the sound.
@@ -183,6 +193,7 @@ ${personalHints ? '\n' + personalHints : ''}`;
       const promptText = `Artist: ${artist}
 Title: ${title}
 
+${physicalContext ? physicalContext + '\n' : ''}${spotifyContext ? spotifyContext + '\n' : ''}
 ${ragContext}
 ${networkContext ? '\n' + networkContext : ''}`;
 

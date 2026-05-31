@@ -9,9 +9,7 @@ import * as fs from 'fs';
  * falling back to filename splitting.
  */
 
-export async function extractMetadata(
-  filepath: string
-): Promise<{
+export async function extractMetadata(filepath: string): Promise<{
   artist: string;
   title: string;
   duration: number;
@@ -19,6 +17,7 @@ export async function extractMetadata(
   key?: string;
   genre?: string;
   comment?: string;
+  label?: string;
 }> {
   let artist: string | undefined;
   let title: string | undefined;
@@ -27,6 +26,7 @@ export async function extractMetadata(
   let key: string | undefined;
   let genre: string | undefined;
   let comment: string | undefined;
+  let label: string | undefined;
 
   // Bypassed if the file does not physically exist to prevent console pollution
   const fileExists = fs.existsSync(filepath);
@@ -55,6 +55,9 @@ export async function extractMetadata(
       if (metadata.common.comment && metadata.common.comment.length > 0) {
         const c = metadata.common.comment[0];
         comment = typeof c === 'string' ? c : (c as { text?: string })?.text;
+      }
+      if (metadata.common.label && metadata.common.label.length > 0) {
+        label = metadata.common.label.join(', ');
       }
     } catch {
       // Silently fall back to filename parsing without corrupting TUI screen buffer
@@ -108,7 +111,8 @@ export async function extractMetadata(
     bpm,
     key,
     genre,
-    comment
+    comment,
+    label
   };
 }
 export default extractMetadata;
