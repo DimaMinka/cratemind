@@ -93,6 +93,20 @@ export function getDB(): Database.Database {
       PRIMARY KEY (playlist_id, track_index),
       FOREIGN KEY (playlist_id) REFERENCES yt_playlists(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS spotify_cache (
+      artist TEXT NOT NULL,
+      title TEXT NOT NULL,
+      danceability REAL,
+      energy REAL,
+      acousticness REAL,
+      instrumentalness REAL,
+      valence REAL,
+      tempo REAL,
+      spotify_genres TEXT, -- JSON string array
+      cached_at INTEGER NOT NULL,
+      PRIMARY KEY (artist, title)
+    );
   `);
 
   // Clean exit handling

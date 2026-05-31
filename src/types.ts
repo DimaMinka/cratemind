@@ -21,6 +21,11 @@ export type TrackMeta = {
   artist: string;
   title: string;
   duration: number;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  comment?: string;
+  label?: string;
 };
 
 export type RagStatus = 'first-run' | 'scanning' | 'ready';
@@ -65,6 +70,11 @@ export type EngineTrack = {
   filename: string;
   title: string;
   artist: string;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  comment?: string;
+  label?: string;
 };
 
 export type OverrideState = {
