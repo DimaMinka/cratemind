@@ -52,12 +52,18 @@ export async function processTrack(filepath: string): Promise<void> {
         if (dbTrack.genre) meta.genre = dbTrack.genre;
         if (dbTrack.comment) meta.comment = dbTrack.comment;
         if (dbTrack.label) meta.label = dbTrack.label;
-        addLog('SYSTEM', `Engine DJ DB Match: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`);
+        addLog(
+          'SYSTEM',
+          `Engine DJ DB Match: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`
+        );
       }
     }
 
     if (meta.bpm || meta.key || meta.genre) {
-      addLog('SYSTEM', `Physical Profile: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`);
+      addLog(
+        'SYSTEM',
+        `Physical Profile: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`
+      );
     }
 
     // Query Spotify Audio Features if configured
@@ -65,7 +71,10 @@ export async function processTrack(filepath: string): Promise<void> {
     try {
       const spotifyFeatures = await SpotifyService.getTrackFeatures(meta.artist, meta.title);
       if (spotifyFeatures) {
-        addLog('SYSTEM', `Spotify Acoustic: Energy=${spotifyFeatures.energy}, Acoustic=${spotifyFeatures.acousticness}`);
+        addLog(
+          'SYSTEM',
+          `Spotify Acoustic: Energy=${spotifyFeatures.energy}, Acoustic=${spotifyFeatures.acousticness}`
+        );
         spotifyProfile = `=== Spotify Acoustic Blueprint ===
 - Energy: ${spotifyFeatures.energy} (0 = calm/ambient, 1 = heavy peak-time)
 - Danceability: ${spotifyFeatures.danceability} (0 = erratic/non-dance, 1 = structured groove)
@@ -116,7 +125,10 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
     // Helper to clean metadata for accurate bridging
     function cleanMetadataString(s: string): string {
       return s
-        .replace(/\s*[\[\(](?:original|extended|radio|dub|club|official|lyric)?\s*(?:mix|edit|version|video|audio|track|remix)?[\])]/gi, '') // strips (Original Mix), [Extended Mix] etc
+        .replace(
+          /\s*[[()](?:original|extended|radio|dub|club|official|lyric)?\s*(?:mix|edit|version|video|audio|track|remix)?[\])]/gi,
+          ''
+        ) // strips (Original Mix), [Extended Mix] etc
         .replace(/\s*\[[^\]]+\]/gi, '') // strips label names like [Truesoul]
         .replace(/\s*\([^)]+\)/gi, '') // strips remaining brackets
         .replace(/\s*\|.+$/g, '') // strips label suffixes like " | Truesoul"
@@ -146,7 +158,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');
           addLog('YT_HIT', `Found in YouTube mix: "${playlistNames}" — playlist saved to memory`);
         }
-        
+
         networkContext = NetworkScoutService.formatForPrompt(scoutResult);
 
         // --- Live m.db Bridging Logic ---
@@ -156,26 +168,36 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
 
           for (const neighbor of scoutResult.neighbors) {
             const neighborKey = normalizeKey(neighbor.artist, neighbor.title);
-            const mdbMatch = dbTracks.find(t => 
-              normalizeKey(t.artist || 'Unknown', t.title || t.filename || 'Unknown') === neighborKey
+            const mdbMatch = dbTracks.find(
+              (t) =>
+                normalizeKey(t.artist || 'Unknown', t.title || t.filename || 'Unknown') ===
+                neighborKey
             );
 
             if (mdbMatch) {
               const pathParts = mdbMatch.path.toLowerCase().split(/[/\\]/);
-              const folder = FOLDERS.find(f => pathParts.includes(f.toLowerCase()));
+              const folder = FOLDERS.find((f) => pathParts.includes(f.toLowerCase()));
               if (folder) {
-                matches.push(`- Neighbor track "${neighbor.artist} - ${neighbor.title}" is already sorted in your library folder: "${folder}"`);
+                matches.push(
+                  `- Neighbor track "${neighbor.artist} - ${neighbor.title}" is already sorted in your library folder: "${folder}"`
+                );
               }
             }
           }
 
           if (matches.length > 0) {
-            let dbMatchContext = '\n\n=== High-Priority Library Match Context (YouTube neighbors already sorted in your library) ===\n';
-            dbMatchContext += 'These tracks are in the same playlists/mixes as the target track on YouTube, and you have already manually sorted them in these vibe folders. Give these folders the HIGHEST priority:\n';
+            let dbMatchContext =
+              '\n\n=== High-Priority Library Match Context (YouTube neighbors already sorted in your library) ===\n';
+            dbMatchContext +=
+              'These tracks are in the same playlists/mixes as the target track on YouTube, and you have already manually sorted them in these vibe folders. Give these folders the HIGHEST priority:\n';
             dbMatchContext += matches.join('\n');
-            dbMatchContext += '\n==================================================================================================';
+            dbMatchContext +=
+              '\n==================================================================================================';
             networkContext += dbMatchContext;
-            addLog('SYSTEM', `Mapped ${matches.length} YouTube neighbor tracks directly to your library vibes!`);
+            addLog(
+              'SYSTEM',
+              `Mapped ${matches.length} YouTube neighbor tracks directly to your library vibes!`
+            );
           }
         }
       }
@@ -213,7 +235,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       );
       llmResponse = {
         folders: [],
-        reasoning: 'No context blueprint signals available. Forced manual routing to ensure precision.',
+        reasoning:
+          'No context blueprint signals available. Forced manual routing to ensure precision.',
         confidence: 0
       };
     } else {

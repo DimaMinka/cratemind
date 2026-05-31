@@ -81,7 +81,7 @@ export function isAvailable(): boolean {
 
 function convertKeyToCamelot(keyVal: number | null | undefined): string | undefined {
   if (keyVal === null || keyVal === undefined || keyVal < 0 || keyVal > 23) return undefined;
-  const num = ((Math.floor(keyVal / 2) + 8) % 12) || 12;
+  const num = (Math.floor(keyVal / 2) + 8) % 12 || 12;
   const letter = keyVal % 2 === 0 ? 'B' : 'A';
   return `${num.toString().padStart(2, '0')}${letter}`;
 }
@@ -167,11 +167,13 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
  */
 export function getTrackByMeta(artist: string, title: string): EngineTrack | null {
   if (MOCK_MODE) {
-    return MOCK_ENGINE_TRACKS.find(
-      (t) =>
-        t.artist.toLowerCase() === artist.toLowerCase() &&
-        t.title.toLowerCase() === title.toLowerCase()
-    ) || null;
+    return (
+      MOCK_ENGINE_TRACKS.find(
+        (t) =>
+          t.artist.toLowerCase() === artist.toLowerCase() &&
+          t.title.toLowerCase() === title.toLowerCase()
+      ) || null
+    );
   }
 
   const db = getDB();

@@ -144,7 +144,9 @@ export async function getTrackFeatures(
     logToFile('SPOTIFY', `Searching Spotify for [${artist} - ${title}]`);
 
     // Clean artist/title keywords for Spotify search
-    const cleanTitle = title.replace(/\s*[[(](?:original|extended|radio|dub|club|remix).*?[\])]/gi, '').trim();
+    const cleanTitle = title
+      .replace(/\s*[[(](?:original|extended|radio|dub|club|remix).*?[\])]/gi, '')
+      .trim();
     const cleanArtist = artist.replace(/\s*feat\..*$/gi, '').trim();
 
     const query = encodeURIComponent(`track:"${cleanTitle}" artist:"${cleanArtist}"`);
