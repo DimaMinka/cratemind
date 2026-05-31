@@ -8,6 +8,7 @@ import * as CacheService from './CacheService.js';
 import * as UserInteractionService from './UserInteractionService.js';
 import * as NetworkScoutService from './NetworkScoutService.js';
 import * as EngineDBService from './EngineDBService.js';
+import * as SpotifyService from './SpotifyService.js';
 import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD, FOLDERS } from '../config.js';
 import { LLMResponse } from '../types.js';
 
@@ -41,6 +42,49 @@ export async function processTrack(filepath: string): Promise<void> {
     // Step 1: Extract ID3 metadata
     const meta = await extractMetadata(filepath);
     addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
+
+    // Enrich with Engine DJ SQLite metadata if available
+    if (EngineDBService.isAvailable()) {
+      const dbTrack = EngineDBService.getTrackByMeta(meta.artist, meta.title);
+      if (dbTrack) {
+        if (dbTrack.bpm) meta.bpm = dbTrack.bpm;
+        if (dbTrack.key) meta.key = dbTrack.key;
+        if (dbTrack.genre) meta.genre = dbTrack.genre;
+        if (dbTrack.comment) meta.comment = dbTrack.comment;
+        if (dbTrack.label) meta.label = dbTrack.label;
+        addLog('SYSTEM', `Engine DJ DB Match: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`);
+      }
+    }
+
+    if (meta.bpm || meta.key || meta.genre) {
+      addLog('SYSTEM', `Physical Profile: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`);
+    }
+
+    // Query Spotify Audio Features if configured
+    let spotifyProfile = '';
+    try {
+      const spotifyFeatures = await SpotifyService.getTrackFeatures(meta.artist, meta.title);
+      if (spotifyFeatures) {
+        addLog('SYSTEM', `Spotify Acoustic: Energy=${spotifyFeatures.energy}, Acoustic=${spotifyFeatures.acousticness}`);
+        spotifyProfile = `=== Spotify Acoustic Blueprint ===
+- Energy: ${spotifyFeatures.energy} (0 = calm/ambient, 1 = heavy peak-time)
+- Danceability: ${spotifyFeatures.danceability} (0 = erratic/non-dance, 1 = structured groove)
+- Acousticness: ${spotifyFeatures.acousticness} (0 = highly synthetic/processed, 1 = natural acoustic/wooden)
+- Instrumentalness: ${spotifyFeatures.instrumentalness} (0 = highly vocal-driven, 1 = purely instrumental)
+- Valence: ${spotifyFeatures.valence} (0 = sad/melancholic/dark, 1 = happy/bright/positive)
+- Spotify Genres: ${spotifyFeatures.genres ? spotifyFeatures.genres.join(', ') : 'N/A'}
+==================================`;
+      }
+    } catch {
+      // Silence Spotify errors to keep the classification robust
+    }
+
+    // Build physical metadata blueprint
+    let physicalProfile = '';
+    if (meta.bpm || meta.key || meta.genre || meta.comment || meta.label) {
+      physicalProfile = `=== Physical Audio Blueprint ===
+${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : ''}${meta.genre ? `- Genre: ${meta.genre}\n` : ''}${meta.comment ? `- Comment: ${meta.comment}\n` : ''}${meta.label ? `- Label: ${meta.label}\n` : ''}================================`;
+    }
 
     // Step 2: Check RAG memory for existing classification
     const existingExample = RAGService.findExample(meta.artist, meta.title);
@@ -137,14 +181,16 @@ export async function processTrack(filepath: string): Promise<void> {
       }
     }
 
-    // Compute hash AFTER all context is gathered (RAG + personal hints + network)
+    // Compute hash AFTER all context is gathered (RAG + personal hints + network + physical + Spotify)
     // This ensures the cache key reflects the full context used for classification
     const contextHash = CacheService.generateContextHash(
       meta.artist,
       meta.title,
       ragContext,
       personalHints,
-      networkContext
+      networkContext,
+      physicalProfile,
+      spotifyProfile
     );
 
     // Step 4: LLM classification
@@ -157,16 +203,17 @@ export async function processTrack(filepath: string): Promise<void> {
     let errorMsg = '';
 
     const hasYouTubeContext = networkContext.trim().length > 0;
+    const hasSignals = hasYouTubeContext || spotifyProfile.length > 0 || physicalProfile.length > 0;
 
-    if (!hasYouTubeContext) {
+    if (!hasSignals) {
       bypassed = true;
       addLog(
         'SYSTEM',
-        'No YouTube playlist context found. Bypassing Gemini to avoid inaccurate guesses.'
+        'No YouTube context, Spotify context, or physical metadata found. Bypassing Gemini to avoid inaccurate guesses.'
       );
       llmResponse = {
         folders: [],
-        reasoning: 'No YouTube context available. Forced manual routing to ensure precision.',
+        reasoning: 'No context blueprint signals available. Forced manual routing to ensure precision.',
         confidence: 0
       };
     } else {
@@ -177,7 +224,9 @@ export async function processTrack(filepath: string): Promise<void> {
           meta.title,
           ragContext,
           personalHints,
-          networkContext
+          networkContext,
+          physicalProfile,
+          spotifyProfile
         );
         useStore.getState().setLLMAnalyzing(false);
         addLog('LLM_REASONING', `[LLM reasoning] ${llmResponse.reasoning}`);
