@@ -11,10 +11,22 @@ import * as fs from 'fs';
 
 export async function extractMetadata(
   filepath: string
-): Promise<{ artist: string; title: string; duration: number }> {
+): Promise<{
+  artist: string;
+  title: string;
+  duration: number;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  comment?: string;
+}> {
   let artist: string | undefined;
   let title: string | undefined;
   let duration = 180; // Default mock fallback (3 minutes)
+  let bpm: number | undefined;
+  let key: string | undefined;
+  let genre: string | undefined;
+  let comment: string | undefined;
 
   // Bypassed if the file does not physically exist to prevent console pollution
   const fileExists = fs.existsSync(filepath);
@@ -30,6 +42,19 @@ export async function extractMetadata(
       title = metadata.common.title;
       if (metadata.format.duration) {
         duration = Math.round(metadata.format.duration);
+      }
+      if (metadata.common.bpm) {
+        bpm = Math.round(metadata.common.bpm);
+      }
+      if (metadata.common.key) {
+        key = metadata.common.key;
+      }
+      if (metadata.common.genre && metadata.common.genre.length > 0) {
+        genre = metadata.common.genre.join(', ');
+      }
+      if (metadata.common.comment && metadata.common.comment.length > 0) {
+        const c = metadata.common.comment[0];
+        comment = typeof c === 'string' ? c : (c as { text?: string })?.text;
       }
     } catch {
       // Silently fall back to filename parsing without corrupting TUI screen buffer
@@ -79,7 +104,11 @@ export async function extractMetadata(
   return {
     artist: finalArtist || 'Unknown',
     title: finalTitle || 'Unknown',
-    duration
+    duration,
+    bpm,
+    key,
+    genre,
+    comment
   };
 }
 export default extractMetadata;

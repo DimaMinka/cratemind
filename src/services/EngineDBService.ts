@@ -79,9 +79,16 @@ export function isAvailable(): boolean {
   return getDB() !== null;
 }
 
+function convertKeyToCamelot(keyVal: number | null | undefined): string | undefined {
+  if (keyVal === null || keyVal === undefined || keyVal < 0 || keyVal > 23) return undefined;
+  const num = ((Math.floor(keyVal / 2) + 8) % 12) || 12;
+  const letter = keyVal % 2 === 0 ? 'B' : 'A';
+  return `${num.toString().padStart(2, '0')}${letter}`;
+}
+
 /**
  * Retrieves all tracks registered in the Engine DJ database.
- * Key Columns: id, path, filename, title, artist.
+ * Key Columns: id, path, filename, title, artist, bpm, key, genre, comment, label.
  */
 export function getTracks(): EngineTrack[] {
   if (MOCK_MODE) {
@@ -92,7 +99,24 @@ export function getTracks(): EngineTrack[] {
   if (!db) return [];
 
   try {
-    return db.prepare('SELECT id, path, filename, title, artist FROM Track').all() as EngineTrack[];
+    const rows = db
+      .prepare(
+        'SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track'
+      )
+      .all() as any[];
+
+    return rows.map((t) => ({
+      id: t.id,
+      path: t.path,
+      filename: t.filename,
+      title: t.title || t.filename || 'Unknown Title',
+      artist: t.artist || 'Unknown Artist',
+      bpm: t.bpm ? Math.round(t.bpm) : undefined,
+      key: convertKeyToCamelot(t.keyVal),
+      genre: t.genre || undefined,
+      comment: t.comment || undefined,
+      label: t.label || undefined
+    }));
   } catch {
     return [];
   }
@@ -101,8 +125,6 @@ export function getTracks(): EngineTrack[] {
 /**
  * Retrieves only the tracks whose file path starts with the given sorted directory.
  * Used for RAG bootstrap scanning within a specific collection directory.
- *
- * Query: SELECT ... FROM Track WHERE path LIKE ? || '%'
  */
 export function getTracksInPath(dirPath: string): EngineTrack[] {
   if (MOCK_MODE) {
@@ -117,9 +139,24 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
 
   try {
     const normalizedDir = dirPath.endsWith(path.sep) ? dirPath : dirPath + path.sep;
-    return db
-      .prepare("SELECT id, path, filename, title, artist FROM Track WHERE path LIKE ? || '%'")
-      .all(normalizedDir) as EngineTrack[];
+    const rows = db
+      .prepare(
+        "SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track WHERE path LIKE ? || '%'"
+      )
+      .all(normalizedDir) as any[];
+
+    return rows.map((t) => ({
+      id: t.id,
+      path: t.path,
+      filename: t.filename,
+      title: t.title || t.filename || 'Unknown Title',
+      artist: t.artist || 'Unknown Artist',
+      bpm: t.bpm ? Math.round(t.bpm) : undefined,
+      key: convertKeyToCamelot(t.keyVal),
+      genre: t.genre || undefined,
+      comment: t.comment || undefined,
+      label: t.label || undefined
+    }));
   } catch {
     return [];
   }
