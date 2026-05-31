@@ -73,15 +73,15 @@ export async function processTrack(filepath: string): Promise<void> {
       if (spotifyFeatures) {
         addLog(
           'SYSTEM',
-          `Spotify Acoustic: Energy=${spotifyFeatures.energy}, Acoustic=${spotifyFeatures.acousticness}`
+          `Spotify Acoustic: Energy=${spotifyFeatures.energy ?? 'N/A'}, Genres=${spotifyFeatures.genres?.join(', ') || 'None'}`
         );
         spotifyProfile = `=== Spotify Acoustic Blueprint ===
-- Energy: ${spotifyFeatures.energy} (0 = calm/ambient, 1 = heavy peak-time)
-- Danceability: ${spotifyFeatures.danceability} (0 = erratic/non-dance, 1 = structured groove)
-- Acousticness: ${spotifyFeatures.acousticness} (0 = highly synthetic/processed, 1 = natural acoustic/wooden)
-- Instrumentalness: ${spotifyFeatures.instrumentalness} (0 = highly vocal-driven, 1 = purely instrumental)
-- Valence: ${spotifyFeatures.valence} (0 = sad/melancholic/dark, 1 = happy/bright/positive)
-- Spotify Genres: ${spotifyFeatures.genres ? spotifyFeatures.genres.join(', ') : 'N/A'}
+- Energy: ${spotifyFeatures.energy !== null && spotifyFeatures.energy !== undefined ? spotifyFeatures.energy : 'N/A'} (0 = calm/ambient, 1 = heavy peak-time)
+- Danceability: ${spotifyFeatures.danceability !== null && spotifyFeatures.danceability !== undefined ? spotifyFeatures.danceability : 'N/A'} (0 = erratic/non-dance, 1 = structured groove)
+- Acousticness: ${spotifyFeatures.acousticness !== null && spotifyFeatures.acousticness !== undefined ? spotifyFeatures.acousticness : 'N/A'} (0 = highly synthetic/processed, 1 = natural acoustic/wooden)
+- Instrumentalness: ${spotifyFeatures.instrumentalness !== null && spotifyFeatures.instrumentalness !== undefined ? spotifyFeatures.instrumentalness : 'N/A'} (0 = highly vocal-driven, 1 = purely instrumental)
+- Valence: ${spotifyFeatures.valence !== null && spotifyFeatures.valence !== undefined ? spotifyFeatures.valence : 'N/A'} (0 = sad/melancholic/dark, 1 = happy/bright/positive)
+- Spotify Genres: ${spotifyFeatures.genres && spotifyFeatures.genres.length > 0 ? spotifyFeatures.genres.join(', ') : 'N/A'}
 ==================================`;
       }
     } catch {
