@@ -84,7 +84,7 @@ function getAIClient(): GoogleGenAI {
  * Formats the vector neighbor search results into a prompt-ready context block.
  * Gives the LLM explicit ground-truth anchors from the user's personal library.
  */
-function formatVectorNeighborsContext(neighbors: VectorNeighbor[]): string {
+export function formatVectorNeighborsContext(neighbors: VectorNeighbor[]): string {
   if (neighbors.length === 0) return '';
 
   const lines = neighbors.map(

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import chokidar from 'chokidar';
 import PQueue from 'p-queue';
 import { useStore } from './UIService.js';
-import { processTrack } from './TrackProcessor.js';
+import { processTracksBatch } from './TrackProcessor.js';
 import { MOCK_MODE, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 
@@ -27,6 +27,9 @@ const queue = new PQueueClass({ concurrency: 1 });
  * Extracted from FSService to separate infrastructure from business logic.
  */
 
+let pendingFiles: string[] = [];
+let batchTimeout: ReturnType<typeof setTimeout> | null = null;
+
 export async function initWatcher(): Promise<void> {
   const addLog = useStore.getState().addLog;
 
@@ -37,12 +40,21 @@ export async function initWatcher(): Promise<void> {
     fs.mkdirSync(SORTED_DIR, { recursive: true });
   }
 
+  const processPendingBatch = () => {
+    if (pendingFiles.length === 0) return;
+    const filesToProcess = [...pendingFiles];
+    pendingFiles = [];
+    queue.add(() => processTracksBatch(filesToProcess));
+  };
+
   if (MOCK_MODE) {
     addLog('SYSTEM', 'MOCK MODE active. Starting simulated track discovery loop...');
 
     MOCK_DISCOVERIES.forEach((discovery) => {
       setTimeout(() => {
-        queue.add(() => processTrack(discovery.filepath));
+        pendingFiles.push(discovery.filepath);
+        if (batchTimeout) clearTimeout(batchTimeout);
+        batchTimeout = setTimeout(processPendingBatch, 1000);
       }, discovery.delayMs);
     });
   }
@@ -62,7 +74,9 @@ export async function initWatcher(): Promise<void> {
   watcher.on('add', (filepath) => {
     const ext = path.extname(filepath).toLowerCase();
     if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
-      queue.add(() => processTrack(filepath));
+      pendingFiles.push(filepath);
+      if (batchTimeout) clearTimeout(batchTimeout);
+      batchTimeout = setTimeout(processPendingBatch, 1000);
     }
   });
 }
