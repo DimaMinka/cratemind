@@ -145,7 +145,8 @@ async function run() {
   const stickyCases = sortedCases.filter(c => stickyFiles.some(sf => c.filename.includes(sf)));
   const nonStickyCases = sortedCases.filter(c => !stickyFiles.some(sf => c.filename.includes(sf)));
 
-  const sampleSize = 15;
+  const sizeArg = args.find(a => a.startsWith('--size='));
+  const sampleSize = sizeArg ? parseInt(sizeArg.split('=')[1], 10) : 15;
   const testSample: TestCase[] = [...stickyCases];
 
   const needed = Math.max(0, sampleSize - stickyCases.length);
