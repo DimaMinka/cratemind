@@ -6,6 +6,19 @@ import { EngineTrack } from '../types.js';
 import { ENGINE_DB_PATH, MOCK_MODE } from '../config.js';
 import { MOCK_ENGINE_TRACKS } from '../mocks/mockData.js';
 
+interface DBTrackRow {
+  id: number;
+  path: string;
+  filename: string;
+  title: string | null;
+  artist: string | null;
+  bpm: number | null;
+  keyVal: number | null;
+  genre: string | null;
+  comment: string | null;
+  label: string | null;
+}
+
 /**
  * EngineDBService.ts
  *
@@ -103,7 +116,7 @@ export function getTracks(): EngineTrack[] {
       .prepare(
         'SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track'
       )
-      .all() as any[];
+      .all() as DBTrackRow[];
 
     return rows.map((t) => ({
       id: t.id,
@@ -143,7 +156,7 @@ export function getTracksInPath(dirPath: string): EngineTrack[] {
       .prepare(
         "SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track WHERE path LIKE ? || '%'"
       )
-      .all(normalizedDir) as any[];
+      .all(normalizedDir) as DBTrackRow[];
 
     return rows.map((t) => ({
       id: t.id,
@@ -184,7 +197,7 @@ export function getTrackByMeta(artist: string, title: string): EngineTrack | nul
       .prepare(
         'SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track WHERE LOWER(artist) = ? AND LOWER(title) = ? LIMIT 1'
       )
-      .get(artist.toLowerCase().trim(), title.toLowerCase().trim()) as any;
+      .get(artist.toLowerCase().trim(), title.toLowerCase().trim()) as DBTrackRow | undefined;
 
     if (!row) return null;
 
