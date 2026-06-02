@@ -339,6 +339,14 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
             confidence: res.confidence
           };
           addLog('LLM_REASONING', `[LLM reasoning for ${matchState.filename}] ${res.reasoning}`);
+
+          // Cache raw LLM response immediately to prevent losing it if the process exits before routing completes
+          CacheService.saveTrackCache(
+            matchState.meta.artist,
+            matchState.meta.title,
+            matchState.contextHash,
+            matchState.llmResponse
+          );
         }
       }
     } catch (err) {
