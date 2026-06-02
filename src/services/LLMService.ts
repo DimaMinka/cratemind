@@ -32,6 +32,41 @@ const LLMResponseSchema = z.object({
   confidence: z.number().min(0).max(1)
 });
 
+export interface BatchTrackInput {
+  trackId: string;
+  artist: string;
+  title: string;
+  bpm?: number | null;
+  key?: string | null;
+  genre?: string | null;
+  comment?: string | null;
+  label?: string | null;
+  energy?: number | null;
+  valence?: number | null;
+  acousticness?: number | null;
+  vectorNeighbors?: VectorNeighbor[];
+  youtubeContext?: string;
+}
+
+const TrackResultSchema = z.object({
+  trackId: z.string(),
+  folders: z.array(z.enum(FOLDERS)).min(1).max(2),
+  reasoning: z.string().max(300),
+  confidence: z.number().min(0).max(1),
+  flagged_for_review: z.boolean()
+});
+
+const BatchResponseSchema = z.array(TrackResultSchema);
+
+const BatchErrorSchema = z.object({
+  error: z.literal('classification_failed'),
+  reason: z.string()
+});
+
+export const CrateMindResponseSchema = z.union([BatchResponseSchema, BatchErrorSchema]);
+
+export type BatchTrackResult = z.infer<typeof TrackResultSchema>;
+
 // Lazy-initialized Google Gen AI client
 let aiClient: GoogleGenAI | null = null;
 
@@ -256,4 +291,121 @@ ${networkContext ? '\n' + networkContext : ''}`;
   }
 
   throw new Error('Gemini API classification failed after 2 attempts', { cause: lastError });
+}
+
+export async function classifyTracksBatch(
+  tracks: BatchTrackInput[]
+): Promise<BatchTrackResult[]> {
+  if (tracks.length === 0) return [];
+  if (!process.env.GEMINI_API_KEY) {
+    throw new MissingApiKeyError();
+  }
+
+  // Check and increment limits
+  const limitCheck = CacheService.checkAndIncrementLimits();
+  if (!limitCheck.success) {
+    throw new RequestLimitExceededError();
+  }
+
+  let promptText = `Classify the following ${tracks.length} tracks. Return exactly ${tracks.length} objects in the JSON array.\n`;
+
+  for (let i = 0; i < tracks.length; i++) {
+    const t = tracks[i];
+    const vectorLines = (t.vectorNeighbors || []).map(
+      (n, idx) => `${idx + 1}. ${n.artist} - ${n.title} (Similarity: ${n.similarity.toFixed(2)}) → Folder: /${n.folder}`
+    );
+    const vectorContext = vectorLines.length > 0 ? vectorLines.join('\n') : 'N/A';
+
+    promptText += `\n---\n[Track #${i + 1}]\n`;
+    promptText += `trackId: "${t.trackId}"\n`;
+    promptText += `artist: "${t.artist}"\n`;
+    promptText += `title: "${t.title}"\n`;
+    promptText += `bpm: ${t.bpm ?? 'null'}\n`;
+    promptText += `key: "${t.key ?? 'null'}"\n`;
+    promptText += `genre: "${t.genre ?? 'null'}"\n`;
+    promptText += `spotify_energy: ${t.energy ?? 'null'}\n`;
+    promptText += `spotify_valence: ${t.valence ?? 'null'}\n`;
+    promptText += `spotify_acousticness: ${t.acousticness ?? 'null'}\n`;
+    promptText += `RAG_neighbors:\n${vectorContext}\n`;
+    promptText += `youtube_context: "${t.youtubeContext ?? ''}"\n`;
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const ai = getAIClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: promptText,
+        config: {
+          systemInstruction: BASE_SYSTEM_INSTRUCTION,
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+          maxOutputTokens: 4096,
+        }
+      });
+
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error('Gemini returned an empty response');
+      }
+
+      const parsedData = JSON.parse(responseText);
+      const validated = CrateMindResponseSchema.parse(parsedData);
+
+      if ('error' in validated) {
+        throw new Error(`Gemini classification failed: ${validated.reason}`);
+      }
+
+      if (validated.length !== tracks.length) {
+        throw new Error(`Expected ${tracks.length} results, but got ${validated.length}`);
+      }
+
+      return validated;
+    } catch (err) {
+      lastError = err;
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  // Fallback / Binary split retry logic
+  if (tracks.length > 1) {
+    const mid = Math.floor(tracks.length / 2);
+    const left = tracks.slice(0, mid);
+    const right = tracks.slice(mid);
+    
+    const [leftRes, rightRes] = await Promise.all([
+      classifyTracksBatch(left).catch(() => {
+        return processSequentially(left);
+      }),
+      classifyTracksBatch(right).catch(() => {
+        return processSequentially(right);
+      })
+    ]);
+
+    return [...leftRes, ...rightRes];
+  }
+
+  throw new Error(`Gemini API batch classification failed after 2 attempts`, { cause: lastError });
+}
+
+async function processSequentially(tracks: BatchTrackInput[]): Promise<BatchTrackResult[]> {
+  const results: BatchTrackResult[] = [];
+  for (const t of tracks) {
+    try {
+      const single = await classifyTracksBatch([t]);
+      results.push(single[0]);
+    } catch (err) {
+      results.push({
+        trackId: t.trackId,
+        folders: ['intro outro'],
+        reasoning: `Fallback triggered due to error: ${err instanceof Error ? err.message : String(err)}`,
+        confidence: 0.3,
+        flagged_for_review: true
+      });
+    }
+  }
+  return results;
 }
