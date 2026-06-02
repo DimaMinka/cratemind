@@ -92,7 +92,7 @@ export function MiniPlayer(): React.JSX.Element | null {
         </Box>
         <Box>
           <Text color="gray" dimColor italic>
-            Use [←]/[→] to seek 10s
+            Use [←]/[→] to seek 10s, Shift for 30s
           </Text>
         </Box>
       </Box>

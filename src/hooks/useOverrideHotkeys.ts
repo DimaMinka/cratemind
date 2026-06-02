@@ -22,9 +22,17 @@ export function useOverrideHotkeys(override: OverrideState, folders: string[]) {
     } else if (input.toLowerCase() === 'a' && override.suggested && override.suggested.length > 0) {
       override.resolve(override.suggested);
     } else if (key.leftArrow) {
-      seekPlayback(-10);
+      if (key.shift) {
+        seekPlayback(-30);
+      } else {
+        seekPlayback(-10);
+      }
     } else if (key.rightArrow) {
-      seekPlayback(10);
+      if (key.shift) {
+        seekPlayback(30);
+      } else {
+        seekPlayback(10);
+      }
     }
   });
 
