@@ -152,6 +152,22 @@ Return STRICT, valid JSON matching this schema:
 }
 Set confidence <0.70 if ambiguous or cross-genre.`;
 
+export const BATCH_SYSTEM_INSTRUCTION = BASE_SYSTEM_INSTRUCTION.replace(
+  /Output Format:[\s\S]+$/,
+  `Output Format:
+You MUST return a JSON array containing exactly one JSON object per track in the batch, in the same order.
+Each object must strictly match this JSON schema:
+[
+  {
+    "trackId": "the trackId string provided in the input",
+    "folders": ["crate name 1", "crate name 2"], // 1 to 2 matching folders from the crate definitions
+    "reasoning": "A concise, descriptive one-sentence analysis (max 300 characters).",
+    "confidence": 0.85, // confidence score between 0.0 and 1.0
+    "flagged_for_review": false // set to true only if the track is extremely ambiguous or does not fit any crate
+  }
+]`
+);
+
 export async function classifyTrack(
   artist: string,
   title: string,
@@ -293,9 +309,7 @@ ${networkContext ? '\n' + networkContext : ''}`;
   throw new Error('Gemini API classification failed after 2 attempts', { cause: lastError });
 }
 
-export async function classifyTracksBatch(
-  tracks: BatchTrackInput[]
-): Promise<BatchTrackResult[]> {
+export async function classifyTracksBatch(tracks: BatchTrackInput[]): Promise<BatchTrackResult[]> {
   if (tracks.length === 0) return [];
   if (!process.env.GEMINI_API_KEY) {
     throw new MissingApiKeyError();
@@ -312,7 +326,8 @@ export async function classifyTracksBatch(
   for (let i = 0; i < tracks.length; i++) {
     const t = tracks[i];
     const vectorLines = (t.vectorNeighbors || []).map(
-      (n, idx) => `${idx + 1}. ${n.artist} - ${n.title} (Similarity: ${n.similarity.toFixed(2)}) → Folder: /${n.folder}`
+      (n, idx) =>
+        `${idx + 1}. ${n.artist} - ${n.title} (Similarity: ${n.similarity.toFixed(2)}) → Folder: /${n.folder}`
     );
     const vectorContext = vectorLines.length > 0 ? vectorLines.join('\n') : 'N/A';
 
@@ -335,13 +350,13 @@ export async function classifyTracksBatch(
     try {
       const ai = getAIClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: LLM_MODEL,
         contents: promptText,
         config: {
-          systemInstruction: BASE_SYSTEM_INSTRUCTION,
+          systemInstruction: BATCH_SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
           temperature: 0.1,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 4096
         }
       });
 
@@ -372,10 +387,14 @@ export async function classifyTracksBatch(
 
   // Fallback / Binary split retry logic
   if (tracks.length > 1) {
+    console.error(
+      `⚠️ Batch of ${tracks.length} failed:`,
+      lastError instanceof Error ? lastError.stack || lastError.message : String(lastError)
+    );
     const mid = Math.floor(tracks.length / 2);
     const left = tracks.slice(0, mid);
     const right = tracks.slice(mid);
-    
+
     const [leftRes, rightRes] = await Promise.all([
       classifyTracksBatch(left).catch(() => {
         return processSequentially(left);
