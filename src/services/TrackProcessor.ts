@@ -487,10 +487,13 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         duration: s.meta.duration
       });
 
+      let isApprovedSuggestion = false;
+
       if (selectedFolders.length === 0) {
-        addLog('ROUTED', `Manual routing skipped: track left in Incoming`);
+        selectedFolders = ['skipped'];
+        addLog('ROUTED', `Manual routing skipped: track moved to /skipped/${s.filename}`);
       } else {
-        const isApprovedSuggestion =
+        isApprovedSuggestion =
           !hasError &&
           !bypassed &&
           selectedFolders.length === llmResponse.folders.length &&
@@ -500,57 +503,59 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           'ROUTED',
           `${isApprovedSuggestion ? 'Auto-routing approved' : 'Manual routing'} -> /${selectedFolders.join(' & /')}/${s.filename}`
         );
+      }
 
-        await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
+      await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
 
-        // Save to offline cache
-        const vectorContextFormatted = LLMService.formatVectorNeighborsContext(s.vectorNeighbors);
-        const contextHash = CacheService.generateContextHash(
+      // Save to offline cache
+      const vectorContextFormatted = LLMService.formatVectorNeighborsContext(s.vectorNeighbors);
+      const contextHash = CacheService.generateContextHash(
+        s.meta.artist,
+        s.meta.title,
+        s.ragContext,
+        s.personalHints,
+        s.networkContext,
+        s.physicalProfile,
+        s.spotifyProfile,
+        vectorContextFormatted
+      );
+
+      CacheService.saveTrackCache(s.meta.artist, s.meta.title, contextHash, {
+        folders: selectedFolders,
+        reasoning: isApprovedSuggestion
+          ? llmResponse.reasoning
+          : selectedFolders.includes('skipped')
+            ? 'Track skipped by user'
+            : 'Routed via manual user override checklist',
+        confidence: isApprovedSuggestion ? llmResponse.confidence : 1.0
+      });
+
+      // Update RAG memory
+      RAGService.addExample({
+        artist: s.meta.artist,
+        title: s.meta.title,
+        folders: selectedFolders,
+        overriddenFolders:
+          !isApprovedSuggestion && llmResponse.folders.length > 0 ? llmResponse.folders : undefined,
+        reasoning: isApprovedSuggestion
+          ? llmResponse.reasoning
+          : selectedFolders.includes('skipped')
+            ? 'Track skipped by user'
+            : 'Routed via manual user override checklist',
+        source: isApprovedSuggestion ? 'auto' : 'manual',
+        ts: Date.now()
+      });
+
+      // Store vector asynchronously
+      if (process.env.GEMINI_API_KEY) {
+        EmbeddingService.storeTrackVector(
           s.meta.artist,
           s.meta.title,
-          s.ragContext,
-          s.personalHints,
-          s.networkContext,
-          s.physicalProfile,
-          s.spotifyProfile,
-          vectorContextFormatted
-        );
-
-        CacheService.saveTrackCache(s.meta.artist, s.meta.title, contextHash, {
-          folders: selectedFolders,
-          reasoning: isApprovedSuggestion
-            ? llmResponse.reasoning
-            : 'Routed via manual user override checklist',
-          confidence: isApprovedSuggestion ? llmResponse.confidence : 1.0
-        });
-
-        // Update RAG memory
-        RAGService.addExample({
-          artist: s.meta.artist,
-          title: s.meta.title,
-          folders: selectedFolders,
-          overriddenFolders:
-            !isApprovedSuggestion && llmResponse.folders.length > 0
-              ? llmResponse.folders
-              : undefined,
-          reasoning: isApprovedSuggestion
-            ? llmResponse.reasoning
-            : 'Routed via manual user override checklist',
-          source: isApprovedSuggestion ? 'auto' : 'manual',
-          ts: Date.now()
-        });
-
-        // Store vector asynchronously
-        if (process.env.GEMINI_API_KEY) {
-          EmbeddingService.storeTrackVector(
-            s.meta.artist,
-            s.meta.title,
-            selectedFolders[0],
-            s.meta,
-            s.spotifyFeatures,
-            s.scoutResult?.playlists ?? []
-          ).catch(() => {});
-        }
+          selectedFolders[0],
+          s.meta,
+          s.spotifyFeatures,
+          s.scoutResult?.playlists ?? []
+        ).catch(() => {});
       }
     }
 
