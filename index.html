@@ -776,7 +776,7 @@
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>
             <b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not
-            just artist name.
+            just artist name. Instant RAG auto-routing is strictly restricted to user-approved manual entries (<code>source: 'manual'</code>) or files physically present in the collection (<code>source: 'scan'/'engine-dj'</code>), ensuring automatic LLM classifications from previous runs that were never confirmed do not bypass re-analysis if they return to the Incoming folder.
           </li>
           <li>
             <b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your
@@ -785,7 +785,12 @@
           </li>
           <li>
             <b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM
-            latency/charges, paired with daily request limits to avoid API overspending.
+            latency/charges, paired with daily request limits to avoid API overspending. Optimized with:
+            <ul>
+              <li><b>Session-Based Fallback:</b> Automatically falls back to matching by artist/title within the last 24 hours if the strict context hash misses due to float precision variance in vector similarity scores or YouTube scout fluctuations. The hit is then automatically cloned under the new context hash.</li>
+              <li><b>Confidence-Aware Interception:</b> Cache hits with low confidence (&lt; 0.99) are intercepted and redirected to the manual override TUI, preventing automatic misrouting of unconfirmed tracks.</li>
+              <li><b>Sequential Chunking:</b> Large batches of incoming files are split into small groups of 5 tracks and processed sequentially. This prevents API exhaustion (429) and limits the impact of errors to isolated chunks.</li>
+            </ul>
           </li>
           <li>
             <b>Offline Audio Analysis (macOS):</b> Automatically estimates tempo (BPM) and detects
