@@ -751,6 +751,10 @@
             fallback in simulated states).
           </li>
           <li>
+            <b>AubioService:</b> Offline audio analysis service. Runs `aubio tempo` to estimate BPM
+            and `keyfinder-cli` to detect musical keys on macOS when files lack ID3 metadata.
+          </li>
+          <li>
             <b>RAGService:</b> Few-shot memory layer — persists routing history to
             <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
           </li>
@@ -782,6 +786,12 @@
           <li>
             <b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM
             latency/charges, paired with daily request limits to avoid API overspending.
+          </li>
+          <li>
+            <b>Offline Audio Analysis (macOS):</b> Automatically estimates tempo (BPM) and detects
+            musical keys (Camelot format) using local CLI tools (<code>aubio</code> and
+            <code>keyfinder-cli</code>) when metadata tags are missing or corrupt. Install via Homebrew:
+            <code>brew install aubio</code> and <code>brew tap evanpurkhiser/personal && brew install keyfinder-cli</code>.
           </li>
           <li>
             <b>User-first:</b> Bootstrap scan, collection change, and memory clear all require
