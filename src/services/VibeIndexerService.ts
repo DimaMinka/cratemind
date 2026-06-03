@@ -7,13 +7,6 @@ import { TrackMeta } from '../types.js';
 
 let isIndexing = false;
 
-function convertKeyToCamelot(keyVal: number | null | undefined): string {
-  if (keyVal === null || keyVal === undefined || keyVal < 0 || keyVal > 23) return '';
-  const num = (Math.floor(keyVal / 2) + 8) % 12 || 12;
-  const letter = keyVal % 2 === 0 ? 'B' : 'A';
-  return `${num.toString().padStart(2, '0')}${letter}`;
-}
-
 export async function indexAllDBVibes(): Promise<void> {
   const addLog = useStore.getState().addLog;
 
@@ -33,11 +26,21 @@ export async function indexAllDBVibes(): Promise<void> {
   }
 
   isIndexing = true;
-  addLog('SYSTEM', 'Scanning Engine DJ database for tracks in vibe folders...');
+  addLog('SYSTEM', 'Scanning Engine DJ database (Paths & Playlists)...');
 
   try {
     const dbTracks = EngineDBService.getTracks();
     addLog('SYSTEM', `Loaded ${dbTracks.length} tracks from Engine DJ DB.`);
+
+    // Load playlist vibes map
+    const playlistVibes = EngineDBService.getTrackPlaylistVibes();
+    const trackPlaylistMap = new Map<number, string[]>();
+    for (const pv of playlistVibes) {
+      if (!trackPlaylistMap.has(pv.trackId)) {
+        trackPlaylistMap.set(pv.trackId, []);
+      }
+      trackPlaylistMap.get(pv.trackId)!.push(pv.vibe);
+    }
 
     const targets: { vibe: string; track: (typeof dbTracks)[0] }[] = [];
     const folderCounts: Record<string, number> = {};
@@ -45,8 +48,19 @@ export async function indexAllDBVibes(): Promise<void> {
     for (const track of dbTracks) {
       if (!track.path) continue;
 
+      // 1. Try matching by path
       const pathParts = track.path.toLowerCase().split(/[/\\]/);
-      const matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+      let matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+
+      // 2. Try matching by playlist name
+      if (!matchedVibe) {
+        const trackVibes = trackPlaylistMap.get(track.id);
+        if (trackVibes) {
+          matchedVibe = FOLDERS.find((vibe) =>
+            trackVibes.some((tv) => tv.toLowerCase() === vibe.toLowerCase())
+          );
+        }
+      }
 
       if (matchedVibe) {
         targets.push({ vibe: matchedVibe, track });
@@ -55,15 +69,12 @@ export async function indexAllDBVibes(): Promise<void> {
     }
 
     if (targets.length === 0) {
-      addLog('SYSTEM', 'No tracks matching CrateMind vibe folders found in paths.');
+      addLog('SYSTEM', 'No tracks matching CrateMind vibe folders/playlists found.');
       isIndexing = false;
       return;
     }
 
-    addLog(
-      'SYSTEM',
-      `Found ${targets.length} tracks matching vibe folders. Checking existing indexes...`
-    );
+    addLog('SYSTEM', `Found ${targets.length} tracks matching vibes. Checking existing indexes...`);
 
     // Get list of already indexed tracks
     const cmDb = getLocalDB();
@@ -118,10 +129,10 @@ export async function indexAllDBVibes(): Promise<void> {
           title,
           artist,
           bpm: bpmValue,
-          key: convertKeyToCamelot(item.track.id ? item.track.bpm : undefined), // Use converted keyVal or pass fallback
+          key: '',
           duration: 0
         };
-        // Retrieve proper key mapping or leave empty if undefined
+
         if (item.track.key) {
           meta.key = item.track.key;
         }
