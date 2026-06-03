@@ -37,6 +37,9 @@ const FLOAT32_BYTES = 4;
 /** Expected vector dimensionality for gemini-embedding-2 */
 const EMBEDDING_DIMS = 3072;
 
+/** Minimum cosine similarity threshold for qualified vector search matches */
+const MIN_SIMILARITY_THRESHOLD = 0.8;
+
 // ── Lazy AI Client ─────────────────────────────────────────────────────────
 
 let _aiClient: GoogleGenAI | null = null;
@@ -261,9 +264,12 @@ export async function findNeighbors(
     });
   }
 
+  // Filter out neighbor results below our similarity threshold to avoid low-quality noise
+  const qualified = results.filter((r) => r.similarity >= MIN_SIMILARITY_THRESHOLD);
+
   // Sort by similarity descending and return top K
-  results.sort((a, b) => b.similarity - a.similarity);
-  return results.slice(0, topK);
+  qualified.sort((a, b) => b.similarity - a.similarity);
+  return qualified.slice(0, topK);
 }
 
 // ── Batch Bootstrap Vectorizer ─────────────────────────────────────────────

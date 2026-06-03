@@ -766,6 +766,11 @@
             <b>LLMService:</b> Gemini API integration with structured Zod schema validation, local
             cache lookup, and limit checks (simulated in Mock Mode).
           </li>
+          <li>
+            <b>EmbeddingService:</b> Local vector database integration. Generates embeddings using
+            gemini-embedding-2 and runs cosine similarity searches, applying a similarity threshold of
+            <code>0.80</code> to filter out noisy, low-quality matches.
+          </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
         </ul>
 
