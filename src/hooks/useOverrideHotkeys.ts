@@ -3,6 +3,20 @@ import { useInput } from 'ink';
 import { seekPlayback } from '../services/AudioService.js';
 import { OverrideState } from '../types.js';
 
+/**
+ * useOverrideHotkeys.ts
+ *
+ * Custom hook to capture and handle navigation keys within the Manual Override interactive folder checklist.
+ * Manages list cursor navigation (Up/Down), selection toggling (Space), resolution (Return/A), and audio seeking (Left/Right, with Shift modifier).
+ */
+
+/**
+ * Hook to manage hotkeys and state for the manual folder routing checklist overlay.
+ *
+ * @param {OverrideState} override - The active override prompt state object including the suggestion and resolve callback.
+ * @param {string[]} folders - The full array of atmospheric vibe folder names to display in the list.
+ * @returns {object} An object containing the current `cursor` position index and the list of `selectedList` folder strings.
+ */
 export function useOverrideHotkeys(override: OverrideState, folders: string[]) {
   const [cursor, setCursor] = useState(0);
   const [selectedList, setSelectedList] = useState<string[]>(override.suggested || []);

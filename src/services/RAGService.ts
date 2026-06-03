@@ -389,7 +389,7 @@ export function getContext(): string {
 export function getPersonalHints(): string {
   const memory = loadMemory();
 
-  // 1. Recency Bias: Берем только свежие исправления (сортируем по убыванию ts, лимит 50)
+  // 1. Recency Bias: Retrieve only fresh corrections (sorted descending by ts, limit 50)
   const manualExamples = memory.examples
     .filter((ex) => ex.source === 'manual')
     .sort((a, b) => b.ts - a.ts)
@@ -399,7 +399,7 @@ export function getPersonalHints(): string {
     return '';
   }
 
-  // 2. Подсчет частоты подтверждений по папкам
+  // 2. Count confirmation frequencies per folder
   const confirmedCounts: Record<string, number> = {};
   for (const ex of manualExamples) {
     for (const folder of ex.folders) {
@@ -409,11 +409,11 @@ export function getPersonalHints(): string {
 
   const topFolders = Object.entries(confirmedCounts)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5) // топ-5
+    .slice(0, 5) // top-5
     .map(([folder, count]) => `${folder} (${count})`)
     .join(', ');
 
-  // 3. Точный Diff исправлений: llmFolder -> userFolder
+  // 3. Precise Diff of corrections: llmFolder -> userFolder
   const corrections: Record<string, Record<string, number>> = {};
   for (const ex of manualExamples) {
     if (ex.overriddenFolders && ex.overriddenFolders.length > 0) {
@@ -425,7 +425,7 @@ export function getPersonalHints(): string {
           corrections[llmF] = {};
         }
         if (addedFolders.length === 0) {
-          // Пользователь просто удалил папку, не добавив замен
+          // User just removed the folder without adding any replacements
           corrections[llmF]['none'] = (corrections[llmF]['none'] ?? 0) + 1;
         } else {
           for (const userF of addedFolders) {
@@ -436,7 +436,7 @@ export function getPersonalHints(): string {
     }
   }
 
-  // 4. Формирование и ограничение правил (Топ-10 по частоте)
+  // 4. Generate and limit rules (Top-10 by frequency)
   interface CorrectionEntry {
     llmFolder: string;
     userFolder: string;

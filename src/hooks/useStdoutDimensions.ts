@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useStdout } from 'ink';
 
+/**
+ * useStdoutDimensions.ts
+ *
+ * Custom hook to track and react to terminal window dimension changes (resize events).
+ * Provides the current columns and rows of the stdout terminal.
+ */
+
+/**
+ * Subscribes to the stdout resize event and returns the current terminal dimensions.
+ *
+ * @returns {object} An object containing the current `columns` and `rows` of the terminal.
+ */
 export function useStdoutDimensions() {
   const { stdout } = useStdout();
   const [dimensions, setDimensions] = useState({

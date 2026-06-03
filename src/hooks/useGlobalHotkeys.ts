@@ -4,6 +4,19 @@ import { seekPlayback } from '../services/AudioService.js';
 import * as CacheService from '../services/CacheService.js';
 import { MOCK_MODE } from '../config.js';
 
+/**
+ * useGlobalHotkeys.ts
+ *
+ * Custom hook to listen to global terminal keystrokes when no modal/dialog overlay is active.
+ * Handles pausing/resuming the active listener, exiting, logging RAG memory stats, resetting limits,
+ * triggering simulator chaos testing mode, and controlling audio playback seeking.
+ */
+
+/**
+ * Registers global keyboard input listeners for main app navigation and controls.
+ *
+ * @param {boolean} isOverlayActive - If true, suspends global hotkey handlers to avoid interfering with overlay screens (like manual override checklist or boot prompts).
+ */
 export function useGlobalHotkeys(isOverlayActive: boolean): void {
   const { exit } = useApp();
   const status = useStore((state) => state.status);

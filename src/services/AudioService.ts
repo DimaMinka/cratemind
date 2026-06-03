@@ -12,6 +12,14 @@ import { MOCK_MODE } from '../config.js';
 
 let activeAudioProcess: ChildProcess | null = null;
 
+/**
+ * Initiates audio playback of a track file as a background preview process using 'ffplay'.
+ * Updates the global playback state with metadata and offsets.
+ *
+ * @param {string} filepath - Path to the audio file to be previewed.
+ * @param {number} [offset=0] - Playback start time offset in seconds.
+ * @param {number} [duration=180] - Total track duration in seconds.
+ */
 export function previewAudio(filepath: string, offset = 0, duration = 180): void {
   const setPlayback = useStore.getState().setPlayback;
   const addLog = useStore.getState().addLog;
@@ -72,6 +80,9 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
   }
 }
 
+/**
+ * Stops the currently active preview audio process ('ffplay') and resets the playback state.
+ */
 export function stopAudio(): void {
   const setPlayback = useStore.getState().setPlayback;
   setPlayback(null);
@@ -86,12 +97,24 @@ export function stopAudio(): void {
   }
 }
 
+/**
+ * Formats a duration in seconds into a standard 'MM:SS' string.
+ *
+ * @param {number} seconds - Total number of seconds.
+ * @returns {string} Formatted time string (e.g. '3:05').
+ */
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Seeks the active preview audio playback by a relative offset (positive or negative).
+ * Automatically handles bounds constraints and restarts ffplay with the new offset.
+ *
+ * @param {number} deltaSeconds - Time delta to seek (e.g. -10 or +10 seconds).
+ */
 export function seekPlayback(deltaSeconds: number): void {
   const playback = useStore.getState().playback;
   if (!playback) return;
