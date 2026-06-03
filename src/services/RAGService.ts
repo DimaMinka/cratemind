@@ -163,18 +163,20 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
         continue;
       }
 
-      // Determine if track path matches any of our atmospheric vibe folders
-      const pathParts = track.path.toLowerCase().split(/[/\\]/);
-      let matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+      let matchedVibe: string | undefined = undefined;
 
-      // Secondary channel: check if the track is present in a playlist named after the vibe
+      // 1. Try matching by playlist name first
+      const trackVibes = trackPlaylistMap.get(track.id);
+      if (trackVibes) {
+        matchedVibe = FOLDERS.find((vibe) =>
+          trackVibes.some((tv) => tv.toLowerCase() === vibe.toLowerCase())
+        );
+      }
+
+      // 2. Try matching by path if no playlist match
       if (!matchedVibe) {
-        const trackVibes = trackPlaylistMap.get(track.id);
-        if (trackVibes) {
-          matchedVibe = FOLDERS.find((vibe) =>
-            trackVibes.some((tv) => tv.toLowerCase() === vibe.toLowerCase())
-          );
-        }
+        const pathParts = track.path.toLowerCase().split(/[/\\]/);
+        matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
       }
 
       if (!matchedVibe) {
