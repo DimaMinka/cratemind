@@ -126,4 +126,82 @@ export async function extractMetadata(filepath: string): Promise<{
     label
   };
 }
+
+/**
+ * Safely writes estimated/detected BPM and musical key tags to MP3 and FLAC files using FFmpeg.
+ * Writes to a temporary file in the same directory first, and overwrites the original file only on success.
+ *
+ * @param {string} filepath - Path to the audio file.
+ * @param {object} tags - Metadata tags to be written.
+ * @param {number} [tags.bpm] - Beats Per Minute value.
+ * @param {string} [tags.key] - Musical Key in Camelot or original format.
+ * @returns {Promise<boolean>} True if the write succeeded, false otherwise.
+ */
+export async function writeMetadata(
+  filepath: string,
+  tags: { bpm?: number; key?: string }
+): Promise<boolean> {
+  if (!tags.bpm && !tags.key) {
+    return false;
+  }
+
+  const ext = path.extname(filepath).toLowerCase();
+  if (ext !== '.mp3' && ext !== '.flac') {
+    return false;
+  }
+
+  const absolutePath = path.resolve(filepath);
+  if (!fs.existsSync(absolutePath)) {
+    return false;
+  }
+
+  const dir = path.dirname(absolutePath);
+  const base = path.basename(absolutePath, ext);
+  const tempPath = path.join(dir, `.cratemind_temp_${Date.now()}_${base}${ext}`);
+
+  try {
+    let metadataArgs = '';
+    const bpm = tags.bpm ? Math.round(tags.bpm) : undefined;
+
+    if (ext === '.mp3') {
+      if (bpm) {
+        metadataArgs += ` -metadata TBPM="${bpm}"`;
+      }
+      if (tags.key) {
+        metadataArgs += ` -metadata TKEY="${tags.key}"`;
+      }
+    } else if (ext === '.flac') {
+      if (bpm) {
+        metadataArgs += ` -metadata bpm="${bpm}"`;
+      }
+      if (tags.key) {
+        metadataArgs += ` -metadata key="${tags.key}"`;
+      }
+    }
+
+    if (!metadataArgs) {
+      return false;
+    }
+
+    const cmd = `ffmpeg -y -i "${absolutePath}" ${metadataArgs} -codec copy "${tempPath}"`;
+    const { execSync } = await import('child_process');
+    execSync(cmd, { stdio: 'ignore' });
+
+    if (fs.existsSync(tempPath) && fs.statSync(tempPath).size > 0) {
+      fs.renameSync(tempPath, absolutePath);
+      return true;
+    }
+  } catch {
+    try {
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return false;
+}
+
 export default extractMetadata;

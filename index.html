@@ -747,8 +747,7 @@
             the cache.
           </li>
           <li>
-            <b>ID3Service:</b> Metadata tag extraction using music-metadata (with automatic graceful
-            fallback in simulated states).
+            <b>ID3Service:</b> Metadata tag extraction using music-metadata, and safe tag writing (BPM and Key) for MP3/FLAC files via FFmpeg stream copying.
           </li>
           <li>
             <b>AubioService:</b> Offline audio analysis service. Runs `aubio tempo` to estimate BPM
@@ -795,8 +794,7 @@
           <li>
             <b>Offline Audio Analysis (macOS):</b> Automatically estimates tempo (BPM) and detects
             musical keys (Camelot format) using local CLI tools (<code>aubio</code> and
-            <code>keyfinder-cli</code>) when metadata tags are missing or corrupt. Install via Homebrew:
-            <code>brew install aubio</code> and <code>brew tap evanpurkhiser/personal && brew install keyfinder-cli</code>.
+            <code>keyfinder-cli</code>) when metadata tags are missing or corrupt. Newly estimated or database-matched BPM and key values are automatically written back into the source track's metadata (ID3v2 for MP3, Vorbis Comments for FLAC) using FFmpeg before routing.
           </li>
           <li>
             <b>User-first:</b> Bootstrap scan, collection change, and memory clear all require

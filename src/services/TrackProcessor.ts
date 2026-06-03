@@ -449,7 +449,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         `Reusing vibe from Gemini Cache -> /${llmResponse.folders.join(' & /')}/${s.filename}`
       );
       selectedFolders = llmResponse.folders;
-      await routeFile(s.filepath, selectedFolders);
+      await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
       CacheService.incrementCacheHits();
     } else if (shouldAutoRoute) {
       addLog(
@@ -457,7 +457,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         `High LLM confidence (${llmResponse.confidence}) for ${s.filename}: automatically routing -> /${llmResponse.folders.join(' & /')}`
       );
       selectedFolders = llmResponse.folders;
-      await routeFile(s.filepath, selectedFolders);
+      await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
     } else {
       const reasonText = hasError
         ? `Error occurred (${s.errorMsg}). Prompting user override...`
@@ -494,7 +494,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           `${isApprovedSuggestion ? 'Auto-routing approved' : 'Manual routing'} -> /${selectedFolders.join(' & /')}/${s.filename}`
         );
 
-        await routeFile(s.filepath, selectedFolders);
+        await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
 
         // Save to offline cache
         const vectorContextFormatted = LLMService.formatVectorNeighborsContext(s.vectorNeighbors);
