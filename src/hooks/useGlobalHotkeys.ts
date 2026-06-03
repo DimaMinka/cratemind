@@ -2,6 +2,8 @@ import { useInput, useApp } from 'ink';
 import { useStore } from '../services/UIService.js';
 import { seekPlayback } from '../services/AudioService.js';
 import * as CacheService from '../services/CacheService.js';
+import * as EngineDBService from '../services/EngineDBService.js';
+import { indexAllDBVibes } from '../services/VibeIndexerService.js';
 import { MOCK_MODE } from '../config.js';
 
 /**
@@ -67,6 +69,22 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         'SYSTEM',
         '[CHAOS] Chaos Mode initialized! Next discovered track will trigger ManualOverride.'
       );
+    } else if (keyLower === 'v') {
+      if (EngineDBService.isAvailable()) {
+        const setBootPrompt = useStore.getState().setBootPrompt;
+        setBootPrompt({
+          message: 'Scan m.db for new vibe tracks to index?',
+          detail: 'Finds all tracks in mood folders and vector-indexes them',
+          resolve: (confirmed) => {
+            setBootPrompt(null);
+            if (confirmed) {
+              indexAllDBVibes();
+            }
+          }
+        });
+      } else {
+        addLog('ERROR', 'Engine DJ database is not available for vibe indexing.');
+      }
     } else if (key.leftArrow) {
       seekPlayback(-10);
     } else if (key.rightArrow) {

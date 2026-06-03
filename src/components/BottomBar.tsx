@@ -25,6 +25,11 @@ export function BottomBar(): React.JSX.Element {
         [L]
       </Text>
       <Text color="gray"> Reset Limits</Text>
+      <Text color="gray"> | </Text>
+      <Text color="magenta" bold>
+        [V]
+      </Text>
+      <Text color="gray"> Index DB Vibes</Text>
 
       {MOCK_MODE ? (
         <>
