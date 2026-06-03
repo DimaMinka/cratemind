@@ -1,6 +1,7 @@
 import * as mm from 'music-metadata';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as AubioService from './AubioService.js';
 
 /**
  * ID3Service.ts
@@ -61,6 +62,16 @@ export async function extractMetadata(filepath: string): Promise<{
       }
     } catch {
       // Silently fall back to filename parsing without corrupting TUI screen buffer
+    }
+
+    // Run offline analysis tools (aubio and keyfinder-cli) for missing fields
+    if (!bpm) {
+      const estimated = AubioService.estimateBpm(filepath);
+      if (estimated) bpm = estimated;
+    }
+    if (!key) {
+      const detected = AubioService.detectKey(filepath);
+      if (detected) key = detected;
     }
   }
 
