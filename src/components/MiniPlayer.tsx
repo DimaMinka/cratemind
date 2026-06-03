@@ -59,9 +59,9 @@ export function MiniPlayer(): React.JSX.Element | null {
       {/* Top Meta Row */}
       <Box justifyContent="space-between" marginBottom={1}>
         <Box>
-          <Text backgroundColor="green" color="black" bold>
+          <Text backgroundColor={playback.isPaused ? 'yellow' : 'green'} color="black" bold>
             {' '}
-            PLAYING{' '}
+            {playback.isPaused ? 'PAUSED' : 'PLAYING'}{' '}
           </Text>
           <Text color="white" bold>
             {' '}
@@ -92,7 +92,7 @@ export function MiniPlayer(): React.JSX.Element | null {
         </Box>
         <Box>
           <Text color="gray" dimColor italic>
-            Use [←]/[→] to seek 10s, Shift for 30s
+            Use [P] to Pause/Resume | [←]/[→] to seek 10s, Shift for 30s
           </Text>
         </Box>
       </Box>

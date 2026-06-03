@@ -134,16 +134,11 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
         })}
       </Box>
 
-      <Box paddingLeft={1} marginTop={1} flexDirection="column">
-        <Box flexDirection="row">
-          <Text color="white">Selected: </Text>
-          <Text color="greenBright" bold>
-            {selectedList.length} crates
-          </Text>
-        </Box>
-        <Box marginTop={1}>
-          <Text color="gray">[P] Pause/Resume | [←]/[→] Seek | [Space] Toggle | [Enter] Route</Text>
-        </Box>
+      <Box paddingLeft={1} marginTop={1}>
+        <Text color="white">Selected: </Text>
+        <Text color="greenBright" bold>
+          {selectedList.length} crates
+        </Text>
       </Box>
     </Box>
   );
