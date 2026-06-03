@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import { useStore } from './UIService.js';
 import * as RAGService from './RAGService.js';
 import * as LLMService from './LLMService.js';
@@ -10,7 +11,13 @@ import * as NetworkScoutService from './NetworkScoutService.js';
 import * as EngineDBService from './EngineDBService.js';
 import * as SpotifyService from './SpotifyService.js';
 import * as EmbeddingService from './EmbeddingService.js';
-import { YT_SCOUT_ENABLED, CONFIDENCE_THRESHOLD, FOLDERS } from '../config.js';
+import {
+  YT_SCOUT_ENABLED,
+  CONFIDENCE_THRESHOLD,
+  FOLDERS,
+  INCOMING_DIR,
+  AUDIO_EXTENSIONS
+} from '../config.js';
 import { LLMResponse, VectorNeighbor, TrackMeta, NetworkScoutResult } from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
 
@@ -550,5 +557,25 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
     incrementStat('processed');
     const currentStats = CacheService.getStats();
     useStore.getState().setLimitStats(currentStats);
+  }
+
+  // After processing the chunk, check if Incoming folder contains any remaining audio files
+  try {
+    if (fs.existsSync(INCOMING_DIR)) {
+      const files = fs.readdirSync(INCOMING_DIR);
+      const audioFiles = files.filter((f) => {
+        const ext = path.extname(f).toLowerCase();
+        return AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number]);
+      });
+
+      if (audioFiles.length === 0) {
+        useStore.getState().clearLogs();
+        useStore
+          .getState()
+          .addLog('SYSTEM', 'All tracks have been processed! Incoming folder is clean.');
+      }
+    }
+  } catch {
+    // ignore
   }
 }

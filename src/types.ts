@@ -123,6 +123,7 @@ export type AppState = {
     totalCacheHits: number;
   }) => void;
   setLLMAnalyzing: (isAnalyzing: boolean) => void;
+  clearLogs: () => void;
 };
 
 export type LLMResponse = {

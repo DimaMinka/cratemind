@@ -57,7 +57,8 @@ export const useStore = create<AppState>((set) => ({
       dailyRequestsLimit: stats.dailyRequestsLimit,
       totalCacheHits: stats.totalCacheHits
     }),
-  setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing })
+  setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing }),
+  clearLogs: () => set({ log: [] })
 }));
 
 /**
