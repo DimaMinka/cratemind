@@ -37,7 +37,7 @@ export const LLM_MODEL = 'gemini-2.5-flash';
 export const CONFIDENCE_THRESHOLD = 0.99;
 
 // Caching and API limit configurations
-export const DAILY_REQUEST_LIMIT = 15;
+export const DAILY_REQUEST_LIMIT = 50;
 export const CACHE_FILE_PATH = './.cratemind-cache.json';
 export const STATS_FILE_PATH = './.cratemind-stats.json';
 
@@ -52,6 +52,6 @@ export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Libr
 // YouTube Network Scout configuration
 export const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 export const YT_SCOUT_ENABLED = !!YOUTUBE_API_KEY.trim();
-export const YT_SCOUT_NETWORK_DELAY_MS = 1200;
+export const YT_SCOUT_NETWORK_DELAY_MS = 2000;
 export const YT_SCOUT_MAX_PLAYLISTS = 3;
-export const YT_SCOUT_NEIGHBOR_RADIUS = 5;
+export const YT_SCOUT_NEIGHBOR_RADIUS = 10;

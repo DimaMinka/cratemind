@@ -63,10 +63,30 @@ interface TrackBatchState {
 
 export async function processTracksBatch(filepaths: string[]): Promise<void> {
   const addLog = useStore.getState().addLog;
-  const incrementStat = useStore.getState().incrementStat;
 
   if (filepaths.length === 0) return;
 
+  const BATCH_SIZE = 5;
+  const filepathChunks: string[][] = [];
+  for (let i = 0; i < filepaths.length; i += BATCH_SIZE) {
+    filepathChunks.push(filepaths.slice(i, i + BATCH_SIZE));
+  }
+
+  for (let chunkIdx = 0; chunkIdx < filepathChunks.length; chunkIdx++) {
+    const chunkFilepaths = filepathChunks[chunkIdx];
+    if (filepathChunks.length > 1) {
+      addLog(
+        'SYSTEM',
+        `Starting incoming batch ${chunkIdx + 1}/${filepathChunks.length} (${chunkFilepaths.length} tracks)...`
+      );
+    }
+    await processSingleFilepathChunk(chunkFilepaths);
+  }
+}
+
+async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
+  const addLog = useStore.getState().addLog;
+  const incrementStat = useStore.getState().incrementStat;
   const states: TrackBatchState[] = [];
 
   // Step 1: Metadata Extraction & Local RAG/Cache Checking
@@ -314,96 +334,82 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
   if (needLLM.length > 0) {
     useStore.getState().setLLMAnalyzing(true);
 
-    const BATCH_SIZE = 5;
-    const chunks: TrackBatchState[][] = [];
-    for (let i = 0; i < needLLM.length; i += BATCH_SIZE) {
-      chunks.push(needLLM.slice(i, i + BATCH_SIZE));
-    }
+    // Map each state to BatchTrackInput
+    const batchInputs: LLMService.BatchTrackInput[] = needLLM.map((s) => ({
+      trackId: s.filename,
+      artist: s.meta.artist,
+      title: s.meta.title,
+      bpm: s.meta.bpm || null,
+      key: s.meta.key || null,
+      genre: s.meta.genre || null,
+      energy: s.spotifyFeatures?.energy || null,
+      valence: s.spotifyFeatures?.valence || null,
+      acousticness: s.spotifyFeatures?.acousticness || null,
+      vectorNeighbors: s.vectorNeighbors,
+      youtubeContext: s.networkContext
+    }));
 
-    for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-      const chunk = chunks[chunkIdx];
-      addLog(
-        'SYSTEM',
-        `Sending batch ${chunkIdx + 1}/${chunks.length} (${chunk.length} tracks) to Gemini...`
-      );
+    try {
+      const batchResults = await LLMService.classifyTracksBatch(batchInputs);
 
-      // Map each state to BatchTrackInput
-      const batchInputs: LLMService.BatchTrackInput[] = chunk.map((s) => ({
-        trackId: s.filename,
-        artist: s.meta.artist,
-        title: s.meta.title,
-        bpm: s.meta.bpm || null,
-        key: s.meta.key || null,
-        genre: s.meta.genre || null,
-        energy: s.spotifyFeatures?.energy || null,
-        valence: s.spotifyFeatures?.valence || null,
-        acousticness: s.spotifyFeatures?.acousticness || null,
-        vectorNeighbors: s.vectorNeighbors,
-        youtubeContext: s.networkContext
-      }));
-
-      try {
-        const batchResults = await LLMService.classifyTracksBatch(batchInputs);
-
-        // Map results back to states
-        for (const res of batchResults) {
-          const matchState = chunk.find((s) => s.filename === res.trackId);
-          if (matchState) {
-            matchState.llmResponse = {
-              folders: res.folders,
-              reasoning: res.reasoning,
-              confidence: res.confidence
-            };
-            addLog('LLM_REASONING', `[LLM reasoning for ${matchState.filename}] ${res.reasoning}`);
-
-            // Cache raw LLM response immediately to prevent losing it if the process exits before routing completes
-            CacheService.saveTrackCache(
-              matchState.meta.artist,
-              matchState.meta.title,
-              matchState.contextHash,
-              matchState.llmResponse
-            );
-          }
-        }
-      } catch (err) {
-        let limitExceeded = false;
-        let missingApiKey = false;
-        let networkError = false;
-        let schemaError = false;
-        let errorMsg: string;
-
-        if (err instanceof LLMService.RequestLimitExceededError) {
-          limitExceeded = true;
-          errorMsg = 'Daily API request limit reached';
-        } else if (err instanceof LLMService.MissingApiKeyError) {
-          missingApiKey = true;
-          errorMsg = 'Configuration: GEMINI_API_KEY is missing';
-        } else if (
-          err instanceof Error &&
-          (err.name === 'ZodError' ||
-            err.message.includes('JSON') ||
-            err.message.includes('parsing') ||
-            err.message.includes('validation'))
-        ) {
-          schemaError = true;
-          errorMsg = 'Error: Invalid schema response format';
-        } else {
-          networkError = true;
-          errorMsg = 'Network Error: Google Gemini API unreachable';
-        }
-
-        for (const s of chunk) {
-          s.limitExceeded = limitExceeded;
-          s.missingApiKey = missingApiKey;
-          s.networkError = networkError;
-          s.schemaError = schemaError;
-          s.errorMsg = errorMsg;
-          s.llmResponse = {
-            folders: [],
-            reasoning: errorMsg,
-            confidence: 0
+      // Map results back to states
+      for (const res of batchResults) {
+        const matchState = needLLM.find((s) => s.filename === res.trackId);
+        if (matchState) {
+          matchState.llmResponse = {
+            folders: res.folders,
+            reasoning: res.reasoning,
+            confidence: res.confidence
           };
+          addLog('LLM_REASONING', `[LLM reasoning for ${matchState.filename}] ${res.reasoning}`);
+
+          // Cache raw LLM response immediately to prevent losing it if the process exits before routing completes
+          CacheService.saveTrackCache(
+            matchState.meta.artist,
+            matchState.meta.title,
+            matchState.contextHash,
+            matchState.llmResponse
+          );
         }
+      }
+    } catch (err) {
+      let limitExceeded = false;
+      let missingApiKey = false;
+      let networkError = false;
+      let schemaError = false;
+      let errorMsg: string;
+
+      if (err instanceof LLMService.RequestLimitExceededError) {
+        limitExceeded = true;
+        errorMsg = 'Daily API request limit reached';
+      } else if (err instanceof LLMService.MissingApiKeyError) {
+        missingApiKey = true;
+        errorMsg = 'Configuration: GEMINI_API_KEY is missing';
+      } else if (
+        err instanceof Error &&
+        (err.name === 'ZodError' ||
+          err.message.includes('JSON') ||
+          err.message.includes('parsing') ||
+          err.message.includes('validation'))
+      ) {
+        schemaError = true;
+        errorMsg = 'Error: Invalid schema response format';
+      } else {
+        networkError = true;
+        errorMsg = 'Network Error: Google Gemini API unreachable';
+      }
+
+      for (const s of needLLM) {
+        s.limitExceeded = limitExceeded;
+        s.missingApiKey = missingApiKey;
+        s.networkError = networkError;
+        s.schemaError = schemaError;
+        s.errorMsg = errorMsg;
+        s.llmResponse = {
+          folders: [],
+          reasoning: errorMsg,
+          confidence: 0
+        };
       }
     }
 
