@@ -102,9 +102,14 @@ export async function processTracksBatch(filepaths: string[]): Promise<void> {
         );
       }
 
-      // Step 2: Check RAG memory for existing classification
+      // Step 2: Check RAG memory for existing classification (only reuse if manually confirmed or present in collection)
       const existingExample = RAGService.findExample(meta.artist, meta.title);
-      if (existingExample) {
+      if (
+        existingExample &&
+        (existingExample.source === 'manual' ||
+          existingExample.source === 'scan' ||
+          existingExample.source === 'engine-dj')
+      ) {
         addLog(
           'RAG',
           `Reusing vibe from memory -> /${existingExample.folders.join(' & /')}/${filename}`
@@ -415,11 +420,11 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
     }
 
     const shouldAutoRoute =
-      !s.cacheHit && !bypassed && !hasError && llmResponse.confidence >= CONFIDENCE_THRESHOLD;
+      !bypassed && !hasError && llmResponse.confidence >= CONFIDENCE_THRESHOLD;
 
     let selectedFolders: string[];
 
-    if (s.cacheHit) {
+    if (s.cacheHit && shouldAutoRoute) {
       addLog(
         'RAG',
         `Reusing vibe from Gemini Cache -> /${llmResponse.folders.join(' & /')}/${s.filename}`

@@ -14,6 +14,7 @@ interface CacheStore {
     artist: string;
     title: string;
     response: LLMResponse;
+    ts: number;
   };
 }
 
@@ -101,7 +102,9 @@ function readCache(): CacheStore {
   const cache: CacheStore = {};
   try {
     const rows = db
-      .prepare('SELECT context_hash, artist, title, folders, reasoning, confidence FROM llm_cache')
+      .prepare(
+        'SELECT context_hash, artist, title, folders, reasoning, confidence, ts FROM llm_cache'
+      )
       .all() as {
       context_hash: string;
       artist: string;
@@ -109,6 +112,7 @@ function readCache(): CacheStore {
       folders: string;
       reasoning: string;
       confidence: number;
+      ts: number;
     }[];
     for (const r of rows) {
       cache[r.context_hash] = {
@@ -118,7 +122,8 @@ function readCache(): CacheStore {
           folders: JSON.parse(r.folders),
           reasoning: r.reasoning,
           confidence: r.confidence
-        }
+        },
+        ts: r.ts
       };
     }
     _cacheStore = cache;
@@ -194,10 +199,47 @@ export function getTrackCache(
   contextHash: string
 ): LLMResponse | null {
   const cache = readCache();
+
+  // 1. First attempt: Exact match by context hash
   if (cache[contextHash]) {
     incrementCacheHits();
     return cache[contextHash].response;
   }
+
+  // 2. Second attempt: Fallback match by artist & title within the last 24 hours (session approach)
+  const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const normalizedArtist = artist.trim().toLowerCase();
+  const normalizedTitle = title.trim().toLowerCase();
+
+  const entries = Object.entries(cache);
+  const matches = entries
+    .filter(([_, entry]) => {
+      return (
+        entry.artist.trim().toLowerCase() === normalizedArtist &&
+        entry.title.trim().toLowerCase() === normalizedTitle &&
+        entry.ts >= twentyFourHoursAgo
+      );
+    })
+    .sort((a, b) => b[1].ts - a[1].ts);
+
+  if (matches.length > 0) {
+    const bestEntry = matches[0][1];
+
+    // Warm up the cache for this exact context hash in memory
+    cache[contextHash] = {
+      artist: bestEntry.artist,
+      title: bestEntry.title,
+      response: bestEntry.response,
+      ts: Date.now()
+    };
+
+    // Write-through to SQLite DB
+    writeCacheItem(contextHash, bestEntry.artist, bestEntry.title, bestEntry.response);
+
+    incrementCacheHits();
+    return bestEntry.response;
+  }
+
   return null;
 }
 
@@ -214,7 +256,8 @@ export function saveTrackCache(
   cache[contextHash] = {
     artist,
     title,
-    response
+    response,
+    ts: Date.now()
   };
   writeCacheItem(contextHash, artist, title, response);
 }
