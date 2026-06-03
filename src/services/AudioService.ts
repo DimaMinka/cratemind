@@ -62,7 +62,11 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
         addLog('ERROR', `ffplay exited with error code: ${code}`);
       }
       const currentPlayback = useStore.getState().playback;
-      if (currentPlayback?.filepath === filepath && activeAudioProcess === null) {
+      if (
+        currentPlayback?.filepath === filepath &&
+        activeAudioProcess === null &&
+        !currentPlayback.isPaused
+      ) {
         setPlayback(null);
       }
     });
@@ -94,6 +98,44 @@ export function stopAudio(): void {
       // Ignore process kill issues
     }
     activeAudioProcess = null;
+  }
+}
+
+/**
+ * Toggles the playback state between playing and paused for the active track preview.
+ * Remembers the exact playback offset and resumes seamlessly.
+ */
+export function togglePausePreview(): void {
+  const playback = useStore.getState().playback;
+  const setPlayback = useStore.getState().setPlayback;
+  if (!playback) return;
+
+  if (activeAudioProcess) {
+    // Currently playing -> Pause it
+    const elapsed = Math.round((Date.now() - playback.lastStartedAt) / 1000);
+    const newOffset = playback.offset + elapsed;
+
+    // Set state to isPaused = true before killing the process
+    setPlayback({
+      ...playback,
+      offset: newOffset,
+      isPaused: true
+    });
+
+    try {
+      activeAudioProcess.kill('SIGKILL');
+    } catch {
+      // Ignore process kill issues
+    }
+    activeAudioProcess = null;
+  } else {
+    // Currently paused -> Resume it
+    setPlayback({
+      ...playback,
+      isPaused: false,
+      lastStartedAt: Date.now()
+    });
+    previewAudio(playback.filepath, playback.offset, playback.duration);
   }
 }
 

@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import { OverrideState } from '../types.js';
 import { FOLDERS } from '../config.js';
 import { useOverrideHotkeys } from '../hooks/useOverrideHotkeys.js';
+import { useStore } from '../services/UIService.js';
 
 interface ManualOverrideProps {
   override: OverrideState;
@@ -15,6 +16,9 @@ interface ManualOverrideProps {
  * Allows quick manual routing override when LLM confidence falls below threshold.
  */
 export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Element {
+  const playback = useStore((state) => state.playback);
+  const isPaused = playback?.isPaused || false;
+
   // Dynamically sort vibe folders: put suggested ones on top, and sort the rest alphabetically
   const suggested = override.suggested || [];
   const remainingFolders = [...FOLDERS]
@@ -56,8 +60,8 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
       <Box marginBottom={1} flexDirection="column">
         <Text color="white" bold>
           Track: {override.filename}{' '}
-          <Text color="greenBright" bold>
-            [PLAYING]
+          <Text color={isPaused ? 'yellowBright' : 'greenBright'} bold>
+            {isPaused ? '[PAUSED]' : '[PLAYING]'}
           </Text>
         </Text>
 
@@ -130,11 +134,16 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
         })}
       </Box>
 
-      <Box paddingLeft={1} marginTop={1}>
-        <Text color="white">Selected: </Text>
-        <Text color="greenBright" bold>
-          {selectedList.length} crates
-        </Text>
+      <Box paddingLeft={1} marginTop={1} flexDirection="column">
+        <Box flexDirection="row">
+          <Text color="white">Selected: </Text>
+          <Text color="greenBright" bold>
+            {selectedList.length} crates
+          </Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text color="gray">[P] Pause/Resume | [←]/[→] Seek | [Space] Toggle | [Enter] Route</Text>
+        </Box>
       </Box>
     </Box>
   );

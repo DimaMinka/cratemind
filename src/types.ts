@@ -108,6 +108,7 @@ export type AppState = {
     duration: number;
     offset: number;
     lastStartedAt: number;
+    isPaused?: boolean;
   } | null;
   isLLMAnalyzing: boolean;
   setStatus: (status: 'listening' | 'paused') => void;

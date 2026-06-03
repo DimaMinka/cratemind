@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInput } from 'ink';
-import { seekPlayback } from '../services/AudioService.js';
+import { seekPlayback, togglePausePreview } from '../services/AudioService.js';
 import { OverrideState } from '../types.js';
 
 /**
@@ -35,6 +35,8 @@ export function useOverrideHotkeys(override: OverrideState, folders: string[]) {
       override.resolve(selectedList);
     } else if (input.toLowerCase() === 'a' && override.suggested && override.suggested.length > 0) {
       override.resolve(override.suggested);
+    } else if (input.toLowerCase() === 'p') {
+      togglePausePreview();
     } else if (key.leftArrow) {
       if (key.shift) {
         seekPlayback(-30);
