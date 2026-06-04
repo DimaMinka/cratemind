@@ -71,14 +71,6 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
               {override.filename}
             </Text>
           )}
-          {override.bpm || override.key ? (
-            <Text color="gray" dimColor>
-              {' '}
-              ({override.bpm ? `${override.bpm} BPM` : ''}
-              {override.bpm && override.key ? ' | ' : ''}
-              {override.key ? `${override.key}` : ''})
-            </Text>
-          ) : null}
         </Text>
 
         {override.suggested && override.suggested.length > 0 ? (
