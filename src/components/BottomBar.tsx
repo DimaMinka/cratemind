@@ -16,11 +16,7 @@ export function BottomBar(): React.JSX.Element {
       </Text>
       <Text color="gray"> Pause/Resume</Text>
       <Text color="gray"> | </Text>
-      <Text color="greenBright" bold>
-        [R]
-      </Text>
-      <Text color="gray"> Log RAG Stats</Text>
-      <Text color="gray"> | </Text>
+
       <Text color="cyan" bold>
         [L]
       </Text>

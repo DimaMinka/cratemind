@@ -22,8 +22,7 @@ import { MOCK_MODE } from '../config.js';
 export function useGlobalHotkeys(isOverlayActive: boolean): void {
   const { exit } = useApp();
   const status = useStore((state) => state.status);
-  const ragStatus = useStore((state) => state.ragStatus);
-  const ragStats = useStore((state) => state.ragStats);
+
   const setStatus = useStore((state) => state.setStatus);
   const addLog = useStore((state) => state.addLog);
 
@@ -44,11 +43,6 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         exit();
         process.exit(0);
       }, 3000);
-    } else if (keyLower === 'r') {
-      addLog(
-        'SYSTEM',
-        `Memory Status: [${ragStatus}] - Total Tracks: ${ragStats.total} across ${ragStats.folders} directories.`
-      );
     } else if (keyLower === 'l') {
       CacheService.resetDailyLimits();
       const currentStats = CacheService.getStats();
