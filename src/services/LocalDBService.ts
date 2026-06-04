@@ -119,6 +119,20 @@ export function getDB(): Database.Database {
       created_at INTEGER NOT NULL,
       UNIQUE(artist, title) ON CONFLICT REPLACE
     );
+
+    CREATE TABLE IF NOT EXISTS file_metadata_cache (
+      filepath TEXT PRIMARY KEY,
+      mtime INTEGER NOT NULL,
+      size INTEGER NOT NULL,
+      artist TEXT NOT NULL,
+      title TEXT NOT NULL,
+      duration INTEGER NOT NULL,
+      bpm INTEGER,
+      key TEXT,
+      genre TEXT,
+      comment TEXT,
+      label TEXT
+    );
   `);
 
   // Clean exit handling
@@ -131,6 +145,93 @@ export function getDB(): Database.Database {
   });
 
   return _db;
+}
+
+export interface CachedMetadata {
+  artist: string;
+  title: string;
+  duration: number;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  comment?: string;
+  label?: string;
+}
+
+/**
+ * Retrieves cached audio metadata if modification time and size match.
+ */
+export function getCachedMetadata(
+  filepath: string,
+  mtime: number,
+  size: number
+): CachedMetadata | null {
+  const db = getDB();
+  try {
+    const row = db
+      .prepare(
+        'SELECT artist, title, duration, bpm, key, genre, comment, label FROM file_metadata_cache WHERE filepath = ? AND mtime = ? AND size = ?'
+      )
+      .get(filepath, mtime, size) as
+      | {
+          artist: string;
+          title: string;
+          duration: number;
+          bpm: number | null;
+          key: string | null;
+          genre: string | null;
+          comment: string | null;
+          label: string | null;
+        }
+      | undefined;
+    if (!row) return null;
+    return {
+      artist: row.artist,
+      title: row.title,
+      duration: row.duration,
+      bpm: row.bpm !== null ? row.bpm : undefined,
+      key: row.key !== null ? row.key : undefined,
+      genre: row.genre !== null ? row.genre : undefined,
+      comment: row.comment !== null ? row.comment : undefined,
+      label: row.label !== null ? row.label : undefined
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stores audio metadata in the local cache.
+ */
+export function setCachedMetadata(
+  filepath: string,
+  mtime: number,
+  size: number,
+  meta: CachedMetadata
+): void {
+  const db = getDB();
+  try {
+    db.prepare(
+      `
+      INSERT OR REPLACE INTO file_metadata_cache (filepath, mtime, size, artist, title, duration, bpm, key, genre, comment, label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    ).run(
+      filepath,
+      mtime,
+      size,
+      meta.artist,
+      meta.title,
+      meta.duration,
+      meta.bpm ?? null,
+      meta.key ?? null,
+      meta.genre ?? null,
+      meta.comment ?? null,
+      meta.label ?? null
+    );
+  } catch {
+    // Ignore cache write errors
+  }
 }
 
 /**

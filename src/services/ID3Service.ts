@@ -2,6 +2,7 @@ import * as mm from 'music-metadata';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as AubioService from './AubioService.js';
+import { getCachedMetadata, setCachedMetadata } from './LocalDBService.js';
 
 /**
  * ID3Service.ts
@@ -31,6 +32,22 @@ export async function extractMetadata(filepath: string): Promise<{
 
   // Bypassed if the file does not physically exist to prevent console pollution
   const fileExists = fs.existsSync(filepath);
+  let mtime = 0;
+  let size = 0;
+
+  if (fileExists) {
+    try {
+      const stats = fs.statSync(filepath);
+      mtime = stats.mtimeMs;
+      size = stats.size;
+      const cached = getCachedMetadata(filepath, mtime, size);
+      if (cached) {
+        return cached;
+      }
+    } catch {
+      // Ignore stat/cache errors, proceed to full extraction
+    }
+  }
 
   if (fileExists) {
     try {
@@ -115,7 +132,7 @@ export async function extractMetadata(filepath: string): Promise<{
   const finalArtist = cleanPrefix(artist || 'Unknown');
   const finalTitle = cleanPrefix(title || 'Unknown');
 
-  return {
+  const result = {
     artist: finalArtist || 'Unknown',
     title: finalTitle || 'Unknown',
     duration,
@@ -125,6 +142,12 @@ export async function extractMetadata(filepath: string): Promise<{
     comment,
     label
   };
+
+  if (fileExists && mtime > 0 && size > 0) {
+    setCachedMetadata(filepath, mtime, size, result);
+  }
+
+  return result;
 }
 
 /**
