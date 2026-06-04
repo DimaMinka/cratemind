@@ -115,11 +115,25 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
         }
 
         if (dbTrack && dbTrack.bpm && dbTrack.key) {
+          const parsed = parseMetaFromFilename(filename);
+          const artist =
+            dbTrack.artist &&
+            dbTrack.artist.trim().toLowerCase() !== 'unknown' &&
+            dbTrack.artist.trim().toLowerCase() !== 'unknown artist'
+              ? dbTrack.artist
+              : parsed.artist;
+          const title =
+            dbTrack.title &&
+            dbTrack.title.trim().toLowerCase() !== 'unknown' &&
+            dbTrack.title.trim().toLowerCase() !== 'unknown title'
+              ? dbTrack.title
+              : parsed.title;
+
           meta = {
             filepath,
             filename,
-            artist: dbTrack.artist,
-            title: dbTrack.title,
+            artist,
+            title,
             duration: 180,
             bpm: dbTrack.bpm,
             key: dbTrack.key,
