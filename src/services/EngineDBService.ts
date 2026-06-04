@@ -267,3 +267,42 @@ export function getTrackPlaylists(trackId: number): string[] {
   const vibes = getTrackPlaylistVibes();
   return vibes.filter((v) => v.trackId === trackId).map((v) => v.vibe);
 }
+
+/**
+ * Retrieves a single track by its filename using a fast SQLite index lookup.
+ */
+export function getTrackByFilename(filename: string): EngineTrack | null {
+  if (MOCK_MODE) {
+    return (
+      MOCK_ENGINE_TRACKS.find((t) => t.filename.toLowerCase() === filename.toLowerCase()) || null
+    );
+  }
+
+  const db = getDB();
+  if (!db) return null;
+
+  try {
+    const row = db
+      .prepare(
+        'SELECT id, path, filename, title, artist, bpmAnalyzed AS bpm, key AS keyVal, genre, comment, label FROM Track WHERE LOWER(filename) = ? LIMIT 1'
+      )
+      .get(filename.toLowerCase().trim()) as DBTrackRow | undefined;
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      path: row.path,
+      filename: row.filename,
+      title: row.title || row.filename || 'Unknown Title',
+      artist: row.artist || 'Unknown Artist',
+      bpm: row.bpm ? Math.round(row.bpm) : undefined,
+      key: convertKeyToCamelot(row.keyVal),
+      genre: row.genre || undefined,
+      comment: row.comment || undefined,
+      label: row.label || undefined
+    };
+  } catch {
+    return null;
+  }
+}

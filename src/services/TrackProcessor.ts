@@ -102,13 +102,47 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
       const filename = path.basename(filepath);
       addLog('DETECTED', `Discovered track: ${filename}`);
 
-      // Extract ID3 metadata
-      const meta = await extractMetadata(filepath);
-      addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
+      let meta: TrackMeta | null = null;
+      let dbTrack: Awaited<ReturnType<typeof EngineDBService.getTrackByFilename>> = null;
 
-      // Enrich with Engine DJ SQLite metadata if available
+      // Check Engine DJ SQLite metadata first to avoid expensive ID3 parsing & offline analysis
       if (EngineDBService.isAvailable()) {
-        const dbTrack = EngineDBService.getTrackByMeta(meta.artist, meta.title);
+        dbTrack = EngineDBService.getTrackByFilename(filename);
+        if (!dbTrack) {
+          const parsed = parseMetaFromFilename(filename);
+          dbTrack = EngineDBService.getTrackByMeta(parsed.artist, parsed.title);
+        }
+
+        if (dbTrack && dbTrack.bpm && dbTrack.key) {
+          meta = {
+            filepath,
+            filename,
+            artist: dbTrack.artist,
+            title: dbTrack.title,
+            duration: 180,
+            bpm: dbTrack.bpm,
+            key: dbTrack.key,
+            genre: dbTrack.genre,
+            comment: dbTrack.comment,
+            label: dbTrack.label
+          };
+          addLog(
+            'SYSTEM',
+            `Engine DJ DB Match (Pre-extraction): BPM=${meta.bpm}, Key=${meta.key}, Genre=${meta.genre || 'N/A'}`
+          );
+        }
+      }
+
+      if (!meta) {
+        // Extract ID3 metadata if not found or incomplete in Engine DJ
+        meta = await extractMetadata(filepath);
+        addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
+
+        // Enrich with Engine DJ SQLite metadata if available but not fully matched before
+        if (EngineDBService.isAvailable() && !dbTrack) {
+          dbTrack = EngineDBService.getTrackByMeta(meta.artist, meta.title);
+        }
+
         if (dbTrack) {
           if (dbTrack.bpm) meta.bpm = dbTrack.bpm;
           if (dbTrack.key) meta.key = dbTrack.key;
@@ -119,26 +153,28 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
             'SYSTEM',
             `Engine DJ DB Match: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`
           );
+        }
+      }
 
-          // Tier 1: Check for backup routing from Engine DJ playlists or path
-          const trackPlaylists = EngineDBService.getTrackPlaylists(dbTrack.id);
-          let matchedVibe = FOLDERS.find((vibe) =>
-            trackPlaylists.some((tp) => tp.toLowerCase() === vibe.toLowerCase())
-          );
+      // Check for backup routing from Engine DJ playlists or path
+      if (EngineDBService.isAvailable() && dbTrack) {
+        const trackPlaylists = EngineDBService.getTrackPlaylists(dbTrack.id);
+        let matchedVibe = FOLDERS.find((vibe) =>
+          trackPlaylists.some((tp) => tp.toLowerCase() === vibe.toLowerCase())
+        );
 
-          if (!matchedVibe && dbTrack.path) {
-            const pathParts = dbTrack.path.toLowerCase().replace(/\\/g, '/').split('/');
-            matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
-          }
+        if (!matchedVibe && dbTrack.path) {
+          const pathParts = dbTrack.path.toLowerCase().replace(/\\/g, '/').split('/');
+          matchedVibe = FOLDERS.find((vibe) => pathParts.includes(vibe.toLowerCase()));
+        }
 
-          if (matchedVibe) {
-            addLog('ROUTED', `Backup match found in Engine DJ DB -> /${matchedVibe}/${filename}`);
-            await routeFile(filepath, [matchedVibe], { bpm: meta.bpm, key: meta.key });
-            incrementStat('processed');
-            const currentStats = CacheService.getStats();
-            useStore.getState().setLimitStats(currentStats);
-            continue;
-          }
+        if (matchedVibe) {
+          addLog('ROUTED', `Backup match found in Engine DJ DB -> /${matchedVibe}/${filename}`);
+          await routeFile(filepath, [matchedVibe], { bpm: meta.bpm, key: meta.key });
+          incrementStat('processed');
+          const currentStats = CacheService.getStats();
+          useStore.getState().setLimitStats(currentStats);
+          continue;
         }
       }
 
@@ -647,4 +683,46 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
   } catch {
     // ignore
   }
+}
+
+function parseMetaFromFilename(filename: string): { artist: string; title: string } {
+  let nameWithoutExt = filename;
+  const ext = path.extname(filename);
+  if (ext) {
+    nameWithoutExt = filename.slice(0, -ext.length);
+  }
+  nameWithoutExt = nameWithoutExt.replace(/_-_/g, ' - ');
+
+  const separators = [' - ', '-', '_'];
+  let parts: string[] = [nameWithoutExt];
+  let usedSeparator = '';
+
+  for (const sep of separators) {
+    const split = nameWithoutExt.split(sep);
+    if (split.length >= 2) {
+      parts = split;
+      usedSeparator = sep;
+      break;
+    }
+  }
+
+  let artist = 'Unknown';
+  let title: string;
+
+  if (parts.length >= 2) {
+    artist = parts[0]?.replace(/_/g, ' ').trim() || 'Unknown';
+    const joinedTitle = parts.slice(1).join(usedSeparator === '_' ? ' ' : usedSeparator);
+    title = joinedTitle.replace(/_/g, ' ').trim() || 'Unknown';
+  } else {
+    title = nameWithoutExt.replace(/_/g, ' ').trim() || 'Unknown';
+  }
+
+  const cleanPrefix = (str: string): string => {
+    return str.replace(/^\d+[\s.-]+/, '').trim();
+  };
+
+  return {
+    artist: cleanPrefix(artist),
+    title: cleanPrefix(title)
+  };
 }
