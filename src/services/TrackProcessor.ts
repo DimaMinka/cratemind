@@ -542,10 +542,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
     }
 
     const shouldAutoRoute =
-      !bypassed &&
-      !hasError &&
-      llmResponse.confidence >= CONFIDENCE_THRESHOLD &&
-      !llmResponse.reasoning.includes('Vector consensus'); // Temporary: force manual approval for vector consensus
+      !bypassed && !hasError && llmResponse.confidence >= CONFIDENCE_THRESHOLD;
 
     let selectedFolders: string[];
 
