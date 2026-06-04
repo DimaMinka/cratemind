@@ -26,6 +26,7 @@ export type TrackMeta = {
   genre?: string;
   comment?: string;
   label?: string;
+  fromCache?: boolean;
 };
 
 export type RagStatus = 'first-run' | 'scanning' | 'ready';

@@ -20,6 +20,7 @@ export async function extractMetadata(filepath: string): Promise<{
   genre?: string;
   comment?: string;
   label?: string;
+  fromCache?: boolean;
 }> {
   let artist: string | undefined;
   let title: string | undefined;
@@ -42,7 +43,7 @@ export async function extractMetadata(filepath: string): Promise<{
       size = stats.size;
       const cached = getCachedMetadata(filepath, mtime, size);
       if (cached) {
-        return cached;
+        return { ...cached, fromCache: true };
       }
     } catch {
       // Ignore stat/cache errors, proceed to full extraction

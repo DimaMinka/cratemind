@@ -136,7 +136,7 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
       if (!meta) {
         // Extract ID3 metadata if not found or incomplete in Engine DJ
         meta = await extractMetadata(filepath);
-        addLog('ID3', `Tags: ${meta.artist} - ${meta.title}`);
+        addLog('ID3', `Tags: ${meta.artist} - ${meta.title}${meta.fromCache ? ' (cached)' : ''}`);
 
         // Enrich with Engine DJ SQLite metadata if available but not fully matched before
         if (EngineDBService.isAvailable() && !dbTrack) {
