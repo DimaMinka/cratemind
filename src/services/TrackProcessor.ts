@@ -16,7 +16,8 @@ import {
   CONFIDENCE_THRESHOLD,
   FOLDERS,
   INCOMING_DIR,
-  AUDIO_EXTENSIONS
+  AUDIO_EXTENSIONS,
+  FORCE_MANUAL_MODE
 } from '../config.js';
 import { LLMResponse, VectorNeighbor, TrackMeta, NetworkScoutResult } from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
@@ -542,7 +543,10 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
     }
 
     const shouldAutoRoute =
-      !bypassed && !hasError && llmResponse.confidence >= CONFIDENCE_THRESHOLD;
+      !FORCE_MANUAL_MODE &&
+      !bypassed &&
+      !hasError &&
+      llmResponse.confidence >= CONFIDENCE_THRESHOLD;
 
     let selectedFolders: string[];
 
@@ -563,11 +567,13 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       selectedFolders = llmResponse.folders;
       await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
     } else {
-      const reasonText = hasError
-        ? `Error occurred (${s.errorMsg}). Prompting user override...`
-        : bypassed
-          ? `No context signal for ${s.filename}. Prompting manual override...`
-          : `Low LLM confidence (${llmResponse.confidence} < ${CONFIDENCE_THRESHOLD}) for ${s.filename}. Prompting user override...`;
+      const reasonText = FORCE_MANUAL_MODE
+        ? `Force Manual Mode enabled. Prompting manual override for ${s.filename}...`
+        : hasError
+          ? `Error occurred (${s.errorMsg}). Prompting user override...`
+          : bypassed
+            ? `No context signal for ${s.filename}. Prompting manual override...`
+            : `Low LLM confidence (${llmResponse.confidence} < ${CONFIDENCE_THRESHOLD}) for ${s.filename}. Prompting user override...`;
 
       addLog('NEEDS_MANUAL', reasonText);
       incrementStat('overrides');

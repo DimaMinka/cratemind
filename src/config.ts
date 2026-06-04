@@ -5,6 +5,7 @@ dotenv.config();
 
 export const AUTO_MULTI = false;
 export const MOCK_MODE = process.env.MOCK_MODE === 'true';
+export const FORCE_MANUAL_MODE = process.env.FORCE_MANUAL_MODE === 'true';
 
 export const FOLDERS = [
   'mountain sunset',
