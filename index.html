@@ -327,10 +327,19 @@
         color: #c8c8c8;
       }
 
-      .override-track .playing-badge {
+      .override-track .track-artist {
+        color: #00ffff;
+        font-weight: bold;
+      }
+
+      .override-track .track-title {
         color: #00ff00;
         font-weight: bold;
-        margin-left: 4px;
+      }
+
+      .override-track .track-meta {
+        color: #666;
+        font-style: italic;
       }
 
       .override-suggest-box {
@@ -684,8 +693,10 @@
             <div class="override-reason-box">▲ DAILY API REQUEST LIMIT REACHED</div>
 
             <div class="override-track">
-              <b>Track: Stephan Bodzin – Strand.flac</b>
-              <span class="playing-badge">[PLAYING]</span>
+              Track:
+              <span class="track-artist">Stephan Bodzin</span> –
+              <span class="track-title">Strand</span>
+              <span class="track-meta"> (124 BPM | 4A)</span>
             </div>
 
             <div class="override-suggest-box">

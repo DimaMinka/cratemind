@@ -89,6 +89,10 @@ export type OverrideState = {
   selected: string[];
   reason?: string;
   resolve: (folders: string[]) => void;
+  artist?: string;
+  title?: string;
+  bpm?: number;
+  key?: string;
 };
 
 export type AppState = {

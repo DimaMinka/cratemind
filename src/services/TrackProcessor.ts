@@ -553,7 +553,9 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
             : `Low confidence (${llmResponse.confidence})`,
         duration: s.meta.duration,
         bpm: s.meta.bpm,
-        key: s.meta.key
+        key: s.meta.key,
+        artist: s.meta.artist,
+        title: s.meta.title
       });
 
       let isApprovedSuggestion = false;

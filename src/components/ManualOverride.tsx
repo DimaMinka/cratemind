@@ -3,7 +3,6 @@ import { Box, Text } from 'ink';
 import { OverrideState } from '../types.js';
 import { FOLDERS } from '../config.js';
 import { useOverrideHotkeys } from '../hooks/useOverrideHotkeys.js';
-import { useStore } from '../services/UIService.js';
 
 interface ManualOverrideProps {
   override: OverrideState;
@@ -16,9 +15,6 @@ interface ManualOverrideProps {
  * Allows quick manual routing override when LLM confidence falls below threshold.
  */
 export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Element {
-  const playback = useStore((state) => state.playback);
-  const isPaused = playback?.isPaused || false;
-
   // Dynamically sort vibe folders: put suggested ones on top, and sort the rest alphabetically
   const suggested = override.suggested || [];
   const remainingFolders = [...FOLDERS]
@@ -59,10 +55,30 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
 
       <Box marginBottom={1} flexDirection="column">
         <Text color="white" bold>
-          Track: {override.filename}{' '}
-          <Text color={isPaused ? 'yellowBright' : 'greenBright'} bold>
-            {isPaused ? '[PAUSED]' : '[PLAYING]'}
-          </Text>
+          Track:{' '}
+          {override.artist && override.title && override.artist !== 'Unknown' ? (
+            <>
+              <Text color="cyanBright" bold>
+                {override.artist}
+              </Text>
+              <Text color="gray"> – </Text>
+              <Text color="greenBright" bold>
+                {override.title}
+              </Text>
+            </>
+          ) : (
+            <Text color="cyanBright" bold>
+              {override.filename}
+            </Text>
+          )}
+          {override.bpm || override.key ? (
+            <Text color="gray" dimColor>
+              {' '}
+              ({override.bpm ? `${override.bpm} BPM` : ''}
+              {override.bpm && override.key ? ' | ' : ''}
+              {override.key ? `${override.key}` : ''})
+            </Text>
+          ) : null}
         </Text>
 
         {override.suggested && override.suggested.length > 0 ? (

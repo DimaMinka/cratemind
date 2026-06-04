@@ -23,6 +23,8 @@ export interface OverrideRequest {
   duration: number;
   bpm?: number;
   key?: string;
+  artist?: string;
+  title?: string;
 }
 
 /**
@@ -44,6 +46,10 @@ export async function requestOverride(request: OverrideRequest): Promise<string[
       suggested: request.suggested,
       selected: [],
       reason: request.reason,
+      artist: request.artist,
+      title: request.title,
+      bpm: request.bpm,
+      key: request.key,
       resolve: (folders) => {
         setOverride(null);
         resolve(folders);
