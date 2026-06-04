@@ -551,7 +551,9 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           : bypassed
             ? 'No context signals'
             : `Low confidence (${llmResponse.confidence})`,
-        duration: s.meta.duration
+        duration: s.meta.duration,
+        bpm: s.meta.bpm,
+        key: s.meta.key
       });
 
       let isApprovedSuggestion = false;

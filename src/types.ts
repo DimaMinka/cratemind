@@ -113,6 +113,8 @@ export type AppState = {
     offset: number;
     lastStartedAt: number;
     isPaused?: boolean;
+    bpm?: number;
+    key?: string;
   } | null;
   isLLMAnalyzing: boolean;
   setStatus: (status: 'listening' | 'paused') => void;

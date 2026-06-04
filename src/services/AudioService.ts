@@ -20,7 +20,13 @@ let activeAudioProcess: ChildProcess | null = null;
  * @param {number} [offset=0] - Playback start time offset in seconds.
  * @param {number} [duration=180] - Total track duration in seconds.
  */
-export function previewAudio(filepath: string, offset = 0, duration = 180): void {
+export function previewAudio(
+  filepath: string,
+  offset = 0,
+  duration = 180,
+  bpm?: number,
+  key?: string
+): void {
   const setPlayback = useStore.getState().setPlayback;
   const addLog = useStore.getState().addLog;
   const filename = path.basename(filepath);
@@ -31,7 +37,9 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
       filename,
       duration,
       offset,
-      lastStartedAt: Date.now()
+      lastStartedAt: Date.now(),
+      bpm,
+      key
     });
     return;
   }
@@ -76,7 +84,9 @@ export function previewAudio(filepath: string, offset = 0, duration = 180): void
       filename,
       duration,
       offset,
-      lastStartedAt: Date.now()
+      lastStartedAt: Date.now(),
+      bpm,
+      key
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -135,7 +145,7 @@ export function togglePausePreview(): void {
       isPaused: false,
       lastStartedAt: Date.now()
     });
-    previewAudio(playback.filepath, playback.offset, playback.duration);
+    previewAudio(playback.filepath, playback.offset, playback.duration, playback.bpm, playback.key);
   }
 }
 
@@ -171,5 +181,5 @@ export function seekPlayback(deltaSeconds: number): void {
     newOffset = playback.duration - 2;
   }
 
-  previewAudio(playback.filepath, newOffset, playback.duration);
+  previewAudio(playback.filepath, newOffset, playback.duration, playback.bpm, playback.key);
 }

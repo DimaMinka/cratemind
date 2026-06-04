@@ -21,6 +21,8 @@ export interface OverrideRequest {
   suggested: string[];
   reason?: string;
   duration: number;
+  bpm?: number;
+  key?: string;
 }
 
 /**
@@ -32,7 +34,7 @@ export async function requestOverride(request: OverrideRequest): Promise<string[
   const setOverride = useStore.getState().setOverride;
 
   // Play audio so the user can listen while reviewing
-  previewAudio(request.filepath, 0, request.duration);
+  previewAudio(request.filepath, 0, request.duration, request.bpm, request.key);
 
   const selectedFolders = await new Promise<string[]>((resolve) => {
     setOverride({

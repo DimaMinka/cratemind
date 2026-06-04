@@ -69,6 +69,32 @@ export function MiniPlayer(): React.JSX.Element | null {
           </Text>
         </Box>
         <Box>
+          {playback.bpm ? (
+            <>
+              <Text backgroundColor="cyan" color="black" bold>
+                {' '}
+                BPM{' '}
+              </Text>
+              <Text color="cyanBright" bold>
+                {' '}
+                {playback.bpm}{' '}
+              </Text>
+              <Text color="gray"> | </Text>
+            </>
+          ) : null}
+          {playback.key ? (
+            <>
+              <Text backgroundColor="magenta" color="black" bold>
+                {' '}
+                KEY{' '}
+              </Text>
+              <Text color="magentaBright" bold>
+                {' '}
+                {playback.key}{' '}
+              </Text>
+              <Text color="gray"> | </Text>
+            </>
+          ) : null}
           <Text backgroundColor="green" color="black" bold>
             {' '}
             DURATION{' '}
