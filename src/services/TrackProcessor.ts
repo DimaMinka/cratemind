@@ -181,7 +181,7 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
       if (meta.bpm || meta.key || meta.genre) {
         addLog(
           'SYSTEM',
-          `Physical Profile: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}`
+          `Physical Profile: BPM=${meta.bpm || 'N/A'}, Key=${meta.key || 'N/A'}, Genre=${meta.genre || 'N/A'}${meta.fromCache ? ' (cached)' : ''}`
         );
       }
 
