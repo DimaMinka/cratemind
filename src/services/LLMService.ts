@@ -102,7 +102,8 @@ export function formatVectorNeighborsContext(neighbors: VectorNeighbor[]): strin
 }
 
 export const BASE_SYSTEM_INSTRUCTION = `You are CrateMind, an audio classification system organizing music into vibe-based folders ("crates").
-Task: Analyze track metadata (BPM, Key, Genre, Label, Spotify features) + Few-Shot RAG memory. Return 1-2 matching crates based on sonic architecture.
+Task: Analyze track metadata (BPM, Key, Genre, Label, Spotify features) + Few-Shot RAG memory.
+Return exactly ONE primary matching crate. Only suggest a second crate if the track is a genuine hybrid of two distinct atmospheres (e.g. organic percussion meets cinematic themes). Favor a single folder selection over multiple options whenever possible.
 
 Crate Definitions & Rules:
 - mountain sunset: Majestic, dramatic, cinematic melodic themes (Afterlife/Innervisions sound, epic strings, builds). Not background.
