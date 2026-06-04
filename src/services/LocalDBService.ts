@@ -168,32 +168,35 @@ export function getCachedMetadata(
 ): CachedMetadata | null {
   const db = getDB();
   try {
-    const row = db
+    const targetFilename = path.basename(filepath).toLowerCase();
+    const rows = db
       .prepare(
-        'SELECT artist, title, duration, bpm, key, genre, comment, label FROM file_metadata_cache WHERE filepath = ? AND mtime = ? AND size = ?'
+        'SELECT filepath, artist, title, duration, bpm, key, genre, comment, label FROM file_metadata_cache WHERE mtime = ? AND size = ?'
       )
-      .get(filepath, mtime, size) as
-      | {
-          artist: string;
-          title: string;
-          duration: number;
-          bpm: number | null;
-          key: string | null;
-          genre: string | null;
-          comment: string | null;
-          label: string | null;
-        }
-      | undefined;
-    if (!row) return null;
+      .all(mtime, size) as {
+      filepath: string;
+      artist: string;
+      title: string;
+      duration: number;
+      bpm: number | null;
+      key: string | null;
+      genre: string | null;
+      comment: string | null;
+      label: string | null;
+    }[];
+
+    const match = rows.find((r) => path.basename(r.filepath).toLowerCase() === targetFilename);
+    if (!match) return null;
+
     return {
-      artist: row.artist,
-      title: row.title,
-      duration: row.duration,
-      bpm: row.bpm !== null ? row.bpm : undefined,
-      key: row.key !== null ? row.key : undefined,
-      genre: row.genre !== null ? row.genre : undefined,
-      comment: row.comment !== null ? row.comment : undefined,
-      label: row.label !== null ? row.label : undefined
+      artist: match.artist,
+      title: match.title,
+      duration: match.duration,
+      bpm: match.bpm !== null ? match.bpm : undefined,
+      key: match.key !== null ? match.key : undefined,
+      genre: match.genre !== null ? match.genre : undefined,
+      comment: match.comment !== null ? match.comment : undefined,
+      label: match.label !== null ? match.label : undefined
     };
   } catch {
     return null;
