@@ -39,7 +39,7 @@ export async function extractMetadata(filepath: string): Promise<{
   if (fileExists) {
     try {
       const stats = fs.statSync(filepath);
-      mtime = stats.mtimeMs;
+      mtime = Math.round(stats.mtimeMs);
       size = stats.size;
       const cached = getCachedMetadata(filepath, mtime, size);
       if (cached) {

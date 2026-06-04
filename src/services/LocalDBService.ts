@@ -171,10 +171,11 @@ export function getCachedMetadata(
     const targetFilename = path.basename(filepath).toLowerCase();
     const rows = db
       .prepare(
-        'SELECT filepath, artist, title, duration, bpm, key, genre, comment, label FROM file_metadata_cache WHERE mtime = ? AND size = ?'
+        'SELECT filepath, mtime, artist, title, duration, bpm, key, genre, comment, label FROM file_metadata_cache WHERE size = ?'
       )
-      .all(mtime, size) as {
+      .all(size) as {
       filepath: string;
+      mtime: number;
       artist: string;
       title: string;
       duration: number;
@@ -185,8 +186,14 @@ export function getCachedMetadata(
       label: string | null;
     }[];
 
-    const match = rows.find((r) => path.basename(r.filepath).toLowerCase() === targetFilename);
-    if (!match) return null;
+    const filenameMatches = rows.filter(
+      (r) => path.basename(r.filepath).toLowerCase() === targetFilename
+    );
+    if (filenameMatches.length === 0) return null;
+
+    // Best match has matching mtime, otherwise fall back to first size/filename match
+    const exactMatch = filenameMatches.find((r) => r.mtime === mtime);
+    const match = exactMatch || filenameMatches[0];
 
     return {
       artist: match.artist,
