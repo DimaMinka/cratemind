@@ -38,6 +38,12 @@ export function BottomBar(): React.JSX.Element {
       ) : null}
 
       <Text color="gray"> | </Text>
+      <Text color="blueBright" bold>
+        [T]
+      </Text>
+      <Text color="gray"> Sync Telegram</Text>
+
+      <Text color="gray"> | </Text>
       <Text color="red" bold>
         [Q]
       </Text>

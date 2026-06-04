@@ -62,7 +62,10 @@ async function main() {
   // 2. Automatically check and use Engine DJ Database if available
   const useEngineDB = EngineDBService.isAvailable();
   if (useEngineDB) {
-    addLog('SYSTEM', 'Engine DJ SQLite library detected. Automatically scanning database and local folders...');
+    addLog(
+      'SYSTEM',
+      'Engine DJ SQLite library detected. Automatically scanning database and local folders...'
+    );
   } else {
     addLog('SYSTEM', 'Engine DJ library not detected. Scanning local folders...');
   }

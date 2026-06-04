@@ -35,7 +35,11 @@ export function useOverrideHotkeys(override: OverrideState, folders: string[]) {
       );
     } else if (key.return) {
       override.resolve(selectedList);
-    } else if (normInput.toLowerCase() === 'a' && override.suggested && override.suggested.length > 0) {
+    } else if (
+      normInput.toLowerCase() === 'a' &&
+      override.suggested &&
+      override.suggested.length > 0
+    ) {
       override.resolve(override.suggested);
     } else if (normInput.toLowerCase() === 'p') {
       togglePausePreview();
