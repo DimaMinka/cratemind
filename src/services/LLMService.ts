@@ -144,7 +144,7 @@ Priority Heuristics:
 8. Presence of funky, disco, or old analog/vintage synth elements, indie dance, or oldschool house/disco vibes (like Voon - Good) -> 'retro' (regardless of the artist's usual deep/dark reputation or how modern the production feels).
 
 Vibe Exclusivity Rules (Strictly enforce - NEVER combine the following):
-- ENERGY EXCLUSIVITY: Never combine 'club party' or 'psy' with 'nargila vibe' or 'mantra'.
+- ENERGY EXCLUSIVITY: Never combine 'club party' or 'psy' with 'nargila vibe', 'mantra', or 'magic forest'.
 - TEMPERATURE EXCLUSIVITY: Never combine 'mountain sunset' with 'iceland'.
 - SUNRISE EXCLUSIVITY: Never combine 'new day vibe' with 'nargila vibe' or 'iceland'.
 - ERA EXCLUSIVITY: Never combine 'retro' with 'club party' or 'robotic'.
