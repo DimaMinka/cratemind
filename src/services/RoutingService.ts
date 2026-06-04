@@ -41,14 +41,16 @@ export async function routeFile(
 
   const filename = path.basename(srcPath);
 
-  // Copy file to all target subfolders
+  // Copy file to all target subfolders if not already present
   for (const folder of selectedFolders) {
     const targetDir = path.join(SORTED_DIR, folder);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
     const targetPath = path.join(targetDir, filename);
-    fs.copyFileSync(srcPath, targetPath);
+    if (!fs.existsSync(targetPath)) {
+      fs.copyFileSync(srcPath, targetPath);
+    }
   }
 
   // Delete the original file from Incoming to avoid double-processing
