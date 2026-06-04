@@ -105,3 +105,4 @@ Before considering any task complete, committing, or verifying success, the agen
 2. **Lint Second (`npm run lint`)**: Validate static analysis and Typescript rules using ESLint to spot potential bugs or redundant imports.
 3. **Build Third (`npm run build`)**: Compile the project with TypeScript (`tsc`) to verify type safety.
 * **Rule**: The complete chain `npm run format && npm run lint && npm run build` must run and exit with code `0` before presenting the final summary. Never skip this pipeline!
+* **Conventional Commits**: Every commit message must start with a lowercase Conventional Commits prefix matching the change type (e.g., `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`). Never skip these tags in commit messages.
