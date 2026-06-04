@@ -122,7 +122,7 @@ export async function downloadBulk(): Promise<void> {
 
           history[chat] = Math.max(history[chat] || 0, msg.id);
 
-          if (msg.media && msg.document && msg.document.mimeType?.startsWith('audio/')) {
+          if (msg.media && msg.document) {
             const getAttr = (className: string) =>
               msg.document?.attributes.find(
                 (attr: unknown) => (attr as { className?: string }).className === className
@@ -131,13 +131,17 @@ export async function downloadBulk(): Promise<void> {
             const fileNameAttr = getAttr('DocumentAttributeFilename');
             const audioAttr = getAttr('DocumentAttributeAudio');
 
-            let filename = 'unknown_audio.mp3';
+            let filename = '';
             if (fileNameAttr) {
-              filename = fileNameAttr.fileName || 'unknown_audio.mp3';
+              filename = fileNameAttr.fileName || '';
             } else if (audioAttr) {
               const title = audioAttr.title || 'Unknown';
               const performer = audioAttr.performer || 'Unknown';
               filename = `${performer} - ${title}.mp3`;
+            }
+
+            if (!filename) {
+              continue;
             }
 
             // Ensure valid audio extension
