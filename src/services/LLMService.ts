@@ -143,6 +143,15 @@ Priority Heuristics:
 7. Afro/Organic Percussion / Beach Grooves: Warm, Latin, celebratory Afro House or Organic House with prominent percussive patterns (e.g. Eli & Fur - Mirage, Themba) should route to 'tropical vibe', unless there is a dominant bright uplifting sunrise progression that overrides it to 'new day vibe'.
 8. Presence of funky, disco, or old analog/vintage synth elements, indie dance, or oldschool house/disco vibes (like Voon - Good) -> 'retro' (regardless of the artist's usual deep/dark reputation or how modern the production feels).
 
+Vibe Exclusivity Rules (Strictly enforce - NEVER combine the following):
+- ENERGY EXCLUSIVITY: Never combine 'club party' or 'psy' with 'nargila vibe' or 'mantra'.
+- TEMPERATURE EXCLUSIVITY: Never combine 'mountain sunset' with 'iceland'.
+- SUNRISE EXCLUSIVITY: Never combine 'new day vibe' with 'nargila vibe' or 'iceland'.
+- ERA EXCLUSIVITY: Never combine 'retro' with 'club party' or 'robotic'.
+- SCI-FI EXCLUSIVITY: Never combine 'galaxy trip' with 'earth' or 'mantra'.
+- INDUSTRIAL EXCLUSIVITY: Never combine 'robotic' with 'earth' or 'magic forest'.
+- REGIONAL EXCLUSIVITY: Never combine 'spain vibe' with 'india jungle'.
+
 Output Format:
 Return STRICT, valid JSON matching this schema:
 {
