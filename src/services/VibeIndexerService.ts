@@ -82,6 +82,21 @@ export async function indexAllDBVibes(): Promise<void> {
       })
     );
 
+    // Get list of already indexed tracks from cratemind.db
+    const cmDb = getLocalDB();
+    const indexedKeys = new Set<string>();
+    try {
+      const indexedRows = cmDb.prepare('SELECT artist, title FROM track_vectors').all() as {
+        artist: string;
+        title: string;
+      }[];
+      for (const r of indexedRows) {
+        indexedKeys.add(`${r.artist.toLowerCase()}|${r.title.toLowerCase()}`);
+      }
+    } catch {
+      // Table may not exist yet
+    }
+
     if (fs.existsSync(SORTED_DIR)) {
       addLog('SYSTEM', `Scanning physical sorted directory: ${SORTED_DIR}...`);
 
@@ -105,6 +120,7 @@ export async function indexAllDBVibes(): Promise<void> {
       }
 
       let localCount = 0;
+      let alreadyIndexedCount = 0;
       let currentIndex = 0;
       const totalLocalFiles = filesToProcess.length;
 
@@ -115,10 +131,18 @@ export async function indexAllDBVibes(): Promise<void> {
           const key = `${meta.artist.toLowerCase()}|${meta.title.toLowerCase()}`;
           if (!existingKeys.has(key)) {
             existingKeys.add(key);
-            addLog(
-              'SYSTEM',
-              `└─ Local-only track [${currentIndex}/${totalLocalFiles}]: ${meta.artist} - ${meta.title} → /${item.folder}`
-            );
+
+            const isIndexed = indexedKeys.has(key);
+            if (!isIndexed) {
+              addLog(
+                'SYSTEM',
+                `└─ Local-only track [${currentIndex}/${totalLocalFiles}]: ${meta.artist} - ${meta.title} → /${item.folder}`
+              );
+              localCount++;
+            } else {
+              alreadyIndexedCount++;
+            }
+
             targets.push({
               vibe: item.folder,
               track: {
@@ -134,7 +158,6 @@ export async function indexAllDBVibes(): Promise<void> {
                 label: meta.label
               }
             });
-            localCount++;
           }
         } catch {
           // ignore
@@ -146,6 +169,12 @@ export async function indexAllDBVibes(): Promise<void> {
           `Added ${localCount} additional tracks found only in physical Sorted/ folder.`
         );
       }
+      if (alreadyIndexedCount > 0) {
+        addLog(
+          'SYSTEM',
+          `Skipped logging for ${alreadyIndexedCount} physical Sorted/ tracks (already indexed in cratemind.db).`
+        );
+      }
     }
 
     if (targets.length === 0) {
@@ -155,21 +184,6 @@ export async function indexAllDBVibes(): Promise<void> {
     }
 
     addLog('SYSTEM', `Found ${targets.length} tracks matching vibes. Checking existing indexes...`);
-
-    // Get list of already indexed tracks
-    const cmDb = getLocalDB();
-    const indexedKeys = new Set<string>();
-    try {
-      const indexedRows = cmDb.prepare('SELECT artist, title FROM track_vectors').all() as {
-        artist: string;
-        title: string;
-      }[];
-      for (const r of indexedRows) {
-        indexedKeys.add(`${r.artist.toLowerCase()}|${r.title.toLowerCase()}`);
-      }
-    } catch {
-      // Table may not exist yet
-    }
 
     const toProcess = targets.filter((t) => {
       const artist = t.track.artist || 'Unknown Artist';
