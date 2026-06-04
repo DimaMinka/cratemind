@@ -142,7 +142,7 @@ export async function downloadBulk(): Promise<void> {
 
             // Ensure valid audio extension
             const ext = path.extname(filename).toLowerCase();
-            if (!AUDIO_EXTENSIONS.includes(ext as any)) {
+            if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
               continue;
             }
 

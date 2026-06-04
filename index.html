@@ -854,12 +854,18 @@
             gemini-embedding-2 and runs cosine similarity searches, applying a similarity threshold
             of <code>0.80</code> to filter out noisy, low-quality matches.
           </li>
+          <li>
+            <b>TelegramService:</b> Telegram client integration using GramJS. Allows connecting to custom chats/channels via userbot session keys to scrape, filter, and download audio tracks sequentially into the <code>Incoming</code> folder for analysis.
+          </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
         </ul>
 
         <h2>Key Features:</h2>
         <ul>
           <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
+          <li>
+            <b>Telegram Bulk Downloader:</b> Sync and download music from defined Telegram channels using GramJS userbot credentials defined in the environment files. Features built-in duplicate detection checking local files and Engine DJ DB before downloading.
+          </li>
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>
             <b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not
