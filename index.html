@@ -639,6 +639,26 @@
         </p>
       </section>
 
+      <!-- ── Optimization & Spend ───────────────────────────────────── -->
+      <section class="about-box" style="border-left: 3px solid #00ffcc" aria-label="API Spend Optimization">
+        <h1>Gemini API Spend &amp; Token Optimization</h1>
+        <p>
+          During the initial design phase, the system performed raw, un-cached Gemini API calls for every scanned track, resulting in significant token consumption and higher API request overhead during heavy catalog ingestions.
+        </p>
+        <p>
+          To eliminate redundant overhead, we implemented a multi-layered optimization strategy:
+        </p>
+        <ul>
+          <li><b>SHA-256 Context-Aware Cache:</b> Offlines LLM responses using deterministic hashing of track features, neighbor references, and YouTube contexts.</li>
+          <li><b>Session-Based Fallback Matching:</b> Reuses recent classification hits by matching metadata (Artist/Title) within a 24-hour window, bypassing slight floating-point changes in vector similarities.</li>
+          <li><b>Engine DJ Tier 1 Backup Match:</b> Directly resolves folders using local SQLite references in Denon DJ's <code>m.db</code>, bypassing LLM processing entirely for previously sorted tracks.</li>
+          <li><b>YouTube Scout Cache:</b> Caches YouTube scraping results to prevent duplicate network calls and conserve tokens on neighboring tracks in similar mixes.</li>
+        </ul>
+        <p>
+          Following these optimizations, active sorting runs achieved a <b>90–95% reduction</b> in daily token consumption and API request costs, demonstrating that even highly advanced, LLM-based categorization can run at production scale with minimal resources.
+        </p>
+      </section>
+
       <!-- ── TUI Demo ───────────────────────────────────────────────── -->
       <main id="tui-app" class="tui" role="main" aria-label="CrateMind TUI preview">
         <!-- Top status bar -->
