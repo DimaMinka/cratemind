@@ -124,7 +124,13 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
       lastScanDir: currentSortedDir
     };
     saveMemory(memory);
-    return { found: MOCK_RAG_EXAMPLES.length, added: MOCK_RAG_EXAMPLES.length, folders: 4 };
+    return {
+      found: MOCK_RAG_EXAMPLES.length,
+      added: MOCK_RAG_EXAMPLES.length,
+      folders: 4,
+      total: MOCK_RAG_EXAMPLES.length,
+      totalFolders: 4
+    };
   }
 
   const memory = loadMemory();
@@ -224,10 +230,13 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
     memory.lastScanDir = currentSortedDir;
     saveMemory(memory);
 
+    const totalFolders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
     return {
       found,
       added,
-      folders: folderVibeSet.size
+      folders: folderVibeSet.size,
+      total: memory.examples.length,
+      totalFolders
     };
   }
 
@@ -285,10 +294,13 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
   memory.lastScanDir = currentSortedDir;
   saveMemory(memory);
 
+  const totalFolders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
   return {
     found,
     added,
-    folders: foldersScanned
+    folders: foldersScanned,
+    total: memory.examples.length,
+    totalFolders
   };
 }
 
@@ -503,12 +515,13 @@ export async function getVectorContext(
   meta: TrackMeta,
   spotify?: SpotifyAudioFeatures | null,
   ytPlaylists?: YouTubePlaylist[],
-  releaseYear?: number
+  releaseYear?: number,
+  topK = 5
 ): Promise<{ neighbors: VectorNeighbor[]; passport: string }> {
   const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear });
 
   const excludeKey = `${artist.toLowerCase()}|${title.toLowerCase()}`;
-  const neighbors = await EmbeddingService.findNeighbors(passport.text, 5, excludeKey);
+  const neighbors = await EmbeddingService.findNeighbors(passport.text, topK, excludeKey);
 
   return { neighbors, passport: passport.text };
 }

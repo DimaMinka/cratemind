@@ -2,8 +2,11 @@ import { useStore } from './UIService.js';
 import * as EngineDBService from './EngineDBService.js';
 import * as EmbeddingService from './EmbeddingService.js';
 import { getDB as getLocalDB } from './LocalDBService.js';
-import { FOLDERS } from '../config.js';
+import { FOLDERS, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
 import { TrackMeta } from '../types.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { extractMetadata } from './ID3Service.js';
 
 let isIndexing = false;
 
@@ -67,6 +70,64 @@ export async function indexAllDBVibes(): Promise<void> {
       if (matchedVibe) {
         targets.push({ vibe: matchedVibe, track });
         folderCounts[matchedVibe] = (folderCounts[matchedVibe] ?? 0) + 1;
+      }
+    }
+
+    // Add local Sorted/ directory tracks if they are not already collected from DB
+    const existingKeys = new Set(
+      targets.map((t) => {
+        const artist = t.track.artist || 'Unknown Artist';
+        const title = t.track.title || t.track.filename || 'Unknown Title';
+        return `${artist.toLowerCase()}|${title.toLowerCase()}`;
+      })
+    );
+
+    if (fs.existsSync(SORTED_DIR)) {
+      addLog('SYSTEM', `Scanning physical sorted directory: ${SORTED_DIR}...`);
+      let localCount = 0;
+      for (const folder of FOLDERS) {
+        const folderPath = path.join(SORTED_DIR, folder);
+        if (!fs.existsSync(folderPath)) continue;
+
+        const files = fs.readdirSync(folderPath);
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) continue;
+
+          // Parse metadata to see if it's a duplicate
+          const fullPath = path.join(folderPath, file);
+          try {
+            const meta = await extractMetadata(fullPath);
+            const key = `${meta.artist.toLowerCase()}|${meta.title.toLowerCase()}`;
+            if (!existingKeys.has(key)) {
+              existingKeys.add(key);
+              targets.push({
+                vibe: folder,
+                track: {
+                  id: -1, // placeholder for non-DB local tracks
+                  path: fullPath,
+                  filename: file,
+                  title: meta.title,
+                  artist: meta.artist,
+                  bpm: meta.bpm,
+                  key: meta.key,
+                  genre: meta.genre,
+                  comment: meta.comment,
+                  label: meta.label
+                }
+              });
+              localCount++;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      if (localCount > 0) {
+        addLog(
+          'SYSTEM',
+          `Added ${localCount} additional tracks found only in physical Sorted/ folder.`
+        );
       }
     }
 

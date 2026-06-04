@@ -40,6 +40,8 @@ export type BootstrapResult = {
   found: number;
   added: number;
   folders: number;
+  total?: number;
+  totalFolders?: number;
 };
 
 export type RagExample = {

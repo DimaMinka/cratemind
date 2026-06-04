@@ -41,6 +41,8 @@ function resolvePath(filePath: string): string {
 // ── Lazy Singleton Connection ───────────────────────────────────────────────
 
 let _db: Database.Database | null = null;
+let _cachedTracks: EngineTrack[] | null = null;
+let _cachedPlaylistVibes: { trackId: number; vibe: string }[] | null = null;
 
 /**
  * Returns the lazy singleton read-only Database connection.
@@ -108,6 +110,10 @@ export function getTracks(): EngineTrack[] {
     return MOCK_ENGINE_TRACKS;
   }
 
+  if (_cachedTracks) {
+    return _cachedTracks;
+  }
+
   const db = getDB();
   if (!db) return [];
 
@@ -118,7 +124,7 @@ export function getTracks(): EngineTrack[] {
       )
       .all() as DBTrackRow[];
 
-    return rows.map((t) => ({
+    _cachedTracks = rows.map((t) => ({
       id: t.id,
       path: t.path,
       filename: t.filename,
@@ -130,6 +136,7 @@ export function getTracks(): EngineTrack[] {
       comment: t.comment || undefined,
       label: t.label || undefined
     }));
+    return _cachedTracks;
   } catch {
     return [];
   }
@@ -226,6 +233,10 @@ export function getTrackPlaylistVibes(): { trackId: number; vibe: string }[] {
     return [];
   }
 
+  if (_cachedPlaylistVibes) {
+    return _cachedPlaylistVibes;
+  }
+
   const db = getDB();
   if (!db) return [];
 
@@ -239,8 +250,20 @@ export function getTrackPlaylistVibes(): { trackId: number; vibe: string }[] {
     `
       )
       .all() as { trackId: number; vibe: string }[];
-    return rows;
+    _cachedPlaylistVibes = rows;
+    return _cachedPlaylistVibes;
   } catch {
     return [];
   }
+}
+
+/**
+ * Retrieves playlist titles for a specific track ID.
+ */
+export function getTrackPlaylists(trackId: number): string[] {
+  if (MOCK_MODE) {
+    return [];
+  }
+  const vibes = getTrackPlaylistVibes();
+  return vibes.filter((v) => v.trackId === trackId).map((v) => v.vibe);
 }

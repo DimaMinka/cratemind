@@ -63,16 +63,27 @@ async function runBootstrap(useEngineDB = false): Promise<void> {
   const addLog = useStore.getState().addLog;
   const setRagStatus = useStore.getState().setRagStatus;
 
-  addLog('RAG', `Starting bootstrap scan inside ${SORTED_DIR}...`);
+  if (useEngineDB) {
+    addLog('RAG', 'Starting bootstrap import from Engine DJ database (m.db)...');
+  } else {
+    addLog('RAG', `Starting bootstrap scan inside physical folder ${SORTED_DIR}...`);
+  }
   try {
     const result = await RAGService.bootstrap(SORTED_DIR, useEngineDB);
-    addLog(
-      'RAG',
-      `Scan complete: ${result.found} tracks found, ${result.added} added to RAG across ${result.folders} folders.`
-    );
+    if (useEngineDB) {
+      addLog(
+        'RAG',
+        `Import complete: ${result.found} tracks checked in m.db, ${result.added} new added to RAG (Total: ${result.total ?? result.added} tracks across ${result.totalFolders ?? result.folders} vibes).`
+      );
+    } else {
+      addLog(
+        'RAG',
+        `Scan complete: ${result.found} files found in ${SORTED_DIR}, ${result.added} new added to RAG (Total: ${result.total ?? result.added} tracks across ${result.totalFolders ?? result.folders} vibes).`
+      );
+    }
     setRagStatus('ready', {
-      total: result.added,
-      folders: result.folders,
+      total: result.total ?? result.added,
+      folders: result.totalFolders ?? result.folders,
       scannedAt: Date.now()
     });
   } catch (err) {
