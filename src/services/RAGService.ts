@@ -223,6 +223,59 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
       added++;
     }
 
+    // Also scan physical Sorted/ directory for local-only tracks
+    if (fs.existsSync(currentSortedDir)) {
+      for (const folder of FOLDERS) {
+        const folderPath = path.join(currentSortedDir, folder);
+        if (!fs.existsSync(folderPath)) continue;
+
+        const files = fs.readdirSync(folderPath);
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) continue;
+
+          found++;
+
+          try {
+            const fullPath = path.join(folderPath, file);
+            const meta = await extractMetadata(fullPath);
+
+            const isDuplicate = memory.examples.some(
+              (ex) =>
+                ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
+                ex.title.toLowerCase() === meta.title.toLowerCase()
+            );
+
+            if (isDuplicate) {
+              continue;
+            }
+
+            // Enforce per-vibe limit to keep RAG memory lightweight
+            const currentCount = vibeCounts[folder] ?? 0;
+            if (currentCount >= maxPerVibe) {
+              continue;
+            }
+
+            folderVibeSet.add(folder);
+            vibeCounts[folder] = currentCount + 1;
+
+            memory.examples.push({
+              artist: meta.artist,
+              title: meta.title,
+              folders: [folder],
+              reasoning: 'Added from local Sorted folder during bootstrap',
+              source: 'scan',
+              ts: Date.now()
+            });
+
+            added++;
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
     if (memory.examples.length > RAG_MAX_STORED) {
       memory.examples = memory.examples.slice(-RAG_MAX_STORED);
     }

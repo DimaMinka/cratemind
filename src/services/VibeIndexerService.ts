@@ -101,6 +101,7 @@ export async function indexAllDBVibes(): Promise<void> {
             const key = `${meta.artist.toLowerCase()}|${meta.title.toLowerCase()}`;
             if (!existingKeys.has(key)) {
               existingKeys.add(key);
+              addLog('SYSTEM', `└─ Local-only track: ${meta.artist} - ${meta.title} → /${folder}`);
               targets.push({
                 vibe: folder,
                 track: {
