@@ -146,6 +146,7 @@ Priority Heuristics:
 Vibe Exclusivity Rules (Strictly enforce - NEVER combine the following):
 - ENERGY EXCLUSIVITY: Never combine 'club party' or 'psy' with 'nargila vibe', 'mantra', or 'magic forest'.
 - TEMPERATURE EXCLUSIVITY: Never combine 'mountain sunset' with 'iceland'.
+- SUNSET EXCLUSIVITY: Never combine 'mountain sunset' with 'club party'.
 - SUNRISE EXCLUSIVITY: Never combine 'new day vibe' with 'nargila vibe' or 'iceland'.
 - ERA EXCLUSIVITY: Never combine 'retro' with 'club party' or 'robotic'.
 - SCI-FI EXCLUSIVITY: Never combine 'galaxy trip' with 'earth', 'mantra', or 'psy'.
