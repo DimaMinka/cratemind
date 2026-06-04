@@ -326,7 +326,6 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
 
       // Vector similarity search
       let vectorNeighbors: VectorNeighbor[] = [];
-      let vectorConsensusResponse: LLMResponse | undefined = undefined;
       const vectorCount = EmbeddingService.getVectorCount();
       if (vectorCount > 0 && process.env.GEMINI_API_KEY) {
         try {
@@ -342,47 +341,14 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           );
           vectorNeighbors = vectorResult.neighbors;
 
-          // Filter neighbors with similarity >= 0.80
-          const qualifiedNeighbors = vectorNeighbors.filter((n) => n.similarity >= 0.8);
-
-          if (qualifiedNeighbors.length > 0) {
-            // Aggregate similarity scores by vibe folder
-            const vibeScores: Record<string, number> = {};
-            for (const n of qualifiedNeighbors) {
-              vibeScores[n.folder] = (vibeScores[n.folder] ?? 0) + n.similarity;
-            }
-
-            // Find winning vibe
-            let winningVibe = '';
-            let maxScore = 0;
-            for (const [vibe, score] of Object.entries(vibeScores)) {
-              if (score > maxScore) {
-                maxScore = score;
-                winningVibe = vibe;
-              }
-            }
-
-            const topSimilarity = vectorNeighbors[0]?.similarity ?? 0;
-
-            if (maxScore >= 3.3 || topSimilarity >= 0.92) {
-              addLog(
-                'SYSTEM',
-                `Vector consensus match for ${filename}: Vibe="${winningVibe}" (Score: ${maxScore.toFixed(2)}, Top: ${topSimilarity})`
-              );
-              vectorConsensusResponse = {
-                folders: [winningVibe],
-                reasoning: `Vector consensus match (Score: ${maxScore.toFixed(2)}, Top: ${topSimilarity})`,
-                confidence: 1.0
-              };
-            } else {
-              const topFolders = [
-                ...new Set(vectorNeighbors.slice(0, 3).map((n) => n.folder))
-              ].join(', ');
-              addLog(
-                'SYSTEM',
-                `Vector search: ${vectorNeighbors.length} neighbors found → folders: ${topFolders} (Consensus score ${maxScore.toFixed(2)} too low for auto-route)`
-              );
-            }
+          if (vectorNeighbors.length > 0) {
+            const topFolders = [...new Set(vectorNeighbors.slice(0, 3).map((n) => n.folder))].join(
+              ', '
+            );
+            addLog(
+              'SYSTEM',
+              `Vector search: ${vectorNeighbors.length} neighbors found → top folders: ${topFolders}`
+            );
           }
         } catch {
           // ignore
@@ -420,10 +386,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         vectorNeighbors,
         scoutResult,
         ragHit: false,
-        cacheHit:
-          !!cachedResponse ||
-          (!!vectorConsensusResponse && vectorConsensusResponse.confidence >= 0.99),
-        llmResponse: cachedResponse || vectorConsensusResponse
+        cacheHit: !!cachedResponse,
+        llmResponse: cachedResponse || undefined
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

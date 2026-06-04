@@ -38,7 +38,7 @@ const FLOAT32_BYTES = 4;
 const EMBEDDING_DIMS = 3072;
 
 /** Minimum cosine similarity threshold for qualified vector search matches */
-const MIN_SIMILARITY_THRESHOLD = 0.8;
+const MIN_SIMILARITY_THRESHOLD = 0.9;
 
 // ── Lazy AI Client ─────────────────────────────────────────────────────────
 
