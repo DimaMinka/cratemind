@@ -340,6 +340,8 @@
       .override-track .track-label {
         color: #888888;
         font-weight: bold;
+        display: inline-block;
+        width: 55px;
       }
 
       .override-suggest-box {
@@ -693,14 +695,8 @@
             <div class="override-reason-box">▲ DAILY API REQUEST LIMIT REACHED</div>
 
             <div class="override-track">
-              <div>
-                <span class="track-label">Artist:</span>
-                <span class="track-artist">Stephan Bodzin</span>
-              </div>
-              <div>
-                <span class="track-label">Title: &nbsp;</span>
-                <span class="track-title">Strand</span>
-              </div>
+              <div><span class="track-label">Artist:</span> <span class="track-artist">Stephan Bodzin</span></div>
+              <div><span class="track-label">Title:</span> <span class="track-title">Strand</span></div>
             </div>
 
             <div class="override-suggest-box">
@@ -772,11 +768,8 @@
           </div>
         </div>
 
-        <!-- Hotkeys -->
         <div class="tui-hotkeys">
           <span class="key">[Space]</span> Pause/Resume
-          <span class="sep">|</span>
-          <span class="key-green">[R]</span> Log RAG Stats
           <span class="sep">|</span>
           <span class="key" style="color: #00ffff">[L]</span> Reset Limits
           <span class="sep">|</span>
