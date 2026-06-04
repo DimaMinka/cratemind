@@ -149,7 +149,7 @@ Vibe Exclusivity Rules (Strictly enforce - NEVER combine the following):
 - SUNRISE EXCLUSIVITY: Never combine 'new day vibe' with 'nargila vibe' or 'iceland'.
 - ERA EXCLUSIVITY: Never combine 'retro' with 'club party' or 'robotic'.
 - SCI-FI EXCLUSIVITY: Never combine 'galaxy trip' with 'earth' or 'mantra'.
-- INDUSTRIAL EXCLUSIVITY: Never combine 'robotic' with 'earth' or 'magic forest'.
+- INDUSTRIAL EXCLUSIVITY: Never combine 'robotic' with 'earth', 'magic forest', or 'club party'.
 - REGIONAL EXCLUSIVITY: Never combine 'spain vibe' with 'india jungle'.
 
 Output Format:
