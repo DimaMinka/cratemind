@@ -69,7 +69,9 @@ async function runBootstrap(useEngineDB = false): Promise<void> {
     addLog('RAG', `Starting bootstrap scan inside physical folder ${SORTED_DIR}...`);
   }
   try {
-    const result = await RAGService.bootstrap(SORTED_DIR, useEngineDB);
+    const result = await RAGService.bootstrap(SORTED_DIR, useEngineDB, (current, total) => {
+      setRagStatus('scanning', { progress: `${current}/${total}` });
+    });
     if (useEngineDB) {
       addLog(
         'RAG',

@@ -39,7 +39,11 @@ export function Header({
   // Render RAG memory state badge with distinct colors
   let ragBadge = <Text color="yellow">* FIRST RUN (No Memory)</Text>;
   if (ragStatus === 'scanning') {
-    ragBadge = <Text color="gray">~ SCANNING COLLECTION...</Text>;
+    ragBadge = (
+      <Text color="gray">
+        ~ SCANNING COLLECTION...{ragStats.progress ? ` [${ragStats.progress}]` : ''}
+      </Text>
+    );
   } else if (ragStatus === 'ready') {
     ragBadge = (
       <Text color="green" bold>

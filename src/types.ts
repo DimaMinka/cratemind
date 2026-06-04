@@ -34,6 +34,7 @@ export type RagStats = {
   total: number;
   folders: number;
   scannedAt: number | null;
+  progress?: string;
 };
 
 export type BootstrapResult = {

@@ -84,7 +84,9 @@ export async function indexAllDBVibes(): Promise<void> {
 
     if (fs.existsSync(SORTED_DIR)) {
       addLog('SYSTEM', `Scanning physical sorted directory: ${SORTED_DIR}...`);
-      let localCount = 0;
+
+      // Pre-scan directories to get list of audio files and show processing progress
+      const filesToProcess: { folder: string; file: string; fullPath: string }[] = [];
       for (const folder of FOLDERS) {
         const folderPath = path.join(SORTED_DIR, folder);
         if (!fs.existsSync(folderPath)) continue;
@@ -92,36 +94,50 @@ export async function indexAllDBVibes(): Promise<void> {
         const files = fs.readdirSync(folderPath);
         for (const file of files) {
           const ext = path.extname(file).toLowerCase();
-          if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) continue;
-
-          // Parse metadata to see if it's a duplicate
-          const fullPath = path.join(folderPath, file);
-          try {
-            const meta = await extractMetadata(fullPath);
-            const key = `${meta.artist.toLowerCase()}|${meta.title.toLowerCase()}`;
-            if (!existingKeys.has(key)) {
-              existingKeys.add(key);
-              addLog('SYSTEM', `└─ Local-only track: ${meta.artist} - ${meta.title} → /${folder}`);
-              targets.push({
-                vibe: folder,
-                track: {
-                  id: -1, // placeholder for non-DB local tracks
-                  path: fullPath,
-                  filename: file,
-                  title: meta.title,
-                  artist: meta.artist,
-                  bpm: meta.bpm,
-                  key: meta.key,
-                  genre: meta.genre,
-                  comment: meta.comment,
-                  label: meta.label
-                }
-              });
-              localCount++;
-            }
-          } catch {
-            // ignore
+          if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+            filesToProcess.push({
+              folder,
+              file,
+              fullPath: path.join(folderPath, file)
+            });
           }
+        }
+      }
+
+      let localCount = 0;
+      let currentIndex = 0;
+      const totalLocalFiles = filesToProcess.length;
+
+      for (const item of filesToProcess) {
+        currentIndex++;
+        try {
+          const meta = await extractMetadata(item.fullPath);
+          const key = `${meta.artist.toLowerCase()}|${meta.title.toLowerCase()}`;
+          if (!existingKeys.has(key)) {
+            existingKeys.add(key);
+            addLog(
+              'SYSTEM',
+              `└─ Local-only track [${currentIndex}/${totalLocalFiles}]: ${meta.artist} - ${meta.title} → /${item.folder}`
+            );
+            targets.push({
+              vibe: item.folder,
+              track: {
+                id: -1, // placeholder for non-DB local tracks
+                path: item.fullPath,
+                filename: item.file,
+                title: meta.title,
+                artist: meta.artist,
+                bpm: meta.bpm,
+                key: meta.key,
+                genre: meta.genre,
+                comment: meta.comment,
+                label: meta.label
+              }
+            });
+            localCount++;
+          }
+        } catch {
+          // ignore
         }
       }
       if (localCount > 0) {

@@ -111,7 +111,11 @@ export function invalidateCache(): void {
 
 import * as EngineDBService from './EngineDBService.js';
 
-export async function bootstrap(sortedDir: string, useEngineDB = false): Promise<BootstrapResult> {
+export async function bootstrap(
+  sortedDir: string,
+  useEngineDB = false,
+  onProgress?: (current: number, total: number) => void
+): Promise<BootstrapResult> {
   // Invalidate cache so bootstrap always reads a fresh state from disk
   _memoryCache = null;
 
@@ -225,6 +229,7 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
 
     // Also scan physical Sorted/ directory for local-only tracks
     if (fs.existsSync(currentSortedDir)) {
+      const filesToProcess: { folder: string; file: string; fullPath: string }[] = [];
       for (const folder of FOLDERS) {
         const folderPath = path.join(currentSortedDir, folder);
         if (!fs.existsSync(folderPath)) continue;
@@ -232,46 +237,60 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
         const files = fs.readdirSync(folderPath);
         for (const file of files) {
           const ext = path.extname(file).toLowerCase();
-          if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) continue;
-
-          found++;
-
-          try {
-            const fullPath = path.join(folderPath, file);
-            const meta = await extractMetadata(fullPath);
-
-            const isDuplicate = memory.examples.some(
-              (ex) =>
-                ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
-                ex.title.toLowerCase() === meta.title.toLowerCase()
-            );
-
-            if (isDuplicate) {
-              continue;
-            }
-
-            // Enforce per-vibe limit to keep RAG memory lightweight
-            const currentCount = vibeCounts[folder] ?? 0;
-            if (currentCount >= maxPerVibe) {
-              continue;
-            }
-
-            folderVibeSet.add(folder);
-            vibeCounts[folder] = currentCount + 1;
-
-            memory.examples.push({
-              artist: meta.artist,
-              title: meta.title,
-              folders: [folder],
-              reasoning: 'Added from local Sorted folder during bootstrap',
-              source: 'scan',
-              ts: Date.now()
+          if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+            filesToProcess.push({
+              folder,
+              file,
+              fullPath: path.join(folderPath, file)
             });
-
-            added++;
-          } catch {
-            // ignore
           }
+        }
+      }
+
+      let currentIndex = 0;
+      const totalLocalFiles = filesToProcess.length;
+
+      for (const item of filesToProcess) {
+        currentIndex++;
+        if (onProgress) {
+          onProgress(currentIndex, totalLocalFiles);
+        }
+        found++;
+
+        try {
+          const meta = await extractMetadata(item.fullPath);
+
+          const isDuplicate = memory.examples.some(
+            (ex) =>
+              ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
+              ex.title.toLowerCase() === meta.title.toLowerCase()
+          );
+
+          if (isDuplicate) {
+            continue;
+          }
+
+          // Enforce per-vibe limit to keep RAG memory lightweight
+          const currentCount = vibeCounts[item.folder] ?? 0;
+          if (currentCount >= maxPerVibe) {
+            continue;
+          }
+
+          folderVibeSet.add(item.folder);
+          vibeCounts[item.folder] = currentCount + 1;
+
+          memory.examples.push({
+            artist: meta.artist,
+            title: meta.title,
+            folders: [item.folder],
+            reasoning: 'Added from local Sorted folder during bootstrap',
+            source: 'scan',
+            ts: Date.now()
+          });
+
+          added++;
+        } catch {
+          // ignore
         }
       }
     }
@@ -294,6 +313,7 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
   }
 
   // 2. Filesystem scan path
+  const filesToProcess: { folder: string; file: string; fullPath: string }[] = [];
   for (const folder of FOLDERS) {
     const folderPath = path.join(currentSortedDir, folder);
     if (!fs.existsSync(folderPath)) {
@@ -305,17 +325,28 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
 
     for (const file of files) {
       const ext = path.extname(file).toLowerCase();
-      if (!AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
-        continue;
+      if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+        filesToProcess.push({
+          folder,
+          file,
+          fullPath: path.join(folderPath, file)
+        });
       }
+    }
+  }
 
-      found++;
-      const fullPath = path.join(folderPath, file);
+  let currentIndex = 0;
+  const totalLocalFiles = filesToProcess.length;
 
-      // Extract metadata FIRST so we can do a proper artist+title duplicate check.
-      // This is the fix for the broken duplicate detection that was comparing
-      // ex.artist against the raw filename string (which never matched).
-      const meta = await extractMetadata(fullPath);
+  for (const item of filesToProcess) {
+    currentIndex++;
+    if (onProgress) {
+      onProgress(currentIndex, totalLocalFiles);
+    }
+    found++;
+
+    try {
+      const meta = await extractMetadata(item.fullPath);
 
       const isDuplicate = memory.examples.some(
         (ex) =>
@@ -330,13 +361,15 @@ export async function bootstrap(sortedDir: string, useEngineDB = false): Promise
       memory.examples.push({
         artist: meta.artist,
         title: meta.title,
-        folders: [folder],
+        folders: [item.folder],
         reasoning: 'Added during bootstrap scan',
         source: 'scan',
         ts: Date.now()
       });
 
       added++;
+    } catch {
+      // ignore
     }
   }
 
