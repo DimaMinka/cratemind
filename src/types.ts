@@ -65,6 +65,8 @@ export type RagMemory = {
 export type BootPromptState = {
   message: string;
   detail: string;
+  yesLabel?: string;
+  noLabel?: string;
   resolve: (confirmed: boolean) => void;
 };
 

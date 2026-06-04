@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { BootPromptState } from '../types.js';
 import { useStdoutDimensions } from '../hooks/useStdoutDimensions.js';
+import { normalizeKey } from '../services/KeyboardService.js';
 
 interface ConfirmPromptProps {
   prompt: BootPromptState;
@@ -18,7 +19,8 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
 
   // Capture local keyboard inputs and block global hotkeys
   useInput((input, key) => {
-    const keyLower = input.toLowerCase();
+    const normInput = normalizeKey(input);
+    const keyLower = normInput.toLowerCase();
     if (keyLower === 'y' || key.return) {
       prompt.resolve(true);
     } else if (keyLower === 'n' || key.escape) {
@@ -64,10 +66,10 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
           ) : (
             <>
               <Text color="green" bold>
-                [Y] Yes, scan & load memory
+                [Y] {prompt.yesLabel || 'Yes'}
               </Text>
               <Text color="red" bold>
-                [N] Skip, start clean
+                [N] {prompt.noLabel || 'No'}
               </Text>
             </>
           )}

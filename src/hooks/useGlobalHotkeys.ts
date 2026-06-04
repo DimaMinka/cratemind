@@ -5,6 +5,7 @@ import * as CacheService from '../services/CacheService.js';
 import * as EngineDBService from '../services/EngineDBService.js';
 import { indexAllDBVibes } from '../services/VibeIndexerService.js';
 import { MOCK_MODE } from '../config.js';
+import { normalizeKey } from '../services/KeyboardService.js';
 
 /**
  * useGlobalHotkeys.ts
@@ -31,9 +32,10 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
       return;
     }
 
-    const keyLower = input.toLowerCase();
+    const normInput = normalizeKey(input);
+    const keyLower = normInput.toLowerCase();
 
-    if (input === ' ') {
+    if (normInput === ' ') {
       const nextStatus = status === 'listening' ? 'paused' : 'listening';
       setStatus(nextStatus);
       addLog('SYSTEM', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
