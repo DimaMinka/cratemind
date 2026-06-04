@@ -649,6 +649,14 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         ts: Date.now()
       });
 
+      // Sync RAG memory stats to UI
+      const updatedRagStats = RAGService.getStats();
+      useStore.getState().setRagStatus('ready', {
+        total: updatedRagStats.total,
+        folders: updatedRagStats.folders,
+        scannedAt: Date.now()
+      });
+
       // Store vector asynchronously
       if (process.env.GEMINI_API_KEY) {
         EmbeddingService.storeTrackVector(

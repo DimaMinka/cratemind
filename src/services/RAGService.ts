@@ -629,3 +629,12 @@ export async function getVectorContext(
 
   return { neighbors, passport: passport.text };
 }
+
+export function getStats(): { total: number; folders: number } {
+  const memory = loadMemory();
+  const folders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
+  return {
+    total: memory.examples.length,
+    folders
+  };
+}
