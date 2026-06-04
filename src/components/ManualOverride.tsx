@@ -54,24 +54,35 @@ export function ManualOverride({ override }: ManualOverrideProps): React.JSX.Ele
       ) : null}
 
       <Box marginBottom={1} flexDirection="column">
-        <Text color="white" bold>
-          Track:{' '}
-          {override.artist && override.title && override.artist !== 'Unknown' ? (
-            <>
+        {override.artist && override.title && override.artist !== 'Unknown' ? (
+          <>
+            <Box>
+              <Text color="gray" bold>
+                Artist:{' '}
+              </Text>
               <Text color="cyanBright" bold>
                 {override.artist}
               </Text>
-              <Text color="gray"> – </Text>
+            </Box>
+            <Box>
+              <Text color="gray" bold>
+                Title:{' '}
+              </Text>
               <Text color="greenBright" bold>
                 {override.title}
               </Text>
-            </>
-          ) : (
+            </Box>
+          </>
+        ) : (
+          <Box>
+            <Text color="gray" bold>
+              Track:{' '}
+            </Text>
             <Text color="cyanBright" bold>
               {override.filename}
             </Text>
-          )}
-        </Text>
+          </Box>
+        )}
 
         {override.suggested && override.suggested.length > 0 ? (
           <Box
