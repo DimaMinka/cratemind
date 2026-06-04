@@ -712,7 +712,9 @@
             <span class="player-bracket">]</span>
           </div>
 
-          <div class="player-seek-hint">Use [P] to Pause/Resume | [←]/[→] to seek 10s, Shift for 30s</div>
+          <div class="player-seek-hint">
+            Use [P] to Pause/Resume | [←]/[→] to seek 10s, Shift for 30s
+          </div>
         </div>
 
         <!-- Hotkeys -->
@@ -749,20 +751,29 @@
             the cache.
           </li>
           <li>
-            <b>ID3Service:</b> Metadata tag extraction using music-metadata, and safe tag writing (BPM and Key) for MP3/FLAC files via FFmpeg stream copying.
+            <b>ID3Service:</b> Metadata tag extraction using music-metadata, and safe tag writing
+            (BPM and Key) for MP3/FLAC files via FFmpeg stream copying. Features a local
+            <code>file_metadata_cache</code> table in <code>cratemind.db</code> to speed up
+            subsequent bootstrap folder crawls.
           </li>
           <li>
             <b>AubioService:</b> Offline audio analysis service. Runs `aubio tempo` to estimate BPM
             and `keyfinder-cli` to detect musical keys on macOS when files lack ID3 metadata.
           </li>
           <li>
-            <b>RAGService:</b> Few-shot memory layer — persists routing history to
-            <code>cratemind-memory.json</code> and builds context strings for LLM prompts.
+            <b>EngineDBService:</b> Strictly read-only connection to Engine DJ's SQLite database
+            (<code>m.db</code>) to retrieve playlists, folder paths, BPM, and keys. Uses
+            process-lifetime caching for high-performance library lookups.
           </li>
           <li>
-            <b>CacheService:</b> Handles persistent offline SHA-256 caching in
-            <code>.cratemind-cache.json</code> and daily API request counts in
-            <code>.cratemind-stats.json</code>.
+            <b>RAGService:</b> Few-shot memory layer — persists routing history to the
+            <code>rag_examples</code> table in <code>cratemind.db</code> and builds context strings
+            for LLM prompts.
+          </li>
+          <li>
+            <b>CacheService:</b> Handles persistent offline SHA-256 caching and API statistics
+            inside SQLite tables (<code>llm_cache</code>, <code>api_stats</code>) in
+            <code>cratemind.db</code>.
           </li>
           <li>
             <b>LLMService:</b> Gemini API integration with structured Zod schema validation, local
@@ -770,8 +781,8 @@
           </li>
           <li>
             <b>EmbeddingService:</b> Local vector database integration. Generates embeddings using
-            gemini-embedding-2 and runs cosine similarity searches, applying a similarity threshold of
-            <code>0.80</code> to filter out noisy, low-quality matches.
+            gemini-embedding-2 and runs cosine similarity searches, applying a similarity threshold
+            of <code>0.80</code> to filter out noisy, low-quality matches.
           </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
         </ul>
@@ -782,7 +793,11 @@
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>
             <b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not
-            just artist name. Instant RAG auto-routing is strictly restricted to user-approved manual entries (<code>source: 'manual'</code>) or files physically present in the collection (<code>source: 'scan'/'engine-dj'</code>), ensuring automatic LLM classifications from previous runs that were never confirmed do not bypass re-analysis if they return to the Incoming folder.
+            just artist name. Instant RAG auto-routing is strictly restricted to user-approved
+            manual entries (<code>source: 'manual'</code>) or files physically present in the
+            collection (<code>source: 'scan'/'engine-dj'</code>), ensuring automatic LLM
+            classifications from previous runs that were never confirmed do not bypass re-analysis
+            if they return to the Incoming folder.
           </li>
           <li>
             <b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your
@@ -791,17 +806,51 @@
           </li>
           <li>
             <b>Local Caching &amp; Limits:</b> SHA-256 context-aware cache to prevent redundant LLM
-            latency/charges, paired with daily request limits to avoid API overspending. Optimized with:
+            latency/charges, paired with daily request limits to avoid API overspending. Optimized
+            with:
             <ul>
-              <li><b>Session-Based Fallback:</b> Automatically falls back to matching by artist/title within the last 24 hours if the strict context hash misses due to float precision variance in vector similarity scores or YouTube scout fluctuations. The hit is then automatically cloned under the new context hash.</li>
-              <li><b>Confidence-Aware Interception:</b> Cache hits with low confidence (&lt; 0.99) are intercepted and redirected to the manual override TUI, preventing automatic misrouting of unconfirmed tracks.</li>
-              <li><b>Sequential Chunking:</b> Large batches of incoming files are split into small groups of 5 tracks and processed sequentially. This prevents API exhaustion (429) and limits the impact of errors to isolated chunks.</li>
+              <li>
+                <b>Session-Based Fallback:</b> Automatically falls back to matching by artist/title
+                within the last 24 hours if the strict context hash misses due to float precision
+                variance in vector similarity scores or YouTube scout fluctuations. The hit is then
+                automatically cloned under the new context hash.
+              </li>
+              <li>
+                <b>Confidence-Aware Interception:</b> Cache hits with low confidence (&lt; 0.99) are
+                intercepted and redirected to the manual override TUI, preventing automatic
+                misrouting of unconfirmed tracks.
+              </li>
+              <li>
+                <b>Sequential Chunking:</b> Large batches of incoming files are split into small
+                groups of 5 tracks and processed sequentially. This prevents API exhaustion (429)
+                and limits the impact of errors to isolated chunks.
+              </li>
+            </ul>
+          </li>
+          <li>
+            <b>Engine DJ Integration (Strictly Read-Only):</b> Integrates with Denon DJ's SQLite
+            database (<code>m.db</code>). Features:
+            <ul>
+              <li>
+                <b>Tier 1 Backup Match:</b> Instantly matches incoming tracks against
+                <code>m.db</code> playlist associations or directory folder names, auto-routing them
+                directly without calling the Gemini API.
+              </li>
+              <li>
+                <b>Pre-Extraction Check:</b> Looks up metadata (BPM, Key) in the database via
+                filename or parsed names *before* running expensive ID3 extraction or offline
+                tempo/key analysis.
+              </li>
             </ul>
           </li>
           <li>
             <b>Offline Audio Analysis (macOS):</b> Automatically estimates tempo (BPM) and detects
             musical keys (Camelot format) using local CLI tools (<code>aubio</code> and
-            <code>keyfinder-cli</code>) when metadata tags are missing or corrupt. Newly estimated or database-matched BPM and key values are automatically written back into the source track's metadata (ID3v2 for MP3, Vorbis Comments for FLAC) using FFmpeg before routing.
+            <code>keyfinder-cli</code>) when metadata tags are missing or corrupt. Newly estimated
+            or database-matched BPM and key values are automatically written back into the source
+            track's metadata (ID3v2 for MP3, Vorbis Comments for FLAC) using FFmpeg before routing.
+            Bypassed completely if cached in the local database or if already matched inside Engine
+            DJ DB.
           </li>
           <li>
             <b>User-first:</b> Bootstrap scan, collection change, and memory clear all require
@@ -809,8 +858,8 @@
           </li>
           <li>
             Beautiful multi-select checkbox TUI for low-confidence Manual Overrides, with skipped
-            (unmarked) tracks automatically routed to a dedicated <code>Sorted/skipped</code> folder to
-            keep the incoming queue clean.
+            (unmarked) tracks automatically routed to a dedicated <code>Sorted/skipped</code> folder
+            to keep the incoming queue clean.
           </li>
           <li>Native OS audio preview via <code>ffplay</code> with precise seeking support.</li>
           <li>
