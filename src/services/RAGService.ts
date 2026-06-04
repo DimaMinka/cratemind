@@ -202,13 +202,19 @@ export async function bootstrap(
       const trackArtist = track.artist || 'Unknown Artist';
       const trackTitle = track.title || track.filename || 'Unknown Title';
 
-      const isDuplicate = memory.examples.some(
+      const existingIdx = memory.examples.findIndex(
         (ex) =>
           ex.artist.toLowerCase() === trackArtist.toLowerCase() &&
           ex.title.toLowerCase() === trackTitle.toLowerCase()
       );
 
-      if (isDuplicate) {
+      if (existingIdx !== -1) {
+        // Upgrade auto source to engine-dj since it's confirmed in the DB
+        if (memory.examples[existingIdx].source === 'auto') {
+          memory.examples[existingIdx].source = 'engine-dj';
+          memory.examples[existingIdx].reasoning = 'Confirmed in Engine DJ database';
+          memory.examples[existingIdx].folders = [matchedVibe];
+        }
         continue;
       }
 
@@ -260,13 +266,19 @@ export async function bootstrap(
         try {
           const meta = await extractMetadata(item.fullPath);
 
-          const isDuplicate = memory.examples.some(
+          const existingIdx = memory.examples.findIndex(
             (ex) =>
               ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
               ex.title.toLowerCase() === meta.title.toLowerCase()
           );
 
-          if (isDuplicate) {
+          if (existingIdx !== -1) {
+            // Upgrade auto source to scan since it's physically present in Sorted/
+            if (memory.examples[existingIdx].source === 'auto') {
+              memory.examples[existingIdx].source = 'scan';
+              memory.examples[existingIdx].reasoning = 'Confirmed physically in Sorted folder';
+              memory.examples[existingIdx].folders = [item.folder];
+            }
             continue;
           }
 
@@ -348,13 +360,19 @@ export async function bootstrap(
     try {
       const meta = await extractMetadata(item.fullPath);
 
-      const isDuplicate = memory.examples.some(
+      const existingIdx = memory.examples.findIndex(
         (ex) =>
           ex.artist.toLowerCase() === meta.artist.toLowerCase() &&
           ex.title.toLowerCase() === meta.title.toLowerCase()
       );
 
-      if (isDuplicate) {
+      if (existingIdx !== -1) {
+        // Upgrade auto source to scan since it's physically present in Sorted/
+        if (memory.examples[existingIdx].source === 'auto') {
+          memory.examples[existingIdx].source = 'scan';
+          memory.examples[existingIdx].reasoning = 'Confirmed physically in Sorted folder';
+          memory.examples[existingIdx].folders = [item.folder];
+        }
         continue;
       }
 
