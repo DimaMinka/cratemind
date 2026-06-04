@@ -244,6 +244,30 @@ export function getTrackCache(
 }
 
 /**
+ * Quick lookup by artist & title to avoid any network/analysis queries.
+ */
+export function getCacheByArtistTitle(artist: string, title: string): LLMResponse | null {
+  const cache = readCache();
+  const normalizedArtist = artist.trim().toLowerCase();
+  const normalizedTitle = title.trim().toLowerCase();
+
+  const entries = Object.values(cache);
+  const matches = entries
+    .filter((entry) => {
+      return (
+        entry.artist.trim().toLowerCase() === normalizedArtist &&
+        entry.title.trim().toLowerCase() === normalizedTitle
+      );
+    })
+    .sort((a, b) => b.ts - a.ts);
+
+  if (matches.length > 0) {
+    return matches[0].response;
+  }
+  return null;
+}
+
+/**
  * Saves a track response to the cratemind.db local SQLite cache (in-memory + DB).
  */
 export function saveTrackCache(

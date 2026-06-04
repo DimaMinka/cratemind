@@ -210,6 +210,33 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
         continue;
       }
 
+      // Step 2.5: Check LLM cache by artist & title to avoid Spotify/YouTube/Vector calls
+      const fastCached = CacheService.getCacheByArtistTitle(meta.artist, meta.title);
+      if (fastCached) {
+        addLog(
+          'RAG',
+          `Reusing cached Gemini response -> /${fastCached.folders.join(' & /')}/${filename}`
+        );
+        states.push({
+          filepath,
+          filename,
+          meta,
+          spotifyFeatures: null,
+          spotifyProfile: '',
+          physicalProfile: '',
+          ragContext: '',
+          personalHints: '',
+          networkContext: '',
+          contextHash: '',
+          vectorNeighbors: [],
+          scoutResult: null,
+          ragHit: false,
+          cacheHit: true,
+          llmResponse: fastCached
+        });
+        continue;
+      }
+
       // Query Spotify Audio Features if configured
       let spotifyProfile = '';
       let spotifyFeatures: Awaited<ReturnType<typeof SpotifyService.getTrackFeatures>> = null;

@@ -236,11 +236,13 @@ async function getMockContext(artist: string, title: string): Promise<NetworkSco
   if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
     const db = getDB();
     try {
+      const cleanArt = cleanMetadataString(artist).toLowerCase();
+      const cleanTtl = cleanMetadataString(title).toLowerCase();
       const rows = db
         .prepare(
           'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
         )
-        .all(artist.toLowerCase().trim(), title.toLowerCase().trim()) as { playlist_id: string }[];
+        .all(cleanArt, cleanTtl) as { playlist_id: string }[];
       if (rows.length > 0) {
         for (const row of rows) {
           loadPlaylistFromDB(row.playlist_id);
@@ -353,11 +355,13 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
   if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
     const db = getDB();
     try {
+      const cleanArt = cleanMetadataString(artist).toLowerCase();
+      const cleanTtl = cleanMetadataString(title).toLowerCase();
       const rows = db
         .prepare(
           'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
         )
-        .all(artist.toLowerCase().trim(), title.toLowerCase().trim()) as { playlist_id: string }[];
+        .all(cleanArt, cleanTtl) as { playlist_id: string }[];
       if (rows.length > 0) {
         for (const row of rows) {
           loadPlaylistFromDB(row.playlist_id);
