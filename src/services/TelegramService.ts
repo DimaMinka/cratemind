@@ -119,6 +119,15 @@ export async function downloadBulk(): Promise<void> {
 
       addLog('SYSTEM', `Scanning Telegram chat: ${chat}...`);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let targetEntity: any;
+      try {
+        targetEntity = await client.getEntity(peer as unknown as string);
+      } catch (entityErr) {
+        addLog('ERROR', `Failed to resolve Telegram entity for ${chat}: ${entityErr}`);
+        continue;
+      }
+
       const lastMessageId = history[chat] || 0;
       let limitLeft = calculateRemainingTracks();
 
@@ -134,8 +143,7 @@ export async function downloadBulk(): Promise<void> {
       // We need to fetch messages starting from the latest, until we hit lastMessageId
       // Alternatively, we can use `minId` to only fetch messages newer than `lastMessageId`.
       while (keepFetching && limitLeft > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const messages = await client.getMessages(peer as any, {
+        const messages = await client.getMessages(targetEntity, {
           limit: 20,
           minId: lastMessageId, // Only messages newer than this
           offsetId: offsetId // For pagination (starts at 0)
