@@ -15,6 +15,7 @@
   * Sync and download tracks from defined Telegram channels/chats.
   * **Smart Batching**: Integrates with the file watcher to queue downloads and wait for a full `BATCH_SIZE` (default: 5) chunk of tracks before starting analysis, optimizing Gemini API daily limits and preventing rate exhaustion.
   * **Strict Deduplication**: Automatically checks the `./Incoming` folder, the recursive `./Sorted` folder (including skipped files), and the **Engine DJ SQLite Database** before downloading to avoid duplicate tracks.
+  * **Download-Only Mode**: Press `[D]` in the interactive prompt when starting sync to download files from Telegram to `Incoming` without spawning any LLM or classification tasks (useful for bulk loading tracks to process later).
 * **LLM-Driven Vibe Categorization**:
   * Automatically classifies tracks into **21 custom atmospheric vibe folders** (e.g., *mountain sunset*, *magic forest*, *desert vibe*, *nargila vibe*, *club party*, *galaxy trip*).
 * **Few-Shot RAG Memory**:
