@@ -89,6 +89,8 @@ export async function initWatcher(): Promise<void> {
     }
   });
 
+  let isInitialScan = true;
+
   if (MOCK_MODE) {
     addLog('SYSTEM', 'MOCK MODE active. Starting simulated track discovery loop...');
 
@@ -117,8 +119,28 @@ export async function initWatcher(): Promise<void> {
     const ext = path.extname(filepath).toLowerCase();
     if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
       pendingFiles.push(filepath);
-      if (batchTimeout) clearTimeout(batchTimeout);
-      batchTimeout = setTimeout(processPendingBatch, 1000);
+      if (!isInitialScan) {
+        if (batchTimeout) clearTimeout(batchTimeout);
+        batchTimeout = setTimeout(processPendingBatch, 1000);
+      }
+    }
+  });
+
+  watcher.on('ready', () => {
+    isInitialScan = false;
+    if (pendingFiles.length > 1) {
+      addLog(
+        'SYSTEM',
+        `Initial scan complete. Found ${pendingFiles.length} tracks. Starting batch analysis...`
+      );
+      processPendingBatch();
+    } else if (pendingFiles.length === 1) {
+      addLog(
+        'SYSTEM',
+        `Initial scan complete. Found 1 leftover track (${path.basename(pendingFiles[0])}). Waiting for more tracks before starting analysis...`
+      );
+    } else {
+      addLog('SYSTEM', 'Initial scan complete. Waiting for new tracks...');
     }
   });
 }
