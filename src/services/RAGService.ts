@@ -286,7 +286,9 @@ export async function bootstrap(
     memory.lastScanDir = currentSortedDir;
     saveMemory(memory);
 
-    const totalFolders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
+    const totalFolders = new Set(
+      memory.examples.flatMap((ex) => ex.folders).filter((f) => f !== 'skipped')
+    ).size;
     return {
       found,
       added,
@@ -366,7 +368,9 @@ export async function bootstrap(
   memory.lastScanDir = currentSortedDir;
   saveMemory(memory);
 
-  const totalFolders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
+  const totalFolders = new Set(
+    memory.examples.flatMap((ex) => ex.folders).filter((f) => f !== 'skipped')
+  ).size;
   return {
     found,
     added,
@@ -597,7 +601,9 @@ export async function getVectorContext(
 
 export function getStats(): { total: number; folders: number } {
   const memory = loadMemory();
-  const folders = new Set(memory.examples.flatMap((ex) => ex.folders)).size;
+  const folders = new Set(
+    memory.examples.flatMap((ex) => ex.folders).filter((f) => f !== 'skipped')
+  ).size;
   return {
     total: memory.examples.length,
     folders
