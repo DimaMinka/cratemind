@@ -87,7 +87,7 @@ Upon initialization, CrateMind executes the following detection and import pipel
   * Provide interactive verification scripts or sandbox CLI testing steps (e.g., temporary/mock database and directories) that the developer can easily execute themselves.
   * Print clear, formatted diagnostic logs or summaries during tests so the developer can visually confirm that SQLite, RAG, and UI state layers function perfectly.
   * Walk through the verification results step-by-step with the developer, explaining exactly how to run, observe, and validate the correct behavior.
-* **TUI & index.html Synchronization**: Any visual or logical changes made to the CrateMind TUI components (e.g., Header, ManualOverride, BottomBar, player, or logs layouts) must AUTOMATICALLY and immediately be mirrored inside the static mockup and documentation within `index.html`. This ensures that the demo and documentation never drift from the live codebase.
+* **Documentation Synchronization (README.md & index.html)**: Any architectural, visual, or logical changes made to the CrateMind app (e.g., new environment variables, structural features, RAG behavior updates, or TUI components) must AUTOMATICALLY and immediately be mirrored inside both the `README.md` and the static mockup/documentation within `index.html`. This ensures that the user guides, live simulator pages, and technical documentation never drift from the live codebase.
 * **Language Constraints**: The agent MUST always communicate and respond to the USER in Russian. However, all files in the repository (including code, variable/function names, inline comments, JSDoc strings, logs, and markdown documentation files) must be written STRICTLY in English. Do not mix languages inside the codebase.
 
 ---
