@@ -138,8 +138,7 @@ export async function downloadBulk(): Promise<void> {
       let offsetId = 0;
       let downloadedInChat = 0;
       let keepFetching = true;
-      let consecutiveSkippedTracks = 0;
-      const SKIP_THRESHOLD = 150;
+      let totalMessagesChecked = 0;
 
       while (keepFetching && limitLeft > 0) {
         const messages = await client.getMessages(targetEntity, {
@@ -151,6 +150,12 @@ export async function downloadBulk(): Promise<void> {
           addLog('SYSTEM', `Reached the end of history for ${chat}.`);
           break;
         }
+
+        totalMessagesChecked += messages.length;
+        addLog(
+          'SYSTEM',
+          `Telegram: Paging history... Checked ${totalMessagesChecked} messages in ${chat}.`
+        );
 
         for (const msg of messages) {
           if (limitLeft <= 0) break;
@@ -203,21 +208,9 @@ export async function downloadBulk(): Promise<void> {
             : null;
 
           if (existsInIncoming || existsInSortedDir || existsInDB) {
-            consecutiveSkippedTracks++;
-            if (consecutiveSkippedTracks >= SKIP_THRESHOLD) {
-              addLog(
-                'SYSTEM',
-                `Telegram: Found ${SKIP_THRESHOLD} consecutive tracks already in library. Assuming we are caught up.`
-              );
-              keepFetching = false;
-              break;
-            }
             updateAndSaveHistory();
             continue;
           }
-
-          // Reset skip counter since we found a new track to download
-          consecutiveSkippedTracks = 0;
 
           // Download
           addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
@@ -250,6 +243,9 @@ export async function downloadBulk(): Promise<void> {
 
         // Pagination setup
         offsetId = messages[messages.length - 1].id;
+
+        // Introduce a safe 1-second delay between Telegram API calls to prevent flood limits
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       addLog('SYSTEM', `Finished ${chat}. Downloaded: ${downloadedInChat} tracks.`);
