@@ -4,7 +4,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { useStore } from './UIService.js';
 import * as EngineDBService from './EngineDBService.js';
-import { INCOMING_DIR, AUDIO_EXTENSIONS, MOCK_MODE, BATCH_SIZE } from '../config.js';
+import {
+  INCOMING_DIR,
+  AUDIO_EXTENSIONS,
+  MOCK_MODE,
+  BATCH_SIZE,
+  FOLDERS,
+  SORTED_DIR
+} from '../config.js';
 
 const apiId = parseInt((process.env.TELEGRAM_API_ID || '0').replace(/^["']|["']$/g, ''), 10);
 const apiHash = (process.env.TELEGRAM_API_HASH || '').replace(/^["']|["']$/g, '');
@@ -30,6 +37,19 @@ function getHistory(): Record<string, number> {
 
 function saveHistory(history: Record<string, number>) {
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8');
+}
+
+function existsInSorted(filename: string): boolean {
+  if (fs.existsSync(path.join(SORTED_DIR, 'skipped', filename))) {
+    return true;
+  }
+  for (const folder of FOLDERS) {
+    const filePath = path.join(SORTED_DIR, folder, filename);
+    if (fs.existsSync(filePath)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function connect(): Promise<boolean> {
@@ -174,12 +194,13 @@ export async function downloadBulk(): Promise<void> {
           // Deduplication checks
           const incomingPath = path.join(INCOMING_DIR, filename);
           const existsInIncoming = fs.existsSync(incomingPath);
+          const existsInSortedDir = existsInSorted(filename);
           const existsInDB = EngineDBService.isAvailable()
             ? EngineDBService.getTrackByFilename(filename)
             : null;
 
-          if (existsInIncoming || existsInDB) {
-            addLog('SYSTEM', `Telegram: Skipping ${filename} (Already in library/incoming)`);
+          if (existsInIncoming || existsInSortedDir || existsInDB) {
+            addLog('SYSTEM', `Telegram: Skipping ${filename} (Already in library/incoming/sorted)`);
             updateAndSaveHistory();
             continue;
           }
