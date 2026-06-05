@@ -155,10 +155,6 @@ export async function bootstrap(
       trackPlaylistMap.get(pv.trackId)!.push(pv.vibe);
     }
 
-    // Track count per vibe folder to enforce a strict import limit
-    const vibeCounts: Record<string, number> = {};
-    const maxPerVibe = RAG_EXAMPLES_PER_FOLDER * 2; // e.g., max 4 tracks per vibe folder
-
     for (const track of dbTracks) {
       found++;
 
@@ -187,12 +183,6 @@ export async function bootstrap(
         continue; // Path/playlist doesn't belong to any known vibe folders
       }
 
-      // Enforce per-vibe limit to keep RAG memory lightweight
-      const currentCount = vibeCounts[matchedVibe] ?? 0;
-      if (currentCount >= maxPerVibe) {
-        continue;
-      }
-
       const trackArtist = track.artist || 'Unknown Artist';
       const trackTitle = track.title || track.filename || 'Unknown Title';
 
@@ -213,7 +203,6 @@ export async function bootstrap(
       }
 
       folderVibeSet.add(matchedVibe);
-      vibeCounts[matchedVibe] = currentCount + 1;
 
       memory.examples.push({
         artist: trackArtist,
@@ -276,14 +265,7 @@ export async function bootstrap(
             continue;
           }
 
-          // Enforce per-vibe limit to keep RAG memory lightweight
-          const currentCount = vibeCounts[item.folder] ?? 0;
-          if (currentCount >= maxPerVibe) {
-            continue;
-          }
-
           folderVibeSet.add(item.folder);
-          vibeCounts[item.folder] = currentCount + 1;
 
           memory.examples.push({
             artist: meta.artist,
