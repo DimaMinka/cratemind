@@ -28,6 +28,7 @@ export const useStore = create<AppState>((set) => ({
   override: null,
   playback: null,
   isLLMAnalyzing: false,
+  isTelegramDownloading: false,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -58,6 +59,7 @@ export const useStore = create<AppState>((set) => ({
       totalCacheHits: stats.totalCacheHits
     }),
   setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing }),
+  setTelegramDownloading: (isTelegramDownloading) => set({ isTelegramDownloading }),
   clearLogs: () => set({ log: [] })
 }));
 

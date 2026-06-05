@@ -42,10 +42,52 @@ export async function initWatcher(): Promise<void> {
 
   const processPendingBatch = () => {
     if (pendingFiles.length === 0) return;
+
+    const isDownloading = useStore.getState().isTelegramDownloading;
+    if (isDownloading) {
+      if (pendingFiles.length < 5) {
+        const remaining = 5 - pendingFiles.length;
+        addLog(
+          'SYSTEM',
+          `Queued ${path.basename(pendingFiles[pendingFiles.length - 1])}. Waiting for ${remaining} more track(s) to start batch analysis...`
+        );
+        return;
+      }
+
+      const filesToProcess = pendingFiles.slice(0, 5);
+      pendingFiles = pendingFiles.slice(5);
+      addLog('SYSTEM', `Batch threshold reached (5 tracks). Initiating bulk analysis...`);
+      queue.add(() => processTracksBatch(filesToProcess));
+
+      if (pendingFiles.length > 0) {
+        if (batchTimeout) clearTimeout(batchTimeout);
+        batchTimeout = setTimeout(processPendingBatch, 1000);
+      }
+      return;
+    }
+
     const filesToProcess = [...pendingFiles];
     pendingFiles = [];
     queue.add(() => processTracksBatch(filesToProcess));
   };
+
+  // Subscribe to Telegram download completion to process remaining queue
+  let wasDownloading = false;
+  useStore.subscribe((state) => {
+    const isDownloading = state.isTelegramDownloading;
+    if (wasDownloading && !isDownloading) {
+      wasDownloading = false;
+      if (pendingFiles.length > 0) {
+        addLog(
+          'SYSTEM',
+          'Telegram download completed. Processing remaining tracks in incoming queue...'
+        );
+        processPendingBatch();
+      }
+    } else if (!wasDownloading && isDownloading) {
+      wasDownloading = true;
+    }
+  });
 
   if (MOCK_MODE) {
     addLog('SYSTEM', 'MOCK MODE active. Starting simulated track discovery loop...');

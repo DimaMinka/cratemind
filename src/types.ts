@@ -123,6 +123,7 @@ export type AppState = {
     key?: string;
   } | null;
   isLLMAnalyzing: boolean;
+  isTelegramDownloading: boolean;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
@@ -136,6 +137,7 @@ export type AppState = {
     totalCacheHits: number;
   }) => void;
   setLLMAnalyzing: (isAnalyzing: boolean) => void;
+  setTelegramDownloading: (isDownloading: boolean) => void;
   clearLogs: () => void;
 };
 
