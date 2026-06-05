@@ -18,13 +18,19 @@ const apiHash = (process.env.TELEGRAM_API_HASH || '').replace(/^["']|["']$/g, ''
 const sessionString = (process.env.TELEGRAM_SESSION_STRING || '').replace(/^["']|["']$/g, '');
 const chatsStr = (process.env.TELEGRAM_CHATS || '').replace(/^["']|["']$/g, '');
 
+interface ChatHistory {
+  lastMessageId: number;
+  backfillOffsetId: number;
+}
+type HistoryRecord = Record<string, number | ChatHistory>;
+
 const HISTORY_FILE = './.telegram-history.json';
 
 let client: TelegramClient | null = null;
 let isDownloading = false;
 
 // Load or initialize download history
-function getHistory(): Record<string, number> {
+function getHistory(): HistoryRecord {
   if (fs.existsSync(HISTORY_FILE)) {
     try {
       return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf-8'));
@@ -35,7 +41,7 @@ function getHistory(): Record<string, number> {
   return {};
 }
 
-function saveHistory(history: Record<string, number>) {
+function saveHistory(history: HistoryRecord) {
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8');
 }
 
@@ -83,6 +89,101 @@ export async function connect(): Promise<boolean> {
   } catch (err) {
     useStore.getState().addLog('ERROR', `Failed to connect to Telegram: ${err}`);
     return false;
+  }
+}
+
+async function processMessageBatch(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  messages: any[],
+  chat: string,
+  activeHistory: ChatHistory,
+  history: HistoryRecord,
+  ctx: { limitLeft: number; downloadedInChat: number }
+): Promise<void> {
+  const addLog = useStore.getState().addLog;
+  for (const msg of messages) {
+    if (ctx.limitLeft <= 0) break;
+
+    const updateAndSaveHistory = () => {
+      activeHistory.lastMessageId = Math.max(activeHistory.lastMessageId, msg.id);
+      history[chat] = activeHistory;
+      saveHistory(history);
+    };
+
+    if (!(msg.media && msg.document)) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    const getAttr = (className: string) =>
+      msg.document?.attributes.find(
+        (attr: unknown) => (attr as { className?: string }).className === className
+      ) as { fileName?: string; title?: string; performer?: string } | undefined;
+
+    const fileNameAttr = getAttr('DocumentAttributeFilename');
+    const audioAttr = getAttr('DocumentAttributeAudio');
+
+    let filename = '';
+    if (fileNameAttr) {
+      filename = fileNameAttr.fileName || '';
+    } else if (audioAttr) {
+      const title = audioAttr.title || 'Unknown';
+      const performer = audioAttr.performer || 'Unknown';
+      filename = `${performer} - ${title}.mp3`;
+    }
+
+    if (!filename) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    // Ensure valid audio extension
+    const ext = path.extname(filename).toLowerCase();
+    if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    // Deduplication checks
+    const incomingPath = path.join(INCOMING_DIR, filename);
+    const existsInIncoming = fs.existsSync(incomingPath);
+    const existsInSortedDir = existsInSorted(filename);
+    const existsInDB = EngineDBService.isAvailable()
+      ? EngineDBService.getTrackByFilename(filename)
+      : null;
+
+    if (existsInIncoming || existsInSortedDir || existsInDB) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    // Download
+    addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
+    let lastProgressPercent = 0;
+    const buffer = await client!.downloadMedia(msg, {
+      progressCallback: (downloadedBytes: unknown, totalBytes: unknown) => {
+        if (!totalBytes) return;
+        const d = Number(downloadedBytes);
+        const t = Number(totalBytes);
+        const percent = Math.round((d / t) * 100);
+        if (percent - lastProgressPercent >= 25 || percent === 100) {
+          lastProgressPercent = percent;
+          addLog(
+            'SYSTEM',
+            `Downloading ${filename}: ${percent}% (${(d / 1024 / 1024).toFixed(1)} MB / ${(t / 1024 / 1024).toFixed(1)} MB)`
+          );
+        }
+      }
+    });
+    if (buffer) {
+      if (!fs.existsSync(INCOMING_DIR)) {
+        fs.mkdirSync(INCOMING_DIR, { recursive: true });
+      }
+      fs.writeFileSync(incomingPath, buffer);
+      ctx.downloadedInChat++;
+      ctx.limitLeft--;
+      updateAndSaveHistory();
+    }
   }
 }
 
@@ -135,120 +236,79 @@ export async function downloadBulk(): Promise<void> {
         break;
       }
 
-      let offsetId = 0;
-      let downloadedInChat = 0;
-      let keepFetching = true;
-      let totalMessagesChecked = 0;
+      let chatHistory = history[chat];
+      if (typeof chatHistory === 'number') {
+        chatHistory = { lastMessageId: chatHistory, backfillOffsetId: 0 };
+      } else if (!chatHistory) {
+        chatHistory = { lastMessageId: 0, backfillOffsetId: 0 };
+      }
+      const activeHistory: ChatHistory = chatHistory;
+      history[chat] = activeHistory;
 
-      while (keepFetching && limitLeft > 0) {
-        const messages = await client.getMessages(targetEntity, {
-          limit: 100,
-          offsetId: offsetId
-        });
+      const ctx = { limitLeft, downloadedInChat: 0 };
 
-        if (messages.length === 0) {
-          addLog('SYSTEM', `Reached the end of history for ${chat}.`);
-          break;
-        }
-
-        totalMessagesChecked += messages.length;
+      // --- PHASE 1: Fetch New Messages ---
+      if (activeHistory.lastMessageId > 0) {
         addLog(
           'SYSTEM',
-          `Telegram: Paging history... Checked ${totalMessagesChecked} messages in ${chat}.`
+          `Telegram: Checking for new messages in ${chat} (since ID ${activeHistory.lastMessageId})...`
         );
-
-        for (const msg of messages) {
-          if (limitLeft <= 0) break;
-
-          const updateAndSaveHistory = () => {
-            history[chat] = Math.max(history[chat] || 0, msg.id);
-            saveHistory(history);
-          };
-
-          if (!(msg.media && msg.document)) {
-            updateAndSaveHistory();
-            continue;
-          }
-
-          const getAttr = (className: string) =>
-            msg.document?.attributes.find(
-              (attr: unknown) => (attr as { className?: string }).className === className
-            ) as { fileName?: string; title?: string; performer?: string } | undefined;
-
-          const fileNameAttr = getAttr('DocumentAttributeFilename');
-          const audioAttr = getAttr('DocumentAttributeAudio');
-
-          let filename = '';
-          if (fileNameAttr) {
-            filename = fileNameAttr.fileName || '';
-          } else if (audioAttr) {
-            const title = audioAttr.title || 'Unknown';
-            const performer = audioAttr.performer || 'Unknown';
-            filename = `${performer} - ${title}.mp3`;
-          }
-
-          if (!filename) {
-            updateAndSaveHistory();
-            continue;
-          }
-
-          // Ensure valid audio extension
-          const ext = path.extname(filename).toLowerCase();
-          if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-            updateAndSaveHistory();
-            continue;
-          }
-
-          // Deduplication checks
-          const incomingPath = path.join(INCOMING_DIR, filename);
-          const existsInIncoming = fs.existsSync(incomingPath);
-          const existsInSortedDir = existsInSorted(filename);
-          const existsInDB = EngineDBService.isAvailable()
-            ? EngineDBService.getTrackByFilename(filename)
-            : null;
-
-          if (existsInIncoming || existsInSortedDir || existsInDB) {
-            updateAndSaveHistory();
-            continue;
-          }
-
-          // Download
-          addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
-          let lastProgressPercent = 0;
-          const buffer = await client.downloadMedia(msg, {
-            progressCallback: (downloadedBytes: unknown, totalBytes: unknown) => {
-              if (!totalBytes) return;
-              const d = Number(downloadedBytes);
-              const t = Number(totalBytes);
-              const percent = Math.round((d / t) * 100);
-              if (percent - lastProgressPercent >= 25 || percent === 100) {
-                lastProgressPercent = percent;
-                addLog(
-                  'SYSTEM',
-                  `Downloading ${filename}: ${percent}% (${(d / 1024 / 1024).toFixed(1)} MB / ${(t / 1024 / 1024).toFixed(1)} MB)`
-                );
-              }
-            }
+        let newOffsetId = 0;
+        while (ctx.limitLeft > 0) {
+          const messages = await client.getMessages(targetEntity, {
+            limit: 100,
+            minId: activeHistory.lastMessageId,
+            offsetId: newOffsetId
           });
-          if (buffer) {
-            if (!fs.existsSync(INCOMING_DIR)) {
-              fs.mkdirSync(INCOMING_DIR, { recursive: true });
-            }
-            fs.writeFileSync(incomingPath, buffer);
-            downloadedInChat++;
-            limitLeft--;
-            updateAndSaveHistory();
+
+          if (messages.length === 0) {
+            break;
           }
+
+          await processMessageBatch(messages, chat, activeHistory, history, ctx);
+          newOffsetId = messages[messages.length - 1].id;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-
-        // Pagination setup
-        offsetId = messages[messages.length - 1].id;
-
-        // Introduce a safe 1-second delay between Telegram API calls to prevent flood limits
-        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      addLog('SYSTEM', `Finished ${chat}. Downloaded: ${downloadedInChat} tracks.`);
+      // --- PHASE 2: Backfill Old Messages ---
+      if (activeHistory.backfillOffsetId !== -1 && ctx.limitLeft > 0) {
+        addLog(
+          'SYSTEM',
+          `Telegram: Resuming historical backfill in ${chat} (from ID ${activeHistory.backfillOffsetId || 'latest'})...`
+        );
+        let totalChecked = 0;
+        while (ctx.limitLeft > 0) {
+          const messages = await client.getMessages(targetEntity, {
+            limit: 100,
+            offsetId: activeHistory.backfillOffsetId || 0
+          });
+
+          if (messages.length === 0) {
+            addLog('SYSTEM', `Reached the end of history for ${chat}. Backfill complete.`);
+            activeHistory.backfillOffsetId = -1;
+            saveHistory(history);
+            break;
+          }
+
+          totalChecked += messages.length;
+          addLog(
+            'SYSTEM',
+            `Telegram: Backfilling... Checked ${totalChecked} older messages (current offset: ${messages[messages.length - 1].id}).`
+          );
+
+          await processMessageBatch(messages, chat, activeHistory, history, ctx);
+
+          activeHistory.backfillOffsetId = messages[messages.length - 1].id;
+          saveHistory(history);
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      limitLeft = ctx.limitLeft;
+
+      addLog('SYSTEM', `Finished ${chat}. Downloaded: ${ctx.downloadedInChat} tracks.`);
     }
   } catch (err) {
     addLog('ERROR', `Error during Telegram download: ${err}`);
