@@ -106,3 +106,21 @@ Before considering any task complete, committing, or verifying success, the agen
 3. **Build Third (`npm run build`)**: Compile the project with TypeScript (`tsc`) to verify type safety.
 * **Rule**: The complete chain `npm run format && npm run lint && npm run build` must run and exit with code `0` before presenting the final summary. Never skip this pipeline!
 * **Conventional Commits**: Every commit message must start with a lowercase Conventional Commits prefix matching the change type (e.g., `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`). Never skip these tags in commit messages.
+
+---
+
+## 8. Telegram Downloader & GramJS Integration Specification
+
+When modifying or expanding the Telegram sync and download pipeline, agents must adhere to the following rules:
+
+1. **Entity Resolution before API Queries**:
+   Always call `await client.getEntity(peer as unknown as string)` before performing message fetches or download requests like `client.getMessages()`. This warms GramJS's internal entity cache with necessary `accessHash` values and prevents the `Request not set yet` runtime exception.
+2. **Type Safety & ESLint Compliance**:
+   Do NOT use `any` casting or `// eslint-disable-next-line` overrides for GramJS's `EntityLike` parameters (which represent IDs, usernames, or BigInts). Instead, use safe, clean type assertions (e.g., `peer as unknown as string`) which satisfy GramJS type checkers without generating compiler warnings or ESLint rules violations.
+3. **Two-Frontier Synchronization (Resumable Sync)**:
+   The sync history must track two separate frontiers in the persistence file (`.telegram-history.json`):
+   - `lastMessageId` (Upper Frontier): The highest message ID checked, used for rapid single-request checks of *new* messages using `minId`.
+   - `backfillOffsetId` (Lower Frontier): The lowest message ID reached during historical backfilling, allowing backfill scans to be paused (e.g., due to daily request limits) and safely resumed from the same spot on the next startup. Set `backfillOffsetId` to `-1` once the oldest message (end of history) is reached.
+4. **Flood Control Delay**:
+   Always introduce a safe 1-second delay (`setTimeout`) between page fetches of Telegram messages to prevent hitting Telegram API Flood limits when performing deep history scans.
+
