@@ -74,6 +74,16 @@ export async function processTracksBatch(filepaths: string[]): Promise<void> {
   const addLog = useStore.getState().addLog;
 
   if (filepaths.length === 0) return;
+
+  const isDownloadOnly = useStore.getState().telegramDownloadOnly;
+  if (isDownloadOnly) {
+    addLog(
+      'SYSTEM',
+      `Download-only mode is active. Skipping analysis for ${filepaths.length} track(s).`
+    );
+    return;
+  }
+
   const filepathChunks: string[][] = [];
   for (let i = 0; i < filepaths.length; i += BATCH_SIZE) {
     filepathChunks.push(filepaths.slice(i, i + BATCH_SIZE));

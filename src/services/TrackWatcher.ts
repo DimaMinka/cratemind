@@ -160,9 +160,10 @@ export async function initWatcher(): Promise<void> {
     if (pendingFiles.length >= BATCH_SIZE) {
       addLog(
         'SYSTEM',
-        `Initial scan complete. Found ${pendingFiles.length} tracks. Starting batch analysis...`
+        `Initial scan complete. Found ${pendingFiles.length} tracks. Starting batch analysis in 3 seconds...`
       );
-      processPendingBatch(false);
+      if (batchTimeout) clearTimeout(batchTimeout);
+      batchTimeout = setTimeout(() => processPendingBatch(false), 3000);
     } else if (pendingFiles.length > 0) {
       const remaining = BATCH_SIZE - pendingFiles.length;
       addLog(
