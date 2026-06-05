@@ -101,6 +101,72 @@ function convertKeyToCamelot(keyVal: number | null | undefined): string | undefi
   return `${num.toString().padStart(2, '0')}${letter}`;
 }
 
+function parseMetaFromFilename(filename: string): { artist: string; title: string } {
+  let nameWithoutExt = filename;
+  const ext = path.extname(filename);
+  if (ext) {
+    nameWithoutExt = filename.slice(0, -ext.length);
+  }
+  nameWithoutExt = nameWithoutExt.replace(/_-_/g, ' - ');
+
+  const separators = [' - ', '-', '_'];
+  let parts: string[] = [nameWithoutExt];
+  let usedSeparator = '';
+
+  for (const sep of separators) {
+    const split = nameWithoutExt.split(sep);
+    if (split.length >= 2) {
+      parts = split;
+      usedSeparator = sep;
+      break;
+    }
+  }
+
+  let artist = 'Unknown';
+  let title: string;
+
+  if (parts.length >= 2) {
+    artist = parts[0]?.replace(/_/g, ' ').trim() || 'Unknown';
+    const joinedTitle = parts.slice(1).join(usedSeparator === '_' ? ' ' : usedSeparator);
+    title = joinedTitle.replace(/_/g, ' ').trim() || 'Unknown';
+  } else {
+    title = nameWithoutExt.replace(/_/g, ' ').trim() || 'Unknown';
+  }
+
+  const cleanPrefix = (str: string): string => {
+    return str.replace(/^\d+[\s.-]+/, '').trim();
+  };
+
+  return {
+    artist: cleanPrefix(artist),
+    title: cleanPrefix(title)
+  };
+}
+
+function mapRowToTrack(t: DBTrackRow): EngineTrack {
+  let artist = t.artist ? t.artist.trim() : '';
+  let title = t.title ? t.title.trim() : '';
+
+  if (!artist || !title) {
+    const parsed = parseMetaFromFilename(t.filename);
+    if (!artist) artist = parsed.artist;
+    if (!title) title = parsed.title;
+  }
+
+  return {
+    id: t.id,
+    path: t.path,
+    filename: t.filename,
+    title: title || 'Unknown Title',
+    artist: artist || 'Unknown Artist',
+    bpm: t.bpm ? Math.round(t.bpm) : undefined,
+    key: convertKeyToCamelot(t.keyVal),
+    genre: t.genre || undefined,
+    comment: t.comment || undefined,
+    label: t.label || undefined
+  };
+}
+
 /**
  * Retrieves all tracks registered in the Engine DJ database.
  * Key Columns: id, path, filename, title, artist, bpm, key, genre, comment, label.
@@ -124,18 +190,7 @@ export function getTracks(): EngineTrack[] {
       )
       .all() as DBTrackRow[];
 
-    _cachedTracks = rows.map((t) => ({
-      id: t.id,
-      path: t.path,
-      filename: t.filename,
-      title: t.title || t.filename || 'Unknown Title',
-      artist: t.artist || 'Unknown Artist',
-      bpm: t.bpm ? Math.round(t.bpm) : undefined,
-      key: convertKeyToCamelot(t.keyVal),
-      genre: t.genre || undefined,
-      comment: t.comment || undefined,
-      label: t.label || undefined
-    }));
+    _cachedTracks = rows.map(mapRowToTrack);
     return _cachedTracks;
   } catch {
     return [];
@@ -290,18 +345,7 @@ export function getTrackByFilename(filename: string): EngineTrack | null {
 
     if (!row) return null;
 
-    return {
-      id: row.id,
-      path: row.path,
-      filename: row.filename,
-      title: row.title || row.filename || 'Unknown Title',
-      artist: row.artist || 'Unknown Artist',
-      bpm: row.bpm ? Math.round(row.bpm) : undefined,
-      key: convertKeyToCamelot(row.keyVal),
-      genre: row.genre || undefined,
-      comment: row.comment || undefined,
-      label: row.label || undefined
-    };
+    return mapRowToTrack(row);
   } catch {
     return null;
   }
