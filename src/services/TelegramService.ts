@@ -133,80 +133,89 @@ export async function downloadBulk(): Promise<void> {
         for (const msg of sortedMessages) {
           if (limitLeft <= 0) break;
 
-          history[chat] = Math.max(history[chat] || 0, msg.id);
+          const updateAndSaveHistory = () => {
+            history[chat] = Math.max(history[chat] || 0, msg.id);
+            saveHistory(history);
+          };
 
-          if (msg.media && msg.document) {
-            const getAttr = (className: string) =>
-              msg.document?.attributes.find(
-                (attr: unknown) => (attr as { className?: string }).className === className
-              ) as { fileName?: string; title?: string; performer?: string } | undefined;
+          if (!(msg.media && msg.document)) {
+            updateAndSaveHistory();
+            continue;
+          }
 
-            const fileNameAttr = getAttr('DocumentAttributeFilename');
-            const audioAttr = getAttr('DocumentAttributeAudio');
+          const getAttr = (className: string) =>
+            msg.document?.attributes.find(
+              (attr: unknown) => (attr as { className?: string }).className === className
+            ) as { fileName?: string; title?: string; performer?: string } | undefined;
 
-            let filename = '';
-            if (fileNameAttr) {
-              filename = fileNameAttr.fileName || '';
-            } else if (audioAttr) {
-              const title = audioAttr.title || 'Unknown';
-              const performer = audioAttr.performer || 'Unknown';
-              filename = `${performer} - ${title}.mp3`;
-            }
+          const fileNameAttr = getAttr('DocumentAttributeFilename');
+          const audioAttr = getAttr('DocumentAttributeAudio');
 
-            if (!filename) {
-              continue;
-            }
+          let filename = '';
+          if (fileNameAttr) {
+            filename = fileNameAttr.fileName || '';
+          } else if (audioAttr) {
+            const title = audioAttr.title || 'Unknown';
+            const performer = audioAttr.performer || 'Unknown';
+            filename = `${performer} - ${title}.mp3`;
+          }
 
-            // Ensure valid audio extension
-            const ext = path.extname(filename).toLowerCase();
-            if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-              continue;
-            }
+          if (!filename) {
+            updateAndSaveHistory();
+            continue;
+          }
 
-            // Deduplication checks
-            const incomingPath = path.join(INCOMING_DIR, filename);
-            const existsInIncoming = fs.existsSync(incomingPath);
-            const existsInDB = EngineDBService.isAvailable()
-              ? EngineDBService.getTrackByFilename(filename)
-              : null;
+          // Ensure valid audio extension
+          const ext = path.extname(filename).toLowerCase();
+          if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+            updateAndSaveHistory();
+            continue;
+          }
 
-            if (existsInIncoming || existsInDB) {
-              addLog('SYSTEM', `Telegram: Skipping ${filename} (Already in library/incoming)`);
-              continue;
-            }
+          // Deduplication checks
+          const incomingPath = path.join(INCOMING_DIR, filename);
+          const existsInIncoming = fs.existsSync(incomingPath);
+          const existsInDB = EngineDBService.isAvailable()
+            ? EngineDBService.getTrackByFilename(filename)
+            : null;
 
-            // Download
-            addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
-            let lastProgressPercent = 0;
-            const buffer = await client.downloadMedia(msg, {
-              progressCallback: (downloadedBytes: unknown, totalBytes: unknown) => {
-                if (!totalBytes) return;
-                const d = Number(downloadedBytes);
-                const t = Number(totalBytes);
-                const percent = Math.round((d / t) * 100);
-                if (percent - lastProgressPercent >= 25 || percent === 100) {
-                  lastProgressPercent = percent;
-                  addLog(
-                    'SYSTEM',
-                    `Downloading ${filename}: ${percent}% (${(d / 1024 / 1024).toFixed(1)} MB / ${(t / 1024 / 1024).toFixed(1)} MB)`
-                  );
-                }
+          if (existsInIncoming || existsInDB) {
+            addLog('SYSTEM', `Telegram: Skipping ${filename} (Already in library/incoming)`);
+            updateAndSaveHistory();
+            continue;
+          }
+
+          // Download
+          addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
+          let lastProgressPercent = 0;
+          const buffer = await client.downloadMedia(msg, {
+            progressCallback: (downloadedBytes: unknown, totalBytes: unknown) => {
+              if (!totalBytes) return;
+              const d = Number(downloadedBytes);
+              const t = Number(totalBytes);
+              const percent = Math.round((d / t) * 100);
+              if (percent - lastProgressPercent >= 25 || percent === 100) {
+                lastProgressPercent = percent;
+                addLog(
+                  'SYSTEM',
+                  `Downloading ${filename}: ${percent}% (${(d / 1024 / 1024).toFixed(1)} MB / ${(t / 1024 / 1024).toFixed(1)} MB)`
+                );
               }
-            });
-            if (buffer) {
-              if (!fs.existsSync(INCOMING_DIR)) {
-                fs.mkdirSync(INCOMING_DIR, { recursive: true });
-              }
-              fs.writeFileSync(incomingPath, buffer);
-              downloadedInChat++;
-              limitLeft--;
             }
+          });
+          if (buffer) {
+            if (!fs.existsSync(INCOMING_DIR)) {
+              fs.mkdirSync(INCOMING_DIR, { recursive: true });
+            }
+            fs.writeFileSync(incomingPath, buffer);
+            downloadedInChat++;
+            limitLeft--;
+            updateAndSaveHistory();
           }
         }
 
         // Pagination setup
         offsetId = messages[messages.length - 1].id;
-        saveHistory(history);
       }
 
       addLog('SYSTEM', `Finished ${chat}. Downloaded: ${downloadedInChat} tracks.`);
