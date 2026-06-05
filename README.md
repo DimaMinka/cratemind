@@ -146,7 +146,8 @@ npm start
 
 ## ⌨️ TUI Keyboard Controls
 
-* `[Space]` — Pause/Resume audio preview
+* `[Space]` — Pause/Resume active processing listener (starts/pauses folder analysis)
+* `[P]` — Pause/Resume audio preview (during manual override)
 * `[←] / [→]` — Seek 10s backward/forward (Hold `Shift` to seek 30s)
 * `[L]` — Reset daily API limits
 * `[V]` — Run manual index DB vibe sync
