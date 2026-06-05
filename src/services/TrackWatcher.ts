@@ -40,38 +40,40 @@ export async function initWatcher(): Promise<void> {
     fs.mkdirSync(SORTED_DIR, { recursive: true });
   }
 
-  const processPendingBatch = () => {
+  const processPendingBatch = (force = false) => {
     if (pendingFiles.length === 0) return;
 
-    const isDownloading = useStore.getState().isTelegramDownloading;
-    if (isDownloading) {
-      if (pendingFiles.length < BATCH_SIZE) {
-        const remaining = BATCH_SIZE - pendingFiles.length;
-        addLog(
-          'SYSTEM',
-          `Queued ${path.basename(pendingFiles[pendingFiles.length - 1])}. Waiting for ${remaining} more track(s) to start batch analysis...`
-        );
-        return;
-      }
-
-      const filesToProcess = pendingFiles.slice(0, BATCH_SIZE);
-      pendingFiles = pendingFiles.slice(BATCH_SIZE);
+    const isDownloadOnly = useStore.getState().telegramDownloadOnly;
+    if (isDownloadOnly) {
       addLog(
         'SYSTEM',
-        `Batch threshold reached (${BATCH_SIZE} tracks). Initiating bulk analysis...`
+        `Download-only mode active. Skipping batch analysis for ${pendingFiles.length} track(s).`
       );
-      queue.add(() => processTracksBatch(filesToProcess));
-
-      if (pendingFiles.length > 0) {
-        if (batchTimeout) clearTimeout(batchTimeout);
-        batchTimeout = setTimeout(processPendingBatch, 1000);
-      }
+      pendingFiles = [];
       return;
     }
 
-    const filesToProcess = [...pendingFiles];
-    pendingFiles = [];
+    if (!force && pendingFiles.length < BATCH_SIZE) {
+      return;
+    }
+
+    const filesToProcess = force ? [...pendingFiles] : pendingFiles.slice(0, BATCH_SIZE);
+    if (force) {
+      pendingFiles = [];
+    } else {
+      pendingFiles = pendingFiles.slice(BATCH_SIZE);
+    }
+
+    addLog(
+      'SYSTEM',
+      `Batch threshold reached / forced. Initiating analysis for ${filesToProcess.length} track(s)...`
+    );
     queue.add(() => processTracksBatch(filesToProcess));
+
+    if (pendingFiles.length > 0) {
+      if (batchTimeout) clearTimeout(batchTimeout);
+      batchTimeout = setTimeout(() => processPendingBatch(force), 1000);
+    }
   };
 
   // Subscribe to Telegram download completion to process remaining queue
@@ -85,7 +87,7 @@ export async function initWatcher(): Promise<void> {
           'SYSTEM',
           'Telegram download completed. Processing remaining tracks in incoming queue...'
         );
-        processPendingBatch();
+        processPendingBatch(true);
       }
     } else if (!wasDownloading && isDownloading) {
       wasDownloading = true;
@@ -101,7 +103,7 @@ export async function initWatcher(): Promise<void> {
       setTimeout(() => {
         pendingFiles.push(discovery.filepath);
         if (batchTimeout) clearTimeout(batchTimeout);
-        batchTimeout = setTimeout(processPendingBatch, 1000);
+        batchTimeout = setTimeout(() => processPendingBatch(false), 1000);
       }, discovery.delayMs);
     });
   }
@@ -121,26 +123,51 @@ export async function initWatcher(): Promise<void> {
   watcher.on('add', (filepath) => {
     const ext = path.extname(filepath).toLowerCase();
     if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+      const isDownloadOnly = useStore.getState().telegramDownloadOnly;
+      if (isDownloadOnly) {
+        addLog(
+          'SYSTEM',
+          `Detected: ${path.basename(filepath)} (Download-only mode - skipping analysis)`
+        );
+        return;
+      }
       pendingFiles.push(filepath);
       if (!isInitialScan) {
+        const remaining = BATCH_SIZE - pendingFiles.length;
+        if (remaining > 0) {
+          addLog(
+            'SYSTEM',
+            `Queued ${path.basename(filepath)}. Waiting for ${remaining} more track(s) to start batch analysis...`
+          );
+        }
         if (batchTimeout) clearTimeout(batchTimeout);
-        batchTimeout = setTimeout(processPendingBatch, 1000);
+        batchTimeout = setTimeout(() => processPendingBatch(false), 1000);
       }
     }
   });
 
   watcher.on('ready', () => {
     isInitialScan = false;
-    if (pendingFiles.length > 1) {
+    const isDownloadOnly = useStore.getState().telegramDownloadOnly;
+    if (isDownloadOnly) {
+      addLog(
+        'SYSTEM',
+        `Initial scan complete. Download-only mode active. Skipping analysis for ${pendingFiles.length} leftover track(s).`
+      );
+      pendingFiles = [];
+      return;
+    }
+    if (pendingFiles.length >= BATCH_SIZE) {
       addLog(
         'SYSTEM',
         `Initial scan complete. Found ${pendingFiles.length} tracks. Starting batch analysis...`
       );
-      processPendingBatch();
-    } else if (pendingFiles.length === 1) {
+      processPendingBatch(false);
+    } else if (pendingFiles.length > 0) {
+      const remaining = BATCH_SIZE - pendingFiles.length;
       addLog(
         'SYSTEM',
-        `Initial scan complete. Found 1 leftover track (${path.basename(pendingFiles[0])}). Waiting for more tracks before starting analysis...`
+        `Initial scan complete. Found ${pendingFiles.length} leftover track(s). Waiting for ${remaining} more track(s) to start batch analysis...`
       );
     } else {
       addLog('SYSTEM', 'Initial scan complete. Waiting for new tracks...');

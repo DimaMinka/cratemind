@@ -86,10 +86,20 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
       const setBootPrompt = useStore.getState().setBootPrompt;
       setBootPrompt({
         message: 'Start downloading tracks from Telegram?',
-        detail: 'Connects to configured channels and downloads audio to Incoming folder.',
-        resolve: (confirmed) => {
+        detail: 'Choose whether to download & analyze, or download only.',
+        yesLabel: 'Download & Analyze',
+        noLabel: 'Cancel',
+        thirdLabel: 'Download Only',
+        thirdKey: 'd',
+        resolve: (result) => {
           setBootPrompt(null);
-          if (confirmed) {
+          if (result === true) {
+            useStore.getState().setTelegramDownloadOnly(false);
+            TelegramService.downloadBulk().catch((err) => {
+              addLog('ERROR', `Telegram download failed: ${err}`);
+            });
+          } else if (result === 'download-only') {
+            useStore.getState().setTelegramDownloadOnly(true);
             TelegramService.downloadBulk().catch((err) => {
               addLog('ERROR', `Telegram download failed: ${err}`);
             });

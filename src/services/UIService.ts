@@ -29,6 +29,7 @@ export const useStore = create<AppState>((set) => ({
   playback: null,
   isLLMAnalyzing: false,
   isTelegramDownloading: false,
+  telegramDownloadOnly: false,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -60,6 +61,7 @@ export const useStore = create<AppState>((set) => ({
     }),
   setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing }),
   setTelegramDownloading: (isTelegramDownloading) => set({ isTelegramDownloading }),
+  setTelegramDownloadOnly: (telegramDownloadOnly) => set({ telegramDownloadOnly }),
   clearLogs: () => set({ log: [] })
 }));
 

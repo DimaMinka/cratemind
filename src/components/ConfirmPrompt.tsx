@@ -25,6 +25,8 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
       prompt.resolve(true);
     } else if (keyLower === 'n' || key.escape) {
       prompt.resolve(false);
+    } else if (prompt.thirdKey && keyLower === prompt.thirdKey.toLowerCase()) {
+      prompt.resolve('download-only');
     }
   });
 
@@ -68,6 +70,11 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
               <Text color="green" bold>
                 [Y] {prompt.yesLabel || 'Yes'}
               </Text>
+              {prompt.thirdLabel && prompt.thirdKey ? (
+                <Text color="cyan" bold>
+                  [{prompt.thirdKey.toUpperCase()}] {prompt.thirdLabel}
+                </Text>
+              ) : null}
               <Text color="red" bold>
                 [N] {prompt.noLabel || 'No'}
               </Text>

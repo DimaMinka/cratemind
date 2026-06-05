@@ -67,7 +67,9 @@ export type BootPromptState = {
   detail: string;
   yesLabel?: string;
   noLabel?: string;
-  resolve: (confirmed: boolean) => void;
+  thirdLabel?: string;
+  thirdKey?: string;
+  resolve: (result: boolean | 'download-only') => void;
 };
 
 export type EngineTrack = {
@@ -124,6 +126,7 @@ export type AppState = {
   } | null;
   isLLMAnalyzing: boolean;
   isTelegramDownloading: boolean;
+  telegramDownloadOnly: boolean;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
@@ -138,6 +141,7 @@ export type AppState = {
   }) => void;
   setLLMAnalyzing: (isAnalyzing: boolean) => void;
   setTelegramDownloading: (isDownloading: boolean) => void;
+  setTelegramDownloadOnly: (isDownloadOnly: boolean) => void;
   clearLogs: () => void;
 };
 
