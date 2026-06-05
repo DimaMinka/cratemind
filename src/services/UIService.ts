@@ -16,7 +16,7 @@ import * as CacheService from './CacheService.js';
 const initialStats = CacheService.getStats();
 
 export const useStore = create<AppState>((set) => ({
-  status: 'listening',
+  status: 'paused',
   stats: { processed: 0, overrides: 0, errors: 0 },
   dailyRequestsUsed: initialStats.dailyRequestsUsed,
   dailyRequestsLimit: initialStats.dailyRequestsLimit,

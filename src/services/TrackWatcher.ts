@@ -43,6 +43,11 @@ export async function initWatcher(): Promise<void> {
   const processPendingBatch = (force = false) => {
     if (pendingFiles.length === 0) return;
 
+    const status = useStore.getState().status;
+    if (status === 'paused' && !force) {
+      return;
+    }
+
     const isDownloadOnly = useStore.getState().telegramDownloadOnly;
     if (isDownloadOnly) {
       addLog(
@@ -94,6 +99,21 @@ export async function initWatcher(): Promise<void> {
     }
   });
 
+  // Subscribe to system status changes (pause/resume)
+  let prevStatus = useStore.getState().status;
+  useStore.subscribe((state) => {
+    const currentStatus = state.status;
+    if (prevStatus === 'paused' && currentStatus === 'listening') {
+      prevStatus = currentStatus;
+      if (pendingFiles.length > 0) {
+        addLog('SYSTEM', 'System resumed. Initiating analysis for pending tracks...');
+        processPendingBatch(false);
+      }
+    } else {
+      prevStatus = currentStatus;
+    }
+  });
+
   let isInitialScan = true;
 
   if (MOCK_MODE) {
@@ -133,6 +153,14 @@ export async function initWatcher(): Promise<void> {
       }
       pendingFiles.push(filepath);
       if (!isInitialScan) {
+        const status = useStore.getState().status;
+        if (status === 'paused') {
+          addLog(
+            'SYSTEM',
+            `Queued ${path.basename(filepath)}. System is PAUSED (Press [Space] to resume and start analysis).`
+          );
+          return;
+        }
         const remaining = BATCH_SIZE - pendingFiles.length;
         if (remaining > 0) {
           addLog(
@@ -160,18 +188,19 @@ export async function initWatcher(): Promise<void> {
     if (pendingFiles.length >= BATCH_SIZE) {
       addLog(
         'SYSTEM',
-        `Initial scan complete. Found ${pendingFiles.length} tracks. Starting batch analysis in 3 seconds...`
+        `Initial scan complete. Found ${pendingFiles.length} tracks. System is PAUSED. Press [Space] to start batch analysis.`
       );
-      if (batchTimeout) clearTimeout(batchTimeout);
-      batchTimeout = setTimeout(() => processPendingBatch(false), 3000);
     } else if (pendingFiles.length > 0) {
       const remaining = BATCH_SIZE - pendingFiles.length;
       addLog(
         'SYSTEM',
-        `Initial scan complete. Found ${pendingFiles.length} leftover track(s). Waiting for ${remaining} more track(s) to start batch analysis...`
+        `Initial scan complete. Found ${pendingFiles.length} leftover track(s). System is PAUSED (Waiting for ${remaining} more track(s)).`
       );
     } else {
-      addLog('SYSTEM', 'Initial scan complete. Waiting for new tracks...');
+      addLog(
+        'SYSTEM',
+        'Initial scan complete. Waiting for new tracks (System is PAUSED. Press [Space] to resume).'
+      );
     }
   });
 }
