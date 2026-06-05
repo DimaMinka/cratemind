@@ -1,4 +1,4 @@
-import { TelegramClient } from 'telegram';
+import { TelegramClient, Api } from 'telegram';
 import { StringSession } from 'telegram/sessions/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -93,8 +93,7 @@ export async function connect(): Promise<boolean> {
 }
 
 async function processMessageBatch(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  messages: any[],
+  messages: Api.Message[],
   chat: string,
   activeHistory: ChatHistory,
   history: HistoryRecord,
@@ -220,10 +219,8 @@ export async function downloadBulk(): Promise<void> {
 
       addLog('SYSTEM', `Scanning Telegram chat: ${chat}...`);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let targetEntity: any;
       try {
-        targetEntity = await client.getEntity(peer as unknown as string);
+        await client.getEntity(peer as unknown as string);
       } catch (entityErr) {
         addLog('ERROR', `Failed to resolve Telegram entity for ${chat}: ${entityErr}`);
         continue;
@@ -255,7 +252,7 @@ export async function downloadBulk(): Promise<void> {
         );
         let newOffsetId = 0;
         while (ctx.limitLeft > 0) {
-          const messages = await client.getMessages(targetEntity, {
+          const messages = await client.getMessages(peer as unknown as string, {
             limit: 100,
             minId: activeHistory.lastMessageId,
             offsetId: newOffsetId
@@ -279,7 +276,7 @@ export async function downloadBulk(): Promise<void> {
         );
         let totalChecked = 0;
         while (ctx.limitLeft > 0) {
-          const messages = await client.getMessages(targetEntity, {
+          const messages = await client.getMessages(peer as unknown as string, {
             limit: 100,
             offsetId: activeHistory.backfillOffsetId || 0
           });
