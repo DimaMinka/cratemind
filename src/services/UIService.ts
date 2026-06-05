@@ -42,7 +42,13 @@ export const useStore = create<AppState>((set) => ({
     set((state) => {
       const nextLog = [...state.log, { type, message, ts: Date.now() }];
       if (nextLog.length > LOG_MAX) nextLog.shift(); // FIFO eviction
-      return { log: nextLog };
+
+      const stats = { ...state.stats };
+      if (type === 'ERROR') {
+        stats.errors += 1;
+      }
+
+      return { log: nextLog, stats };
     });
   },
   setOverride: (override) => set({ override }),
