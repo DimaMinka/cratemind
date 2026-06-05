@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.tsx",
+    "telegram-login": "ts-node src/scripts/telegram-login.ts",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx,json,md}'"
   },
