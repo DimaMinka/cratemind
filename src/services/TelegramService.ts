@@ -6,10 +6,10 @@ import { useStore } from './UIService.js';
 import * as EngineDBService from './EngineDBService.js';
 import { INCOMING_DIR, AUDIO_EXTENSIONS, MOCK_MODE } from '../config.js';
 
-const apiId = parseInt(process.env.TELEGRAM_API_ID || '0', 10);
-const apiHash = process.env.TELEGRAM_API_HASH || '';
-const sessionString = process.env.TELEGRAM_SESSION_STRING || '';
-const chatsStr = process.env.TELEGRAM_CHATS || '';
+const apiId = parseInt((process.env.TELEGRAM_API_ID || '0').replace(/^["']|["']$/g, ''), 10);
+const apiHash = (process.env.TELEGRAM_API_HASH || '').replace(/^["']|["']$/g, '');
+const sessionString = (process.env.TELEGRAM_SESSION_STRING || '').replace(/^["']|["']$/g, '');
+const chatsStr = (process.env.TELEGRAM_CHATS || '').replace(/^["']|["']$/g, '');
 
 const HISTORY_FILE = './.telegram-history.json';
 const BATCH_SIZE = 5; // Tracks per Gemini API request in CrateMind
@@ -40,7 +40,12 @@ export async function connect(): Promise<boolean> {
   }
 
   if (!apiId || !apiHash || !sessionString) {
-    useStore.getState().addLog('ERROR', 'Telegram credentials missing in .env');
+    useStore
+      .getState()
+      .addLog(
+        'ERROR',
+        'Telegram credentials missing in .env. Please run `npm run telegram-login` to authenticate.'
+      );
     return false;
   }
 
@@ -78,6 +83,7 @@ export async function downloadBulk(): Promise<void> {
   if (!(await connect()) || !client) return;
 
   isDownloading = true;
+  useStore.getState().setTelegramDownloading(true);
   const history = getHistory();
   const chats = chatsStr
     .split(',')
@@ -85,7 +91,13 @@ export async function downloadBulk(): Promise<void> {
     .filter(Boolean);
 
   try {
+    addLog('SYSTEM', 'Resolving Telegram chat details...');
+    await client.getDialogs();
+
     for (const chat of chats) {
+      const isNumeric = /^-?\d+$/.test(chat);
+      const peer = isNumeric ? BigInt(chat) : chat;
+
       addLog('SYSTEM', `Scanning Telegram chat: ${chat}...`);
 
       const lastMessageId = history[chat] || 0;
@@ -103,7 +115,8 @@ export async function downloadBulk(): Promise<void> {
       // We need to fetch messages starting from the latest, until we hit lastMessageId
       // Alternatively, we can use `minId` to only fetch messages newer than `lastMessageId`.
       while (keepFetching && limitLeft > 0) {
-        const messages = await client.getMessages(chat, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const messages = await client.getMessages(peer as any, {
           limit: 20,
           minId: lastMessageId, // Only messages newer than this
           offsetId: offsetId // For pagination (starts at 0)
@@ -164,7 +177,22 @@ export async function downloadBulk(): Promise<void> {
 
             // Download
             addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
-            const buffer = await client.downloadMedia(msg);
+            let lastProgressPercent = 0;
+            const buffer = await client.downloadMedia(msg, {
+              progressCallback: (downloadedBytes: unknown, totalBytes: unknown) => {
+                if (!totalBytes) return;
+                const d = Number(downloadedBytes);
+                const t = Number(totalBytes);
+                const percent = Math.round((d / t) * 100);
+                if (percent - lastProgressPercent >= 25 || percent === 100) {
+                  lastProgressPercent = percent;
+                  addLog(
+                    'SYSTEM',
+                    `Downloading ${filename}: ${percent}% (${(d / 1024 / 1024).toFixed(1)} MB / ${(t / 1024 / 1024).toFixed(1)} MB)`
+                  );
+                }
+              }
+            });
             if (buffer) {
               if (!fs.existsSync(INCOMING_DIR)) {
                 fs.mkdirSync(INCOMING_DIR, { recursive: true });
@@ -187,6 +215,7 @@ export async function downloadBulk(): Promise<void> {
     addLog('ERROR', `Error during Telegram download: ${err}`);
   } finally {
     isDownloading = false;
+    useStore.getState().setTelegramDownloading(false);
     saveHistory(history);
   }
 }
