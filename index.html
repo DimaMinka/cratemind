@@ -809,7 +809,7 @@
         <ul>
           <li>
             <b>TrackWatcher:</b> Chokidar file watcher &amp; sequential queue manager (p-queue).
-            Spawns the processing pipeline for incoming audio files.
+            Spawns the processing pipeline for incoming audio files. Integrates with the Telegram download state to intelligently buffer files, waiting for a full configured <code>BATCH_SIZE</code> before starting analysis, while ignoring single leftover tracks on boot scan.
           </li>
           <li>
             <b>TrackProcessor:</b> Core linear pipeline orchestrator handling metadata extraction,
@@ -864,7 +864,7 @@
         <ul>
           <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
           <li>
-            <b>Telegram Bulk Downloader:</b> Sync and download music from defined Telegram channels using GramJS userbot credentials defined in the environment files. Features built-in duplicate detection checking local files and Engine DJ DB before downloading.
+            <b>Telegram Bulk Downloader:</b> Sync and download music from defined Telegram channels using GramJS userbot credentials. Features built-in duplicate detection checking local Incoming files, Sorted folders, and the Engine DJ DB before downloading. Integrates with file watcher buffering to wait for a full <code>BATCH_SIZE</code> chunk of tracks before starting analysis, optimizing Gemini API limits.
           </li>
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>
