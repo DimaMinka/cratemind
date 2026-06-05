@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { useStore } from './UIService.js';
 import * as EngineDBService from './EngineDBService.js';
-import { INCOMING_DIR, AUDIO_EXTENSIONS, MOCK_MODE } from '../config.js';
+import { INCOMING_DIR, AUDIO_EXTENSIONS, MOCK_MODE, BATCH_SIZE } from '../config.js';
 
 const apiId = parseInt((process.env.TELEGRAM_API_ID || '0').replace(/^["']|["']$/g, ''), 10);
 const apiHash = (process.env.TELEGRAM_API_HASH || '').replace(/^["']|["']$/g, '');
@@ -12,7 +12,6 @@ const sessionString = (process.env.TELEGRAM_SESSION_STRING || '').replace(/^["']
 const chatsStr = (process.env.TELEGRAM_CHATS || '').replace(/^["']|["']$/g, '');
 
 const HISTORY_FILE = './.telegram-history.json';
-const BATCH_SIZE = 5; // Tracks per Gemini API request in CrateMind
 
 let client: TelegramClient | null = null;
 let isDownloading = false;

@@ -4,7 +4,7 @@ import chokidar from 'chokidar';
 import PQueue from 'p-queue';
 import { useStore } from './UIService.js';
 import { processTracksBatch } from './TrackProcessor.js';
-import { MOCK_MODE, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS } from '../config.js';
+import { MOCK_MODE, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS, BATCH_SIZE } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 
 const PQueueClass = ('default' in PQueue ? PQueue.default : PQueue) as unknown as new (opts: {
@@ -45,8 +45,8 @@ export async function initWatcher(): Promise<void> {
 
     const isDownloading = useStore.getState().isTelegramDownloading;
     if (isDownloading) {
-      if (pendingFiles.length < 5) {
-        const remaining = 5 - pendingFiles.length;
+      if (pendingFiles.length < BATCH_SIZE) {
+        const remaining = BATCH_SIZE - pendingFiles.length;
         addLog(
           'SYSTEM',
           `Queued ${path.basename(pendingFiles[pendingFiles.length - 1])}. Waiting for ${remaining} more track(s) to start batch analysis...`
@@ -54,9 +54,12 @@ export async function initWatcher(): Promise<void> {
         return;
       }
 
-      const filesToProcess = pendingFiles.slice(0, 5);
-      pendingFiles = pendingFiles.slice(5);
-      addLog('SYSTEM', `Batch threshold reached (5 tracks). Initiating bulk analysis...`);
+      const filesToProcess = pendingFiles.slice(0, BATCH_SIZE);
+      pendingFiles = pendingFiles.slice(BATCH_SIZE);
+      addLog(
+        'SYSTEM',
+        `Batch threshold reached (${BATCH_SIZE} tracks). Initiating bulk analysis...`
+      );
       queue.add(() => processTracksBatch(filesToProcess));
 
       if (pendingFiles.length > 0) {

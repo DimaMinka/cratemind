@@ -17,7 +17,8 @@ import {
   FOLDERS,
   INCOMING_DIR,
   AUDIO_EXTENSIONS,
-  FORCE_MANUAL_MODE
+  FORCE_MANUAL_MODE,
+  BATCH_SIZE
 } from '../config.js';
 import { LLMResponse, VectorNeighbor, TrackMeta, NetworkScoutResult } from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
@@ -73,8 +74,6 @@ export async function processTracksBatch(filepaths: string[]): Promise<void> {
   const addLog = useStore.getState().addLog;
 
   if (filepaths.length === 0) return;
-
-  const BATCH_SIZE = 5;
   const filepathChunks: string[][] = [];
   for (let i = 0; i < filepaths.length; i += BATCH_SIZE) {
     filepathChunks.push(filepaths.slice(i, i + BATCH_SIZE));

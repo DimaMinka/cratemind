@@ -39,6 +39,7 @@ export const CONFIDENCE_THRESHOLD = 0.99;
 
 // Caching and API limit configurations
 export const DAILY_REQUEST_LIMIT = 50;
+export const BATCH_SIZE = 5;
 export const CACHE_FILE_PATH = './.cratemind-cache.json';
 export const STATS_FILE_PATH = './.cratemind-stats.json';
 
