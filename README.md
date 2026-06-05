@@ -162,6 +162,7 @@ npm start
 * **Model Context Protocol (MCP) Server**: Expose CrateMind's RAG memory and vibe-routing logic as an MCP server. This allows IDE agents to query library rules, inspect track metadata, and suggest playlist changes.
 * **Antigravity SDK (AGY CLI) Integration**: Orchestrate autonomous multi-agent music curations. For example, let one subagent scour charts and new releases, while CrateMind acts as the local routing agent.
 * **Streaming Playlists Import (Apple Music / Spotify)**: Automatically monitor or import tracklists from Apple Music and Spotify playlist URLs. The system can scrape track names and artists from the web pages, search and download high-quality audio files using `yt-dlp` directly into the `Incoming` folder, and run the RAG-vibe classification pipeline.
+* **Beatport Purchase Integration**: Automatically search Beatport for identified tracks to retrieve purchase links. The system can append these store links directly to the ID3 tags (e.g., inside the Comments or a custom URL frame) to streamline buying tracks for live DJ sets.
 
 ---
 
