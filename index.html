@@ -640,22 +640,44 @@
       </section>
 
       <!-- ── Optimization & Spend ───────────────────────────────────── -->
-      <section class="about-box" style="border-left: 3px solid #00ffcc" aria-label="API Spend Optimization">
+      <section
+        class="about-box"
+        style="border-left: 3px solid #00ffcc"
+        aria-label="API Spend Optimization"
+      >
         <h1>Gemini API Spend &amp; Token Optimization</h1>
         <p>
-          During the initial design phase, the system performed raw, un-cached Gemini API calls for every scanned track, resulting in significant token consumption and higher API request overhead during heavy catalog ingestions.
+          During the initial design phase, the system performed raw, un-cached Gemini API calls for
+          every scanned track, resulting in significant token consumption and higher API request
+          overhead during heavy catalog ingestions.
         </p>
         <p>
           To eliminate redundant overhead, we implemented a multi-layered optimization strategy:
         </p>
         <ul>
-          <li><b>SHA-256 Context-Aware Cache:</b> Offlines LLM responses using deterministic hashing of track features, neighbor references, and YouTube contexts.</li>
-          <li><b>Session-Based Fallback Matching:</b> Reuses recent classification hits by matching metadata (Artist/Title) within a 24-hour window, bypassing slight floating-point changes in vector similarities.</li>
-          <li><b>Engine DJ Tier 1 Backup Match:</b> Directly resolves folders using local SQLite references in Denon DJ's <code>m.db</code>, bypassing LLM processing entirely for previously sorted tracks.</li>
-          <li><b>YouTube Scout Cache:</b> Caches YouTube scraping results to prevent duplicate network calls and conserve tokens on neighboring tracks in similar mixes.</li>
+          <li>
+            <b>SHA-256 Context-Aware Cache:</b> Offlines LLM responses using deterministic hashing
+            of track features, neighbor references, and YouTube contexts.
+          </li>
+          <li>
+            <b>Session-Based Fallback Matching:</b> Reuses recent classification hits by matching
+            metadata (Artist/Title) within a 24-hour window, bypassing slight floating-point changes
+            in vector similarities.
+          </li>
+          <li>
+            <b>Engine DJ Tier 1 Backup Match:</b> Directly resolves folders using local SQLite
+            references in Denon DJ's <code>m.db</code>, bypassing LLM processing entirely for
+            previously sorted tracks.
+          </li>
+          <li>
+            <b>YouTube Scout Cache:</b> Caches YouTube scraping results to prevent duplicate network
+            calls and conserve tokens on neighboring tracks in similar mixes.
+          </li>
         </ul>
         <p>
-          Following these optimizations, active sorting runs achieved a <b>90–95% reduction</b> in daily token consumption and API request costs, demonstrating that even highly advanced, LLM-based categorization can run at production scale with minimal resources.
+          Following these optimizations, active sorting runs achieved a <b>90–95% reduction</b> in
+          daily token consumption and API request costs, demonstrating that even highly advanced,
+          LLM-based categorization can run at production scale with minimal resources.
         </p>
       </section>
 
@@ -715,8 +737,13 @@
             <div class="override-reason-box">▲ DAILY API REQUEST LIMIT REACHED</div>
 
             <div class="override-track">
-              <div><span class="track-label">Artist:</span> <span class="track-artist">Stephan Bodzin</span></div>
-              <div><span class="track-label">Title:</span> <span class="track-title">Strand</span></div>
+              <div>
+                <span class="track-label">Artist:</span>
+                <span class="track-artist">Stephan Bodzin</span>
+              </div>
+              <div>
+                <span class="track-label">Title:</span> <span class="track-title">Strand</span>
+              </div>
             </div>
 
             <div class="override-suggest-box">
@@ -809,7 +836,10 @@
         <ul>
           <li>
             <b>TrackWatcher:</b> Chokidar file watcher &amp; sequential queue manager (p-queue).
-            Spawns the processing pipeline for incoming audio files. Integrates with the Telegram download state to intelligently buffer files, waiting for a full configured <code>BATCH_SIZE</code> before starting analysis, while ignoring single leftover tracks on boot scan.
+            Spawns the processing pipeline for incoming audio files. Integrates with the Telegram
+            download state to intelligently buffer files, waiting for a full configured
+            <code>BATCH_SIZE</code> before starting analysis, while ignoring single leftover tracks
+            on boot scan.
           </li>
           <li>
             <b>TrackProcessor:</b> Core linear pipeline orchestrator handling metadata extraction,
@@ -855,7 +885,9 @@
             of <code>0.80</code> to filter out noisy, low-quality matches.
           </li>
           <li>
-            <b>TelegramService:</b> Telegram client integration using GramJS. Allows connecting to custom chats/channels via userbot session keys to scrape, filter, and download audio tracks sequentially into the <code>Incoming</code> folder for analysis.
+            <b>TelegramService:</b> Telegram client integration using GramJS. Allows connecting to
+            custom chats/channels via userbot session keys to scrape, filter, and download audio
+            tracks sequentially into the <code>Incoming</code> folder for analysis.
           </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
         </ul>
@@ -864,7 +896,11 @@
         <ul>
           <li>Automatic detection of new tracks in <code>./Incoming</code>.</li>
           <li>
-            <b>Telegram Bulk Downloader:</b> Sync and download music from defined Telegram channels using GramJS userbot credentials. Features built-in duplicate detection checking local Incoming files, Sorted folders, and the Engine DJ DB before downloading. Integrates with file watcher buffering to wait for a full <code>BATCH_SIZE</code> chunk of tracks before starting analysis, optimizing Gemini API limits.
+            <b>Telegram Bulk Downloader:</b> Sync and download music from defined Telegram channels
+            using GramJS userbot credentials. Features built-in duplicate detection checking local
+            Incoming files, Sorted folders, and the Engine DJ DB before downloading. Integrates with
+            file watcher buffering to wait for a full <code>BATCH_SIZE</code> chunk of tracks before
+            starting analysis, optimizing Gemini API limits.
           </li>
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>
@@ -873,7 +909,8 @@
             manual entries (<code>source: 'manual'</code>) or files physically present in the
             collection (<code>source: 'scan'/'engine-dj'</code>), ensuring automatic LLM
             classifications from previous runs that were never confirmed do not bypass re-analysis
-            if they return to the Incoming folder.
+            if they return to the Incoming folder. Features **unlimited RAG database capacity** to
+            retain all confirmed track vibes forever without rotation or eviction.
           </li>
           <li>
             <b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your
@@ -917,6 +954,11 @@
                 filename or parsed names *before* running expensive ID3 extraction or offline
                 tempo/key analysis.
               </li>
+              <li>
+                <b>Smart Filename Fallback:</b> Automatically parses the artist and title from the
+                track filename if they are missing or empty in the database column fields, enabling
+                clean consensus matching and avoiding "Unknown Artist" fallbacks.
+              </li>
             </ul>
           </li>
           <li>
@@ -948,6 +990,11 @@
             background vector consensus, YouTube scouting, and Gemini classification pipelines to
             run fully, but forces every single track into the Manual Override TUI with
             recommendations pre-selected so you can review and approve every routing.
+          </li>
+          <li>
+            <b>Automatic Log Rotation:</b> Prevents unbounded log growth by automatically rotating
+            and archiving <code>cratemind.log</code> to <code>cratemind.old.log</code> when it
+            exceeds 5MB.
           </li>
         </ul>
 
