@@ -10,7 +10,9 @@ import {
   MOCK_MODE,
   BATCH_SIZE,
   FOLDERS,
-  SORTED_DIR
+  SORTED_DIR,
+  MAX_TRACK_DURATION_SEC,
+  MAX_TRACK_DURATION_MINUTES
 } from '../config.js';
 
 const apiId = parseInt((process.env.TELEGRAM_API_ID || '0').replace(/^["']|["']$/g, ''), 10);
@@ -117,7 +119,7 @@ async function processMessageBatch(
     const getAttr = (className: string) =>
       msg.document?.attributes.find(
         (attr: unknown) => (attr as { className?: string }).className === className
-      ) as { fileName?: string; title?: string; performer?: string } | undefined;
+      ) as { fileName?: string; title?: string; performer?: string; duration?: number } | undefined;
 
     const fileNameAttr = getAttr('DocumentAttributeFilename');
     const audioAttr = getAttr('DocumentAttributeAudio');
@@ -132,6 +134,16 @@ async function processMessageBatch(
     }
 
     if (!filename) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    // Skip DJ mixes or long compilations based on duration limit
+    if (audioAttr && audioAttr.duration && audioAttr.duration > MAX_TRACK_DURATION_SEC) {
+      addLog(
+        'SYSTEM',
+        `Telegram: Skipping ${filename} (Duration: ${Math.round(audioAttr.duration / 60)}m exceeds limit of ${MAX_TRACK_DURATION_MINUTES}m)`
+      );
       updateAndSaveHistory();
       continue;
     }

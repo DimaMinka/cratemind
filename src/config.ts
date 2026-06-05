@@ -49,6 +49,11 @@ export const RAG_MEMORY_FILE = './cratemind-memory.json';
 export const RAG_EXAMPLES_PER_FOLDER = 5;
 export const RAG_SCAN_ON_BOOT = true;
 export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Library/Database2/m.db';
+export const MAX_TRACK_DURATION_MINUTES = parseInt(
+  process.env.MAX_TRACK_DURATION_MINUTES || '20',
+  10
+);
+export const MAX_TRACK_DURATION_SEC = MAX_TRACK_DURATION_MINUTES * 60;
 
 // YouTube Network Scout configuration
 export const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
