@@ -8,6 +8,7 @@ cratemind.log
 cratemind-memory.json
 .cratemind-cache.json
 .cratemind-stats.json
+.telegram-history.json
 m.db
 cratemind.db*
 scratch
