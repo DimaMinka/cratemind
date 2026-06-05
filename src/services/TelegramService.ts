@@ -128,7 +128,6 @@ export async function downloadBulk(): Promise<void> {
         continue;
       }
 
-      const lastMessageId = history[chat] || 0;
       let limitLeft = calculateRemainingTracks();
 
       if (limitLeft <= 0) {
@@ -139,25 +138,21 @@ export async function downloadBulk(): Promise<void> {
       let offsetId = 0;
       let downloadedInChat = 0;
       let keepFetching = true;
+      let consecutiveSkippedTracks = 0;
+      const SKIP_THRESHOLD = 150;
 
-      // We need to fetch messages starting from the latest, until we hit lastMessageId
-      // Alternatively, we can use `minId` to only fetch messages newer than `lastMessageId`.
       while (keepFetching && limitLeft > 0) {
         const messages = await client.getMessages(targetEntity, {
-          limit: 20,
-          minId: lastMessageId, // Only messages newer than this
-          offsetId: offsetId // For pagination (starts at 0)
+          limit: 100,
+          offsetId: offsetId
         });
 
         if (messages.length === 0) {
-          addLog('SYSTEM', `No new messages in ${chat}.`);
+          addLog('SYSTEM', `Reached the end of history for ${chat}.`);
           break;
         }
 
-        // Process from oldest to newest so history advances logically
-        const sortedMessages = messages.sort((a, b) => a.id - b.id);
-
-        for (const msg of sortedMessages) {
+        for (const msg of messages) {
           if (limitLeft <= 0) break;
 
           const updateAndSaveHistory = () => {
@@ -208,10 +203,21 @@ export async function downloadBulk(): Promise<void> {
             : null;
 
           if (existsInIncoming || existsInSortedDir || existsInDB) {
-            addLog('SYSTEM', `Telegram: Skipping ${filename} (Already in library/incoming/sorted)`);
+            consecutiveSkippedTracks++;
+            if (consecutiveSkippedTracks >= SKIP_THRESHOLD) {
+              addLog(
+                'SYSTEM',
+                `Telegram: Found ${SKIP_THRESHOLD} consecutive tracks already in library. Assuming we are caught up.`
+              );
+              keepFetching = false;
+              break;
+            }
             updateAndSaveHistory();
             continue;
           }
+
+          // Reset skip counter since we found a new track to download
+          consecutiveSkippedTracks = 0;
 
           // Download
           addLog('SYSTEM', `Downloading from Telegram: ${filename}...`);
