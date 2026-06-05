@@ -47,7 +47,6 @@ export const STATS_FILE_PATH = './.cratemind-stats.json';
 export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.wav', '.aiff', '.m4a', '.ogg'] as const;
 export const RAG_MEMORY_FILE = './cratemind-memory.json';
 export const RAG_EXAMPLES_PER_FOLDER = 5;
-export const RAG_MAX_STORED = 500;
 export const RAG_SCAN_ON_BOOT = true;
 export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Library/Database2/m.db';
 

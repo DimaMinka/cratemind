@@ -1,13 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { RagExample, RagMemory, BootstrapResult, VectorNeighbor, TrackMeta } from '../types.js';
-import {
-  RAG_EXAMPLES_PER_FOLDER,
-  RAG_MAX_STORED,
-  FOLDERS,
-  AUDIO_EXTENSIONS,
-  MOCK_MODE
-} from '../config.js';
+import { RAG_EXAMPLES_PER_FOLDER, FOLDERS, AUDIO_EXTENSIONS, MOCK_MODE } from '../config.js';
 import { extractMetadata } from './ID3Service.js';
 import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
 import { getDB, getSetting, setSetting } from './LocalDBService.js';
@@ -307,10 +301,6 @@ export async function bootstrap(
       }
     }
 
-    if (memory.examples.length > RAG_MAX_STORED) {
-      memory.examples = memory.examples.slice(-RAG_MAX_STORED);
-    }
-
     memory.lastScanDir = currentSortedDir;
     saveMemory(memory);
 
@@ -391,10 +381,6 @@ export async function bootstrap(
     }
   }
 
-  if (memory.examples.length > RAG_MAX_STORED) {
-    memory.examples = memory.examples.slice(-RAG_MAX_STORED);
-  }
-
   memory.lastScanDir = currentSortedDir;
   saveMemory(memory);
 
@@ -428,9 +414,6 @@ export function addExample(example: RagExample): void {
       )
   );
   memory.examples.push(example);
-  if (memory.examples.length > RAG_MAX_STORED) {
-    memory.examples.shift();
-  }
   saveMemory(memory);
 }
 
