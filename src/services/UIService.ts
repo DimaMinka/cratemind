@@ -6,6 +6,7 @@ import { AppState } from '../types.js';
 import { LOG_MAX } from '../config.js';
 import { App } from '../components/App.js';
 import * as CacheService from './CacheService.js';
+import * as LocalDBService from './LocalDBService.js';
 
 /**
  * UIService.ts
@@ -14,6 +15,7 @@ import * as CacheService from './CacheService.js';
 
 // Retrieve initial persist state on boot
 const initialStats = CacheService.getStats();
+const initialGlobalStats = LocalDBService.getGlobalStats();
 
 export const useStore = create<AppState>((set) => ({
   status: 'paused',
@@ -30,6 +32,8 @@ export const useStore = create<AppState>((set) => ({
   isLLMAnalyzing: false,
   isTelegramDownloading: false,
   telegramDownloadOnly: false,
+  incomingCount: 0,
+  globalStats: initialGlobalStats,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -68,6 +72,8 @@ export const useStore = create<AppState>((set) => ({
   setLLMAnalyzing: (isLLMAnalyzing) => set({ isLLMAnalyzing }),
   setTelegramDownloading: (isTelegramDownloading) => set({ isTelegramDownloading }),
   setTelegramDownloadOnly: (telegramDownloadOnly) => set({ telegramDownloadOnly }),
+  setIncomingCount: (incomingCount) => set({ incomingCount }),
+  setGlobalStats: (globalStats) => set({ globalStats }),
   clearLogs: () => set({ log: [] })
 }));
 

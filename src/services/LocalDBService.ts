@@ -270,3 +270,28 @@ export function setSetting(key: string, value: string): void {
     // Ignore setting write errors
   }
 }
+
+/**
+ * Reads global lifetime classification statistics from the rag_examples table.
+ */
+export function getGlobalStats(): { total: number; auto: number; manual: number } {
+  const db = getDB();
+  try {
+    const row = db
+      .prepare(
+        `SELECT
+           COUNT(*) AS total,
+           SUM(CASE WHEN source = 'auto' THEN 1 ELSE 0 END) AS auto,
+           SUM(CASE WHEN source = 'manual' THEN 1 ELSE 0 END) AS manual
+         FROM rag_examples`
+      )
+      .get() as { total: number; auto: number | null; manual: number | null };
+    return {
+      total: row.total ?? 0,
+      auto: row.auto ?? 0,
+      manual: row.manual ?? 0
+    };
+  } catch {
+    return { total: 0, auto: 0, manual: 0 };
+  }
+}

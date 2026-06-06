@@ -31,6 +31,13 @@ export type TrackMeta = {
 
 export type RagStatus = 'first-run' | 'scanning' | 'ready';
 
+/** Global lifetime statistics pulled from the local rag_examples database. */
+export type GlobalStats = {
+  total: number;
+  auto: number;
+  manual: number;
+};
+
 export type RagStats = {
   total: number;
   folders: number;
@@ -127,6 +134,9 @@ export type AppState = {
   isLLMAnalyzing: boolean;
   isTelegramDownloading: boolean;
   telegramDownloadOnly: boolean;
+  /** Real-time count of audio files currently sitting in the Incoming directory. */
+  incomingCount: number;
+  globalStats: GlobalStats;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
@@ -142,6 +152,8 @@ export type AppState = {
   setLLMAnalyzing: (isAnalyzing: boolean) => void;
   setTelegramDownloading: (isDownloading: boolean) => void;
   setTelegramDownloadOnly: (isDownloadOnly: boolean) => void;
+  setIncomingCount: (count: number) => void;
+  setGlobalStats: (stats: GlobalStats) => void;
   clearLogs: () => void;
 };
 
