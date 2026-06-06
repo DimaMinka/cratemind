@@ -32,7 +32,9 @@ export function App(): React.JSX.Element {
     bootPrompt,
     ragStatus,
     ragStats,
-    isLLMAnalyzing
+    isLLMAnalyzing,
+    incomingCount,
+    globalStats
   } = useStore(
     useShallow((s) => ({
       status: s.status,
@@ -45,7 +47,9 @@ export function App(): React.JSX.Element {
       bootPrompt: s.bootPrompt,
       ragStatus: s.ragStatus,
       ragStats: s.ragStats,
-      isLLMAnalyzing: s.isLLMAnalyzing
+      isLLMAnalyzing: s.isLLMAnalyzing,
+      incomingCount: s.incomingCount,
+      globalStats: s.globalStats
     }))
   );
 
@@ -81,6 +85,8 @@ export function App(): React.JSX.Element {
           dailyRequestsLimit={dailyRequestsLimit}
           totalCacheHits={totalCacheHits}
           isLLMAnalyzing={isLLMAnalyzing}
+          incomingCount={incomingCount}
+          globalStats={globalStats}
         />
 
         {/* Main Panel split (Live stream vs Manual Override check boxes) */}

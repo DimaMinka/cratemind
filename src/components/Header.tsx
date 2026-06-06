@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { RagStatus, RagStats } from '../types.js';
+import { RagStatus, RagStats, GlobalStats } from '../types.js';
 import { MOCK_MODE } from '../config.js';
 
 interface HeaderProps {
@@ -16,6 +16,8 @@ interface HeaderProps {
   dailyRequestsLimit: number;
   totalCacheHits: number;
   isLLMAnalyzing: boolean;
+  incomingCount: number;
+  globalStats: GlobalStats;
 }
 
 /**
@@ -34,7 +36,9 @@ export function Header({
   dailyRequestsUsed,
   dailyRequestsLimit,
   totalCacheHits,
-  isLLMAnalyzing
+  isLLMAnalyzing,
+  incomingCount,
+  globalStats
 }: HeaderProps): React.JSX.Element {
   // Render RAG memory state badge with distinct colors
   let ragBadge = <Text color="yellow">* FIRST RUN (No Memory)</Text>;
@@ -50,6 +54,9 @@ export function Header({
 
   const engineStateText = MOCK_MODE ? ' [SIMULATOR]' : ' [LIVE API]';
   const engineStateColor = MOCK_MODE ? 'cyan' : 'greenBright';
+
+  const classified = globalStats.auto + globalStats.manual;
+  const aiAccuracy = classified > 0 ? Math.round((globalStats.auto / classified) * 100) : 0;
 
   return (
     <Box flexDirection="column" marginBottom={0}>
@@ -75,42 +82,48 @@ export function Header({
         <Box>{ragBadge}</Box>
       </Box>
 
-      {/* Numerical Stats */}
+      {/* Stats */}
       <Box justifyContent="flex-start" paddingLeft={1}>
-        <Text color="white" bold>
-          Processed:{' '}
-        </Text>
-        <Box marginRight={2}>
-          <Text color="cyan">{stats.processed}</Text>
-        </Box>
-
-        <Text color="white" bold>
-          Manual Overrides:{' '}
-        </Text>
-        <Box marginRight={2}>
-          <Text color="yellow">{stats.overrides}</Text>
-        </Box>
-
         <Text color="white" bold>
           Errors:{' '}
         </Text>
-        <Box marginRight={2}>
-          <Text color="red">{stats.errors}</Text>
-        </Box>
-
+        <Text color="red">{stats.errors}</Text>
         <Text color="gray"> | </Text>
-
+        <Text color="white" bold>
+          Incoming:{' '}
+        </Text>
+        <Text color={incomingCount > 0 ? 'yellowBright' : 'gray'}>{incomingCount}</Text>
+        <Text color="gray"> | </Text>
+        <Text color="white" bold>
+          Sorted:{' '}
+        </Text>
+        <Text color="cyan">{globalStats.total}</Text>
+        <Text color="gray"> </Text>
+        <Text color="white" bold>
+          AI:{' '}
+        </Text>
+        <Text color="greenBright">{globalStats.auto}</Text>
+        {globalStats.total > 0 && (
+          <Text color={aiAccuracy >= 80 ? 'greenBright' : 'yellow'}>
+            {' '}
+            ({aiAccuracy}%)
+          </Text>
+        )}
+        <Text color="gray"> </Text>
+        <Text color="white" bold>
+          Manual:{' '}
+        </Text>
+        <Text color="yellow">{globalStats.manual}</Text>
+        <Text color="gray"> | </Text>
         <Text color="white" bold>
           API Today:{' '}
         </Text>
-        <Box marginRight={2}>
-          <Text color={dailyRequestsUsed >= dailyRequestsLimit ? 'redBright' : 'cyan'}>
-            {dailyRequestsUsed}/{dailyRequestsLimit}
-          </Text>
-        </Box>
-
+        <Text color={dailyRequestsUsed >= dailyRequestsLimit ? 'redBright' : 'cyan'}>
+          {dailyRequestsUsed}/{dailyRequestsLimit}
+        </Text>
+        <Text color="gray"> </Text>
         <Text color="white" bold>
-          Cache Saved:{' '}
+          Cache:{' '}
         </Text>
         <Text color="greenBright">{totalCacheHits}</Text>
       </Box>
