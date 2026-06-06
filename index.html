@@ -701,10 +701,17 @@
 
         <!-- Stats row -->
         <div class="tui-stats-row">
-          Processed: <span class="val">1</span> &nbsp; Manual Overrides:
-          <span class="val">1</span> &nbsp; Errors: <span class="err">0</span> &nbsp;
-          <span class="sep">|</span> &nbsp; API Today: <span class="val">1/5</span> &nbsp; Cache
-          Saved: <span class="val" style="color: #00ff00">0</span>
+          Errors: <span class="err">0</span> &nbsp;
+          <span class="sep">|</span> &nbsp;
+          Incoming: <span class="val" style="color: #ffff00">66</span> &nbsp;
+          <span class="sep">|</span> &nbsp;
+          Sorted: <span class="val">1302</span> &nbsp;
+          AI: <span class="val" style="color: #00ff00">28</span>
+          <span style="color: #ffff00">(20%)</span> &nbsp;
+          Manual: <span class="val" style="color: #ffff00">111</span> &nbsp;
+          <span class="sep">|</span> &nbsp;
+          API Today: <span class="val">0/50</span> &nbsp;
+          Cache: <span class="val" style="color: #00ff00">162</span>
         </div>
 
         <!-- Two-panel area -->
@@ -901,6 +908,13 @@
             Incoming files, Sorted folders, and the Engine DJ DB before downloading. Integrates with
             file watcher buffering to wait for a full <code>BATCH_SIZE</code> chunk of tracks before
             starting analysis, optimizing Gemini API limits. Supports a dedicated interactive **Download-Only Mode** (prompted upon starting sync) to fetch tracks into the Incoming directory without spawning any LLM or analysis tasks. Includes automatic mix protection to skip long DJ sets/podcasts based on duration limits.
+          </li>
+          <li>
+            <b>Live Stats Header:</b> Single-line status bar showing real-time
+            <code>Incoming</code> count (updated instantly via chokidar events), plus global
+            lifetime stats from <code>rag_examples</code>: Sorted total, AI hits, Manual fixes,
+            and AI accuracy rate calculated over actually classified tracks
+            (<code>auto &divide; (auto + manual)</code>).
           </li>
           <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
           <li>

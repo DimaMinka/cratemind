@@ -23,6 +23,7 @@
   * Crawls the sorted collection on startup to build a semantic few-shot exemplar database in a local SQLite file (`cratemind.db`).
   * Injects relevant sorted examples into the Gemini prompt for highly accurate, library-aligned classifications.
   * **Unlimited Storage**: The memory capacity limits have been removed, allowing CrateMind to retain all historical user classifications and confirmations indefinitely without any automatic eviction or shifting.
+  * **Auto-classification tracking**: Every track automatically routed by Gemini (confidence ≥ threshold) is now saved to `rag_examples` with `source: 'auto'`, enabling accurate lifetime AI hit rate tracking.
 * **Self-Reflective RAG (Prompt Adaptation)**:
   * Automatically learns from your manual overrides, generating inline prompt adjustments to align the LLM's classification criteria with your precise taste.
 * **Engine DJ Integration (Strictly Read-Only)**:
@@ -35,6 +36,10 @@
 * **User-First Manual Override**:
   * If the LLM confidence score falls below `0.99`, or when running in **Force Manual Mode**, CrateMind prompts you with a beautiful multi-select checkbox TUI with pre-selected recommendations.
   * Skipped (unmarked) tracks are safely routed to a dedicated `Sorted/skipped` folder.
+* **Live Stats Header**:
+  * Real-time `Incoming` counter updated instantly via chokidar `add`/`unlink` events — no polling.
+  * Global lifetime stats pulled from `rag_examples`: total sorted, AI hits, manual fixes, and AI accuracy rate (auto ÷ classified).
+  * AI accuracy is calculated over tracks actually processed by CrateMind (`auto + manual`) — bootstrap scan entries are excluded from the denominator.
 * **Automatic Log Rotation**:
   * Capped local logging size to prevent infinite disk usage. The file `cratemind.log` is automatically rotated and backed up as `cratemind.old.log` when it reaches 5MB.
 * **Native Audio Preview**:
