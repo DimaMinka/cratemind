@@ -4,6 +4,7 @@ import chokidar from 'chokidar';
 import PQueue from 'p-queue';
 import { useStore } from './UIService.js';
 import { processTracksBatch } from './TrackProcessor.js';
+import { getGlobalStats } from './LocalDBService.js';
 import { MOCK_MODE, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS, BATCH_SIZE } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
 
@@ -73,7 +74,10 @@ export async function initWatcher(): Promise<void> {
       'SYSTEM',
       `Batch threshold reached / forced. Initiating analysis for ${filesToProcess.length} track(s)...`
     );
-    queue.add(() => processTracksBatch(filesToProcess));
+    queue.add(async () => {
+      await processTracksBatch(filesToProcess);
+      useStore.getState().setGlobalStats(getGlobalStats());
+    });
 
     if (pendingFiles.length > 0) {
       if (batchTimeout) clearTimeout(batchTimeout);
@@ -143,6 +147,7 @@ export async function initWatcher(): Promise<void> {
   watcher.on('add', (filepath) => {
     const ext = path.extname(filepath).toLowerCase();
     if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+      useStore.getState().setIncomingCount(useStore.getState().incomingCount + 1);
       const isDownloadOnly = useStore.getState().telegramDownloadOnly;
       if (isDownloadOnly) {
         addLog(
@@ -171,6 +176,14 @@ export async function initWatcher(): Promise<void> {
         if (batchTimeout) clearTimeout(batchTimeout);
         batchTimeout = setTimeout(() => processPendingBatch(false), 1000);
       }
+    }
+  });
+
+  watcher.on('unlink', (filepath) => {
+    const ext = path.extname(filepath).toLowerCase();
+    if (AUDIO_EXTENSIONS.includes(ext as (typeof AUDIO_EXTENSIONS)[number])) {
+      const { incomingCount, setIncomingCount } = useStore.getState();
+      setIncomingCount(Math.max(0, incomingCount - 1));
     }
   });
 

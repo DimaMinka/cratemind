@@ -579,6 +579,22 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       );
       selectedFolders = llmResponse.folders;
       await routeFile(s.filepath, selectedFolders, { bpm: s.meta.bpm, key: s.meta.key });
+
+      RAGService.addExample({
+        artist: s.meta.artist,
+        title: s.meta.title,
+        folders: selectedFolders,
+        reasoning: llmResponse.reasoning,
+        source: 'auto',
+        ts: Date.now()
+      });
+
+      const updatedRagStats = RAGService.getStats();
+      useStore.getState().setRagStatus('ready', {
+        total: updatedRagStats.total,
+        folders: updatedRagStats.folders,
+        scannedAt: Date.now()
+      });
     } else {
       const reasonText = FORCE_MANUAL_MODE
         ? `Force Manual Mode enabled. Prompting manual override for ${s.filename}...`
