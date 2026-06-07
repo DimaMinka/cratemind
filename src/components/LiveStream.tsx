@@ -2,17 +2,21 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { LogEntry } from '../types.js';
 
+import { FOLDERS } from '../config.js';
+
 interface LiveStreamProps {
   log: LogEntry[];
 }
 
+const vibeRegexPattern = FOLDERS.map((f) => f.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+const vibeRegex = new RegExp(`'(${vibeRegexPattern})'`, 'gi');
+
 function formatReasoning(text: string): React.JSX.Element[] {
   const parts: React.JSX.Element[] = [];
-  const regex = /'([^']+)'/g;
   let lastIndex = 0;
   let match;
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = vibeRegex.exec(text)) !== null) {
     const matchIndex = match.index;
     const matchText = match[0];
     if (matchIndex > lastIndex) {
@@ -27,7 +31,7 @@ function formatReasoning(text: string): React.JSX.Element[] {
         {matchText}
       </Text>
     );
-    lastIndex = regex.lastIndex;
+    lastIndex = vibeRegex.lastIndex;
   }
 
   if (lastIndex < text.length) {
@@ -38,6 +42,7 @@ function formatReasoning(text: string): React.JSX.Element[] {
     );
   }
 
+  vibeRegex.lastIndex = 0;
   return parts;
 }
 
@@ -146,9 +151,11 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                     <Text color={prefixColor} bold>
                       {`[${prefixLabel}]`.padEnd(12)}
                     </Text>
-                    <Text color="cyanBright">{filename}</Text>
-                    <Text color="gray"> ➔ </Text>
-                    {formatReasoning(reasoning)}
+                    <Text>
+                      <Text color="cyanBright">{filename}</Text>
+                      <Text color="gray"> ➔ </Text>
+                      {formatReasoning(reasoning)}
+                    </Text>
                   </Box>
                 );
               }
