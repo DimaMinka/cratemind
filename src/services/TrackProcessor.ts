@@ -113,6 +113,21 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
       const filename = path.basename(filepath);
       addLog('DETECTED', `Discovered track: ${filename}`);
 
+      if (fs.existsSync(filepath)) {
+        const stats = fs.statSync(filepath);
+        if (stats.size < 50 * 1024) {
+          addLog(
+            'SYSTEM',
+            `Ignoring empty/corrupt track: ${filename} (size: ${(stats.size / 1024).toFixed(1)} KB)`
+          );
+          await routeFile(filepath, ['skipped']);
+          incrementStat('processed');
+          const currentStats = CacheService.getStats();
+          useStore.getState().setLimitStats(currentStats);
+          continue;
+        }
+      }
+
       let meta: TrackMeta | null = null;
       let dbTrack: Awaited<ReturnType<typeof EngineDBService.getTrackByFilename>> = null;
 
