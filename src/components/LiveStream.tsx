@@ -104,7 +104,7 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
             return (
               <Box key={`${entry.ts}-${entry.message.substring(0, 10)}`} marginBottom={0}>
                 <Text color={prefixColor} bold>
-                  {`[${prefixLabel}]`.padEnd(10)}
+                  {`[${prefixLabel}]`.padEnd(12)}
                 </Text>
                 <Text color={messageColor} bold={isBold}>
                   {' '}
