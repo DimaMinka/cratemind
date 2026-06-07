@@ -678,7 +678,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           : selectedFolders.includes('skipped')
             ? 'Track skipped by user'
             : 'Routed via manual user override checklist',
-        source: 'manual',
+        source: isApprovedSuggestion ? 'auto' : 'manual',
         ts: Date.now()
       });
 
