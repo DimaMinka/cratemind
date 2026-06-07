@@ -104,10 +104,7 @@ export function Header({
         </Text>
         <Text color="greenBright">{globalStats.auto}</Text>
         {globalStats.total > 0 && (
-          <Text color={aiAccuracy >= 80 ? 'greenBright' : 'yellow'}>
-            {' '}
-            ({aiAccuracy}%)
-          </Text>
+          <Text color={aiAccuracy >= 80 ? 'greenBright' : 'yellow'}> ({aiAccuracy}%)</Text>
         )}
         <Text color="gray"> </Text>
         <Text color="white" bold>

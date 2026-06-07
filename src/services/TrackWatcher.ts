@@ -70,9 +70,11 @@ export async function initWatcher(): Promise<void> {
       pendingFiles = pendingFiles.slice(BATCH_SIZE);
     }
 
+    const remainingText =
+      pendingFiles.length > 0 ? ` (${pendingFiles.length} remaining in queue)` : '';
     addLog(
       'SYSTEM',
-      `Batch threshold reached / forced. Initiating analysis for ${filesToProcess.length} track(s)...`
+      `Queueing batch of ${filesToProcess.length} track(s) for analysis${remainingText}...`
     );
     queue.add(async () => {
       await processTracksBatch(filesToProcess);
