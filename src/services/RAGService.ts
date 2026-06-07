@@ -193,12 +193,6 @@ export async function bootstrap(
       );
 
       if (existingIdx !== -1) {
-        // Upgrade auto source to engine-dj since it's confirmed in the DB
-        if (memory.examples[existingIdx].source === 'auto') {
-          memory.examples[existingIdx].source = 'engine-dj';
-          memory.examples[existingIdx].reasoning = 'Confirmed in Engine DJ database';
-          memory.examples[existingIdx].folders = [matchedVibe];
-        }
         continue;
       }
 
@@ -256,12 +250,6 @@ export async function bootstrap(
           );
 
           if (existingIdx !== -1) {
-            // Upgrade auto source to scan since it's physically present in Sorted/
-            if (memory.examples[existingIdx].source === 'auto') {
-              memory.examples[existingIdx].source = 'scan';
-              memory.examples[existingIdx].reasoning = 'Confirmed physically in Sorted folder';
-              memory.examples[existingIdx].folders = [item.folder];
-            }
             continue;
           }
 
@@ -341,12 +329,6 @@ export async function bootstrap(
       );
 
       if (existingIdx !== -1) {
-        // Upgrade auto source to scan since it's physically present in Sorted/
-        if (memory.examples[existingIdx].source === 'auto') {
-          memory.examples[existingIdx].source = 'scan';
-          memory.examples[existingIdx].reasoning = 'Confirmed physically in Sorted folder';
-          memory.examples[existingIdx].folders = [item.folder];
-        }
         continue;
       }
 
