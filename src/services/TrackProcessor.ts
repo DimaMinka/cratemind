@@ -494,7 +494,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
             reasoning: res.reasoning,
             confidence: res.confidence
           };
-          addLog('LLM_REASONING', `[LLM reasoning for ${matchState.filename}] ${res.reasoning}`);
+          addLog('LLM_REASONING', `${matchState.filename} ➔ ${res.reasoning}`);
 
           // Cache raw LLM response immediately to prevent losing it if the process exits before routing completes
           CacheService.saveTrackCache(

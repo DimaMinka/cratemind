@@ -37,51 +37,63 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
             let messageColor = 'gray';
             let isBold = false;
 
+            let prefixLabel: string = entry.type;
             switch (entry.type) {
               case 'DETECTED':
+                prefixLabel = 'NEW';
                 prefixColor = 'gray';
                 messageColor = 'white';
                 break;
               case 'ID3':
+                prefixLabel = 'TAGS';
                 prefixColor = '#cc88ff';
                 messageColor = '#cc88ff';
                 break;
               case 'RAG':
+                prefixLabel = 'RAG';
                 prefixColor = '#5599ff';
                 messageColor = '#5599ff';
                 break;
               case 'SYSTEM':
+                prefixLabel = 'SYS';
                 prefixColor = 'cyan';
                 messageColor = 'cyan';
                 break;
               case 'LLM_REASONING':
+                prefixLabel = 'AI';
                 prefixColor = 'yellow';
                 messageColor = 'yellow';
                 isBold = true;
                 break;
               case 'ROUTED':
+                prefixLabel = 'ROUTE';
                 prefixColor = 'gray';
                 break;
               case 'NEEDS_MANUAL':
+                prefixLabel = 'MANUAL';
                 prefixColor = 'yellow';
                 messageColor = 'yellow';
                 isBold = true;
                 break;
               case 'YT_SEARCH':
+                prefixLabel = 'YT';
                 prefixColor = '#ff6b6b';
                 messageColor = '#ff8787';
                 break;
               case 'YT_HIT':
+                prefixLabel = 'YT MIX';
                 prefixColor = '#a855f7';
                 messageColor = '#c084fc';
                 isBold = true;
                 break;
               case 'YT_CACHE_HIT':
+                prefixLabel = 'YT CACHE';
                 prefixColor = '#3b82f6';
                 messageColor = '#60a5fa';
                 isBold = true;
                 break;
               case 'ERROR':
+                prefixLabel = 'ERROR';
                 prefixColor = 'red';
                 messageColor = 'red';
                 isBold = true;
@@ -91,7 +103,7 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
             return (
               <Box key={`${entry.ts}-${entry.message.substring(0, 10)}`} marginBottom={0}>
                 <Text color={prefixColor} bold>
-                  [{entry.type}]
+                  [{prefixLabel.padEnd(8)}]
                 </Text>
                 <Text color={messageColor} bold={isBold}>
                   {' '}
