@@ -22,6 +22,7 @@ import {
 } from '../config.js';
 import { LLMResponse, VectorNeighbor, TrackMeta, NetworkScoutResult } from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
+import { getGlobalStats } from './LocalDBService.js';
 
 /**
  * TrackProcessor.ts
@@ -595,6 +596,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         folders: updatedRagStats.folders,
         scannedAt: Date.now()
       });
+      useStore.getState().setGlobalStats(getGlobalStats());
     } else {
       const reasonText = FORCE_MANUAL_MODE
         ? `Force Manual Mode enabled. Prompting manual override for ${s.filename}...`
@@ -689,6 +691,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         folders: updatedRagStats.folders,
         scannedAt: Date.now()
       });
+      useStore.getState().setGlobalStats(getGlobalStats());
 
       // Store vector asynchronously
       if (process.env.GEMINI_API_KEY) {
