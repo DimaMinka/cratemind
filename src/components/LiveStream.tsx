@@ -6,6 +6,41 @@ interface LiveStreamProps {
   log: LogEntry[];
 }
 
+function formatReasoning(text: string): React.JSX.Element[] {
+  const parts: React.JSX.Element[] = [];
+  const regex = /'([^']+)'/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    const matchText = match[0];
+    if (matchIndex > lastIndex) {
+      parts.push(
+        <Text key={`text-${lastIndex}`} color="yellow">
+          {text.substring(lastIndex, matchIndex)}
+        </Text>
+      );
+    }
+    parts.push(
+      <Text key={`vibe-${matchIndex}`} color="greenBright" bold>
+        {matchText}
+      </Text>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(
+      <Text key={`text-${lastIndex}`} color="yellow">
+        {text.substring(lastIndex)}
+      </Text>
+    );
+  }
+
+  return parts;
+}
+
 /**
  * LiveStream.tsx
  *
@@ -99,6 +134,24 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                 messageColor = 'red';
                 isBold = true;
                 break;
+            }
+
+            if (entry.type === 'LLM_REASONING') {
+              const arrowIndex = entry.message.indexOf(' ➔ ');
+              if (arrowIndex !== -1) {
+                const filename = entry.message.substring(0, arrowIndex);
+                const reasoning = entry.message.substring(arrowIndex + 3);
+                return (
+                  <Box key={`${entry.ts}-${entry.message.substring(0, 10)}`} marginBottom={0}>
+                    <Text color={prefixColor} bold>
+                      {`[${prefixLabel}]`.padEnd(12)}
+                    </Text>
+                    <Text color="cyanBright">{filename}</Text>
+                    <Text color="gray"> ➔ </Text>
+                    {formatReasoning(reasoning)}
+                  </Box>
+                );
+              }
             }
 
             return (
