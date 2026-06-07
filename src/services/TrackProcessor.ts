@@ -115,10 +115,17 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
 
       if (fs.existsSync(filepath)) {
         const stats = fs.statSync(filepath);
-        if (stats.size < 50 * 1024) {
+        const ext = path.extname(filepath).toLowerCase();
+
+        let minSize = 1024 * 1024; // 1MB default for compressed formats (mp3, m4a, ogg)
+        if (['.flac', '.wav', '.aiff'].includes(ext)) {
+          minSize = 1024 * 1024 * 2; // 2MB for lossless formats (flac, wav, aiff)
+        }
+
+        if (stats.size < minSize) {
           addLog(
             'SYSTEM',
-            `Ignoring empty/corrupt track: ${filename} (size: ${(stats.size / 1024).toFixed(1)} KB)`
+            `Ignoring empty/corrupt track: ${filename} (size: ${(stats.size / (1024 * 1024)).toFixed(2)} MB)`
           );
           await routeFile(filepath, ['skipped']);
           incrementStat('processed');
