@@ -328,6 +328,10 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         addLog('YT_SEARCH', `Searching YouTube context for ${meta.artist} - ${meta.title}...`);
         scoutResult = await NetworkScoutService.getTrackContext(meta.artist, meta.title);
 
+        if (scoutResult.error) {
+          addLog('ERROR', `YouTube Search Error: ${scoutResult.error}`);
+        }
+
         if (scoutResult.playlists.length > 0) {
           if (scoutResult.source === 'cache') {
             const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');

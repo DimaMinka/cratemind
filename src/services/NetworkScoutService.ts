@@ -428,6 +428,13 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
     const videoIds: string[] = [];
     const ytPlaylists: { id: string; title: string; description: string; channelName: string }[] =
       [];
+    let scoutError: string | undefined = undefined;
+
+    interface YTErrorResponse {
+      error?: {
+        message?: string;
+      };
+    }
 
     if (videoRes.ok) {
       const videoData = (await videoRes.json()) as { items?: { id?: { videoId?: string } }[] };
@@ -438,7 +445,17 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
         }
       }
     } else {
-      logToFile('YT_SCOUT_ERROR', `Video search request failed: Status ${videoRes.status}`);
+      let errText = `Status ${videoRes.status}`;
+      try {
+        const errorJson = (await videoRes.json()) as YTErrorResponse;
+        if (errorJson?.error?.message) {
+          errText = errorJson.error.message;
+        }
+      } catch (e) {
+        logToFile('YT_SCOUT_ERROR', `Error parsing video search failure response: ${String(e)}`);
+      }
+      logToFile('YT_SCOUT_ERROR', `Video search request failed: ${errText}`);
+      scoutError = `Video search: ${errText}`;
     }
 
     if (playlistRes.ok) {
@@ -460,12 +477,26 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
         }
       }
     } else {
-      logToFile('YT_SCOUT_ERROR', `Playlist search request failed: Status ${playlistRes.status}`);
+      let errText = `Status ${playlistRes.status}`;
+      try {
+        const errorJson = (await playlistRes.json()) as YTErrorResponse;
+        if (errorJson?.error?.message) {
+          errText = errorJson.error.message;
+        }
+      } catch (e) {
+        logToFile('YT_SCOUT_ERROR', `Error parsing playlist search failure response: ${String(e)}`);
+      }
+      logToFile('YT_SCOUT_ERROR', `Playlist search request failed: ${errText}`);
+      if (!scoutError) {
+        scoutError = `Playlist search: ${errText}`;
+      } else {
+        scoutError += ` | Playlist search: ${errText}`;
+      }
     }
 
     if (videoIds.length === 0 && ytPlaylists.length === 0) {
       logToFile('YT_SCOUT_MISS', `No videos or playlists returned for query: "${artist} ${title}"`);
-      return { playlists: [], neighbors: [], source: 'network' };
+      return { playlists: [], neighbors: [], source: 'network', error: scoutError };
     }
 
     const videos: {
@@ -483,6 +514,22 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
       if (detailsRes.ok) {
         const detailsData = await detailsRes.json();
         if (detailsData.items) videos.push(...detailsData.items);
+      } else {
+        let errText = `Status ${detailsRes.status}`;
+        try {
+          const errorJson = (await detailsRes.json()) as YTErrorResponse;
+          if (errorJson?.error?.message) {
+            errText = errorJson.error.message;
+          }
+        } catch (e) {
+          logToFile('YT_SCOUT_ERROR', `Error parsing video details failure response: ${String(e)}`);
+        }
+        logToFile('YT_SCOUT_ERROR', `Video details request failed: ${errText}`);
+        if (!scoutError) {
+          scoutError = `Video details: ${errText}`;
+        } else {
+          scoutError += ` | Video details: ${errText}`;
+        }
       }
     }
 
@@ -554,7 +601,30 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
     for (const pl of ytPlaylists) {
       const listUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${pl.id}&key=${YOUTUBE_API_KEY}`;
       const listRes = await globalThis.fetch(listUrl);
-      if (!listRes.ok) continue;
+      if (!listRes.ok) {
+        let errText = `Status ${listRes.status}`;
+        try {
+          const errorJson = (await listRes.json()) as YTErrorResponse;
+          if (errorJson?.error?.message) {
+            errText = errorJson.error.message;
+          }
+        } catch (e) {
+          logToFile(
+            'YT_SCOUT_ERROR',
+            `Error parsing playlist items failure response: ${String(e)}`
+          );
+        }
+        logToFile(
+          'YT_SCOUT_ERROR',
+          `Playlist items fetch failed for playlist ${pl.id}: ${errText}`
+        );
+        if (!scoutError) {
+          scoutError = `Playlist items (${pl.id}): ${errText}`;
+        } else {
+          scoutError += ` | Playlist items (${pl.id}): ${errText}`;
+        }
+        continue;
+      }
       const listData = await listRes.json();
       const itemsData = listData.items || [];
 
@@ -672,12 +742,13 @@ async function getRealYouTubeContext(artist: string, title: string): Promise<Net
     return {
       playlists: resultPlaylists.slice(0, YT_SCOUT_MAX_PLAYLISTS),
       neighbors: uniqueNeighbors,
-      source: 'network'
+      source: 'network',
+      error: scoutError
     };
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     logToFile('YT_SCOUT_ERROR', `Fatal error during YouTube search: ${errMsg}`);
-    return { playlists: [], neighbors: [], source: 'network' };
+    return { playlists: [], neighbors: [], source: 'network', error: errMsg };
   }
 }
 

@@ -186,6 +186,7 @@ export type NetworkScoutResult = {
   playlists: YouTubePlaylist[];
   neighbors: YouTubePlaylistItem[];
   source: 'cache' | 'network';
+  error?: string;
 };
 
 /** In-memory cached playlist entry */
