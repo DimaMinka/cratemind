@@ -67,7 +67,8 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                 break;
               case 'ROUTED':
                 prefixLabel = 'ROUTE';
-                prefixColor = 'gray';
+                prefixColor = '#86efac';
+                messageColor = '#86efac';
                 break;
               case 'NEEDS_MANUAL':
                 prefixLabel = 'MANUAL';
