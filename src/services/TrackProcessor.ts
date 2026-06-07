@@ -328,6 +328,9 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
               'YT_CACHE_HIT',
               `Vibe matched from cached playlist: "${playlistNames}" (network saved)`
             );
+            CacheService.incrementCacheHits();
+            const currentStats = CacheService.getStats();
+            useStore.getState().setLimitStats(currentStats);
           } else {
             const playlistNames = scoutResult.playlists.map((p) => p.title).join(', ');
             addLog('YT_HIT', `Found in YouTube mix: "${playlistNames}" — playlist saved to memory`);
