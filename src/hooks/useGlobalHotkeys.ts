@@ -5,8 +5,9 @@ import * as CacheService from '../services/CacheService.js';
 import * as EngineDBService from '../services/EngineDBService.js';
 import * as TelegramService from '../services/TelegramService.js';
 import { indexAllDBVibes } from '../services/VibeIndexerService.js';
-import { MOCK_MODE } from '../config.js';
+import { MOCK_MODE, SD_CARD_SYNC_PATH } from '../config.js';
 import { normalizeKey } from '../services/KeyboardService.js';
+import * as SyncService from '../services/SyncService.js';
 
 /**
  * useGlobalHotkeys.ts
@@ -102,6 +103,20 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
             useStore.getState().setTelegramDownloadOnly(true);
             TelegramService.downloadBulk().catch((err) => {
               addLog('ERROR', `Telegram download failed: ${err}`);
+            });
+          }
+        }
+      });
+    } else if (keyLower === 's') {
+      const setBootPrompt = useStore.getState().setBootPrompt;
+      setBootPrompt({
+        message: 'Sync Sorted to external collection?',
+        detail: `Destination: ${SD_CARD_SYNC_PATH}`,
+        resolve: (confirmed) => {
+          setBootPrompt(null);
+          if (confirmed) {
+            SyncService.sync().catch((err) => {
+              addLog('ERROR', `Sync invocation failed: ${err}`);
             });
           }
         }
