@@ -114,6 +114,9 @@ FORCE_MANUAL_MODE=true
 
 # Mix Protection
 MAX_TRACK_DURATION_MINUTES=20
+
+# Sync Destination
+SD_CARD_SYNC_PATH=/Volumes/EngineDJ SD/Music Collection/Atmosphere
 ```
 
 ### Telegram Userbot Authentication
@@ -158,6 +161,7 @@ npm start
 * `[V]` — Run manual index DB vibe sync
 * `[C]` — Simulate network/chaos mode (in Mock Mode)
 * `[T]` — Start Telegram channel downloader sync
+* `[S]` — Sync Sorted collection to external collection (e.g., SD card) via rsync
 * `[Q]` — Quit CrateMind safely
 
 ---
