@@ -144,12 +144,20 @@ export async function sync(): Promise<void> {
           continue;
         }
 
+        // Clean up rsync skip messages (e.g. "skip existing 'magic forest/track.mp3'")
+        let cleanLine = trimmed;
+        if (cleanLine.startsWith('skip existing ')) {
+          cleanLine = cleanLine.substring('skip existing '.length);
+        }
+        // Remove surrounding quotes if present
+        cleanLine = cleanLine.replace(/^['"]|['"]$/g, '');
+
         // Extract top-level folder name (e.g., "club party/track.mp3" -> "club party")
-        const parts = trimmed.split('/');
+        const parts = cleanLine.split('/');
         if (parts.length > 0 && parts[0]) {
           const folder = parts[0];
           // Check if this is a directory we care about
-          if (parts.length > 1 || trimmed.endsWith('/')) {
+          if (parts.length > 1 || cleanLine.endsWith('/')) {
             if (folder !== lastLoggedFolder && folder !== '.' && folder !== '..') {
               lastLoggedFolder = folder;
               addLog('SYSTEM', `Syncing folder: ${folder}...`);
