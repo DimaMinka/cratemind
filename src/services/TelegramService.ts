@@ -81,7 +81,9 @@ export async function connect(): Promise<boolean> {
   try {
     const stringSession = new StringSession(sessionString);
     client = new TelegramClient(stringSession, apiId, apiHash, {
-      connectionRetries: 5
+      connectionRetries: 5,
+      requestRetries: 5,
+      timeout: 30000
     });
 
     useStore.getState().addLog('SYSTEM', 'Connecting to Telegram...');
