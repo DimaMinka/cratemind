@@ -12,7 +12,9 @@ import {
   FOLDERS,
   SORTED_DIR,
   MAX_TRACK_DURATION_SEC,
-  MAX_TRACK_DURATION_MINUTES
+  MAX_TRACK_DURATION_MINUTES,
+  MIN_SIZE_LOSSLESS_MB,
+  MIN_SIZE_LOSSY_MB
 } from '../config.js';
 
 const apiId = parseInt((process.env.TELEGRAM_API_ID || '0').replace(/^["']|["']$/g, ''), 10);
@@ -153,6 +155,20 @@ async function processMessageBatch(
     // Ensure valid audio extension
     const ext = path.extname(filename).toLowerCase();
     if (!(AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+      updateAndSaveHistory();
+      continue;
+    }
+
+    // Skip previews/snippets that are too small
+    const sizeBytes = Number(msg.document.size);
+    const isLossless = ['.flac', '.wav', '.aiff', '.aif'].includes(ext);
+    const minSizeBytes = (isLossless ? MIN_SIZE_LOSSLESS_MB : MIN_SIZE_LOSSY_MB) * 1024 * 1024;
+
+    if (sizeBytes < minSizeBytes) {
+      addLog(
+        'SYSTEM',
+        `Telegram: Skipping ${filename} (Size: ${(sizeBytes / 1024 / 1024).toFixed(2)} MB is below minimum of ${isLossless ? MIN_SIZE_LOSSLESS_MB : MIN_SIZE_LOSSY_MB} MB)`
+      );
       updateAndSaveHistory();
       continue;
     }

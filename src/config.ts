@@ -57,6 +57,10 @@ export const MAX_TRACK_DURATION_MINUTES = parseInt(
 );
 export const MAX_TRACK_DURATION_SEC = MAX_TRACK_DURATION_MINUTES * 60;
 
+// Telegram file size filtering (in megabytes)
+export const MIN_SIZE_LOSSLESS_MB = 10;
+export const MIN_SIZE_LOSSY_MB = 3;
+
 // YouTube Network Scout configuration
 export const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 export const YT_SCOUT_ENABLED = !!YOUTUBE_API_KEY.trim();

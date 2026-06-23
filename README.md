@@ -19,6 +19,7 @@
   - **Strict Deduplication**: Automatically checks the `./Incoming` folder, the recursive `./Sorted` folder (including skipped files), and the **Engine DJ SQLite Database** before downloading to avoid duplicate tracks.
   - **Download-Only Mode**: Press `[D]` in the interactive prompt when starting sync to download files from Telegram to `Incoming` without spawning any LLM or classification tasks (useful for bulk loading tracks to process later).
   - **Automatic Mix Protection**: Automatically checks audio duration and skips tracks exceeding a configurable limit (default: 20 minutes) to avoid downloading long DJ mixes or podcasts.
+  - **Snippet & Preview Filter**: Skips files that fall below a minimum file size threshold (default: 10 MB for lossless formats like `.flac`, `.wav` and 3 MB for lossy formats like `.mp3`) to prevent downloading low-quality snippets or previews.
 - **LLM-Driven Vibe Categorization**:
   - Automatically classifies tracks into **21 custom atmospheric vibe folders** (e.g., _mountain sunset_, _magic forest_, _desert vibe_, _nargila vibe_, _club party_, _galaxy trip_).
 - **Few-Shot RAG Memory**:
