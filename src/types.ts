@@ -108,6 +108,7 @@ export type OverrideState = {
   title?: string;
   bpm?: number;
   key?: string;
+  passportSummary?: string;
 };
 
 export type DriveSyncProgress = {
@@ -152,6 +153,7 @@ export type AppState = {
     isPaused?: boolean;
     bpm?: number;
     key?: string;
+    passportSummary?: string;
   } | null;
   isLLMAnalyzing: boolean;
   isTelegramDownloading: boolean;

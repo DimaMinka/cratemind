@@ -79,6 +79,7 @@ interface TrackBatchState {
   schemaError?: boolean;
   errorMsg?: string;
   bypassed?: boolean;
+  passportSummary?: string;
 }
 
 export async function processTracksBatch(filepaths: string[]): Promise<void> {
@@ -503,7 +504,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         scoutResult,
         ragHit: false,
         cacheHit: !!cachedResponse,
-        llmResponse: cachedResponse || undefined
+        llmResponse: cachedResponse || undefined,
+        passportSummary
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -690,7 +692,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         bpm: s.meta.bpm,
         key: s.meta.key,
         artist: s.meta.artist,
-        title: s.meta.title
+        title: s.meta.title,
+        passportSummary: s.passportSummary
       });
 
       let isApprovedSuggestion = false;

@@ -25,7 +25,8 @@ export function previewAudio(
   offset = 0,
   duration = 180,
   bpm?: number,
-  key?: string
+  key?: string,
+  passportSummary?: string
 ): void {
   const setPlayback = useStore.getState().setPlayback;
   const addLog = useStore.getState().addLog;
@@ -39,7 +40,8 @@ export function previewAudio(
       offset,
       lastStartedAt: Date.now(),
       bpm,
-      key
+      key,
+      passportSummary
     });
     return;
   }
@@ -86,7 +88,8 @@ export function previewAudio(
       offset,
       lastStartedAt: Date.now(),
       bpm,
-      key
+      key,
+      passportSummary
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

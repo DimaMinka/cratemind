@@ -69,6 +69,32 @@ export function MiniPlayer(): React.JSX.Element | null {
           </Text>
         </Box>
         <Box>
+          <Text backgroundColor="green" color="black" bold>
+            {' '}
+            DURATION{' '}
+          </Text>
+          <Text color="greenBright" bold>
+            {' '}
+            {formatTime(currentSecs)}
+          </Text>
+          <Text color="gray"> / {formatTime(playback.duration)}</Text>
+        </Box>
+      </Box>
+
+      {/* Passport Summary Row */}
+      {playback.passportSummary ? (
+        <Box marginBottom={1} paddingX={1} borderStyle="single" borderColor="#38bdf8">
+          <Text backgroundColor="#38bdf8" color="black" bold>
+            {' '}
+            PASSPORT{' '}
+          </Text>
+          <Text color="#7dd3fc" bold>
+            {' '}
+            {playback.passportSummary}
+          </Text>
+        </Box>
+      ) : playback.bpm || playback.key ? (
+        <Box marginBottom={1}>
           {playback.bpm ? (
             <>
               <Text backgroundColor="cyan" color="black" bold>
@@ -92,20 +118,10 @@ export function MiniPlayer(): React.JSX.Element | null {
                 {' '}
                 {playback.key}{' '}
               </Text>
-              <Text color="gray"> | </Text>
             </>
           ) : null}
-          <Text backgroundColor="green" color="black" bold>
-            {' '}
-            DURATION{' '}
-          </Text>
-          <Text color="greenBright" bold>
-            {' '}
-            {formatTime(currentSecs)}
-          </Text>
-          <Text color="gray"> / {formatTime(playback.duration)}</Text>
         </Box>
-      </Box>
+      ) : null}
 
       {/* Progress Track Row */}
       <Box justifyContent="space-between" alignItems="center">
