@@ -2,6 +2,16 @@ import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
 import { getDB, getSetting, setSetting } from './LocalDBService.js';
 import { logToFile } from './LoggerService.js';
+import { SPOTIFY_ENABLED } from '../config.js';
+
+/**
+ * ============================================================================
+ * SPOTIFY DISABLED: Spotify Web API is closed / inaccessible for personal apps.
+ * All runtime network queries and OAuth listeners are permanently disabled.
+ * The interface SpotifyAudioFeatures is retained for schema backwards compatibility.
+ * Superseded by Vibes.app acoustic features and YouTube Network Scout.
+ * ============================================================================
+ */
 
 export interface SpotifyAudioFeatures {
   danceability?: number | null;
@@ -19,8 +29,13 @@ let _tokenExpiresAt = 0;
 /**
  * Spins up a temporary Node.js HTTP server on port 8888
  * and guides the user to authenticate through the Spotify browser window.
+ * @deprecated Spotify Web API is disabled.
  */
 async function startLocalServerAndAuthorize(clientId: string): Promise<string> {
+  if (!SPOTIFY_ENABLED) {
+    throw new Error('Spotify integration is disabled.');
+  }
+
   const redirectUri = 'http://127.0.0.1:8888/callback';
   const authorizeUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
     redirectUri
@@ -71,6 +86,10 @@ async function startLocalServerAndAuthorize(clientId: string): Promise<string> {
  * Caches token in-memory and automatically refreshes using a persistent SQLite token.
  */
 async function getAccessToken(): Promise<string | null> {
+  if (!SPOTIFY_ENABLED) {
+    return null;
+  }
+
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
@@ -241,6 +260,10 @@ export async function getTrackFeatures(
   artist: string,
   title: string
 ): Promise<SpotifyAudioFeatures | null> {
+  if (!SPOTIFY_ENABLED) {
+    return null;
+  }
+
   const hasCreds = !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET);
   if (!hasCreds) {
     return null;

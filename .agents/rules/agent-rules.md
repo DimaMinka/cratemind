@@ -125,3 +125,18 @@ When modifying or expanding the Telegram sync and download pipeline, agents must
 4. **Flood Control Delay**:
    Always introduce a safe 1-second delay (`setTimeout`) between page fetches of Telegram messages to prevent hitting Telegram API Flood limits when performing deep history scans.
 
+---
+
+## 9. Modular Architecture & File Size Limits (Anti-Monolith Rule)
+
+To ensure high maintainability, clean readability, and prevent regression bugs, all code must strictly follow modular boundaries:
+
+1. **Strict File Size Limits**:
+   - Source code files must stay well below **400–500 lines**.
+   - **Never create or allow 800+ line monoliths** in `src/`.
+2. **Decomposition & Single Responsibility**:
+   - If a service or component approaches 400 lines or takes on more than one primary responsibility, proactively decompose it into focused helper modules, specialized sub-services, or dedicated utility files (e.g., separating query builders, parsers, formatters, and network handlers).
+3. **Cohesive Interfaces & Types**:
+   - Extract domain models, database row types, and shared data transfer contracts into `src/types.ts` or scoped `*.types.ts` files instead of bloating service implementation files with large type blocks.
+
+

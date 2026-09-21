@@ -70,3 +70,7 @@ export const YT_SCOUT_ENABLED = !!YOUTUBE_API_KEY.trim();
 export const YT_SCOUT_NETWORK_DELAY_MS = 2000;
 export const YT_SCOUT_MAX_PLAYLISTS = 3;
 export const YT_SCOUT_NEIGHBOR_RADIUS = 10;
+
+// SPOTIFY DISABLED: Spotify Web API is closed / inaccessible for personal developer keys (403 errors).
+// Superseded by Vibes.app acoustic intelligence and YouTube Network Scout.
+export const SPOTIFY_ENABLED = false;
