@@ -899,6 +899,12 @@
             tracks sequentially into the <code>Incoming</code> folder for analysis.
           </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
+          <li>
+            <b>SyncService &amp; Modular Sync Subsystem:</b> Orchestrates collection sync and full Drive-to-Drive Mirror operations with a clean modular design in <code>src/services/sync/</code>:
+            <code>rsyncRunner</code> (line-buffered stdout telemetry, dry-run discovery, audio counting),
+            <code>archiveManager</code> (in-memory audio file indexing, smart track relocation across reorganized crates, and active track recovery from <code>Removed from SD/</code>), and
+            <code>dbRewriter</code> (Engine DJ SQLite database absolute path updates via <code>better-sqlite3</code>).
+          </li>
         </ul>
 
         <h2>Key Features:</h2>
