@@ -55,6 +55,23 @@ function checkDuplicateFolders(): void {
  */
 export async function sync(): Promise<void> {
   const addLog = useStore.getState().addLog;
+  const state = useStore.getState();
+
+  if (state.status === 'listening' || state.isLLMAnalyzing) {
+    addLog(
+      'ERROR',
+      'Sync aborted: Track analysis is active. Press [Space] to pause analysis before starting sync.'
+    );
+    return;
+  }
+
+  if (state.isTelegramDownloading) {
+    addLog(
+      'ERROR',
+      'Sync aborted: Telegram download is currently running. Please wait for completion.'
+    );
+    return;
+  }
 
   if (isSyncing) {
     addLog('SYSTEM', 'Sync already in progress.');
@@ -167,6 +184,23 @@ export function areDrivesConnected(
 export async function syncDrives(customSource?: string, customDest?: string): Promise<void> {
   const addLog = useStore.getState().addLog;
   const setDriveSyncProgress = useStore.getState().setDriveSyncProgress;
+  const state = useStore.getState();
+
+  if (state.status === 'listening' || state.isLLMAnalyzing) {
+    addLog(
+      'ERROR',
+      'Drive mirror aborted: Track analysis is active. Press [Space] to pause analysis before starting drive mirror.'
+    );
+    return;
+  }
+
+  if (state.isTelegramDownloading) {
+    addLog(
+      'ERROR',
+      'Drive mirror aborted: Telegram download is currently running. Please wait for completion.'
+    );
+    return;
+  }
 
   if (isSyncing) {
     addLog('SYSTEM', 'Sync already in progress.');

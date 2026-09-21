@@ -25,6 +25,10 @@ import * as SyncService from '../services/SyncService.js';
 export function useGlobalHotkeys(isOverlayActive: boolean): void {
   const { exit } = useApp();
   const status = useStore((state) => state.status);
+  const driveSyncProgress = useStore((state) => state.driveSyncProgress);
+  const isSyncActive = driveSyncProgress?.isActive ?? false;
+  const isLLMAnalyzing = useStore((state) => state.isLLMAnalyzing);
+  const isTelegramDownloading = useStore((state) => state.isTelegramDownloading);
 
   const setStatus = useStore((state) => state.setStatus);
   const addLog = useStore((state) => state.addLog);
@@ -37,16 +41,71 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
     const normInput = normalizeKey(input);
     const keyLower = normInput.toLowerCase();
 
-    if (normInput === ' ') {
-      const nextStatus = status === 'listening' ? 'paused' : 'listening';
-      setStatus(nextStatus);
-      addLog('SYSTEM', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
-    } else if (keyLower === 'q') {
+    // Always permit audio playback seeking
+    if (key.leftArrow) {
+      seekPlayback(-10);
+      return;
+    } else if (key.rightArrow) {
+      seekPlayback(10);
+      return;
+    }
+
+    // Always permit quit [Q]
+    if (keyLower === 'q') {
       addLog('SYSTEM', 'Shutting down CrateMind in 3 seconds. Goodbye!');
       setTimeout(() => {
         exit();
         process.exit(0);
       }, 3000);
+      return;
+    }
+
+    // Guard 1: When Drive Mirror / Sync is active, block all conflicting operations
+    if (isSyncActive) {
+      if (normInput === ' ' || ['s', 't', 'v', 'l', 'c'].includes(keyLower)) {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Drive synchronization is currently running. Please wait for completion.'
+        );
+      }
+      return;
+    }
+
+    // Guard 2: When Telegram download is active, block new sync and duplicate telegram triggers
+    if (isTelegramDownloading) {
+      if (keyLower === 's') {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Telegram download is currently running. Please wait for completion.'
+        );
+        return;
+      } else if (keyLower === 't') {
+        addLog('SYSTEM', 'Action blocked: Telegram download is already in progress.');
+        return;
+      }
+    }
+
+    // Guard 3: When track analysis queue is active, block sync and vibe indexing to prevent race conditions
+    if (status === 'listening' || isLLMAnalyzing) {
+      if (keyLower === 's') {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Track analysis is active. Press [Space] to pause analysis before starting sync.'
+        );
+        return;
+      } else if (keyLower === 'v') {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Track analysis is active. Press [Space] to pause analysis before indexing vibes.'
+        );
+        return;
+      }
+    }
+
+    if (normInput === ' ') {
+      const nextStatus = status === 'listening' ? 'paused' : 'listening';
+      setStatus(nextStatus);
+      addLog('SYSTEM', `System ${nextStatus === 'listening' ? 'resumed' : 'paused'}.`);
     } else if (keyLower === 'l') {
       CacheService.resetDailyLimits();
       const currentStats = CacheService.getStats();
@@ -147,10 +206,6 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
           }
         });
       }
-    } else if (key.leftArrow) {
-      seekPlayback(-10);
-    } else if (key.rightArrow) {
-      seekPlayback(10);
     }
   });
 }
