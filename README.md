@@ -20,6 +20,11 @@
   - **Download-Only Mode**: Press `[D]` in the interactive prompt when starting sync to download files from Telegram to `Incoming` without spawning any LLM or classification tasks (useful for bulk loading tracks to process later).
   - **Automatic Mix Protection**: Automatically checks audio duration and skips tracks exceeding a configurable limit (default: 20 minutes) to avoid downloading long DJ mixes or podcasts.
   - **Snippet & Preview Filter**: Skips files that fall below a minimum file size threshold (default: 10 MB for lossless formats like `.flac`, `.wav` and 3 MB for lossy formats like `.mp3`) to prevent downloading low-quality snippets or previews.
+- **Drive-to-Drive Mirror Synchronization (EngineDJ SD [Master] -> EngineDJ)**:
+  - Smart dual-drive detection when pressing `[S]` (*Sync to Collection*). When both the master SD card and the target backup drive are mounted, CrateMind offers a dedicated option `[D] Mirror SD -> EngineDJ Drive`.
+  - **Safe Archiving of Obsolete Tracks**: Files present on the target drive but missing on the master SD card are **never deleted**. They are safely relocated to `Removed from SD/` preserving the original folder structure.
+  - **Automated Database Path Rewrite**: After mirroring `Engine Library`, CrateMind automatically rewrites all absolute file paths in `m.db` and `hm.db` from the master mount point to the target drive prefix, allowing Denon DJ hardware and Engine DJ software to load tracks standalone without missing-file errors.
+  - **Configurable Paths**: Source, target, and archive directory paths can be customized via `.env` (`DRIVE_SYNC_SOURCE_PATH`, `DRIVE_SYNC_DEST_PATH`, `DRIVE_SYNC_ARCHIVE_DIR`).
 - **LLM-Driven Vibe Categorization**:
   - Automatically classifies tracks into **21 custom atmospheric vibe folders** (e.g., _mountain sunset_, _magic forest_, _desert vibe_, _nargila vibe_, _club party_, _galaxy trip_).
 - **Few-Shot RAG Memory**:
@@ -164,7 +169,7 @@ npm start
 - `[V]` — Run manual index DB vibe sync
 - `[C]` — Simulate network/chaos mode (in Mock Mode)
 - `[T]` — Start Telegram channel downloader sync
-- `[S]` — Sync Sorted collection to external collection (e.g., SD card) via rsync
+- `[S]` — Sync to Collection via rsync (Syncs local `Sorted/` to SD, or runs full Drive-to-Drive mirror `[D]` if target drive is connected)
 - `[Q]` — Quit CrateMind safely
 
 ---
