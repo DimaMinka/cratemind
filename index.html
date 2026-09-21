@@ -946,7 +946,10 @@
             and AI accuracy rate calculated over actually classified tracks
             (<code>auto &divide; (auto + manual)</code>).
           </li>
-          <li>LLM-driven vibe categorization into 21 custom atmospheric folders.</li>
+          <li>
+            <b>LLM-driven Vibe Categorization (Gemini 3.5 Flash-Lite):</b> Powered by Google's
+            <code>gemini-3.5-flash-lite</code> with native <code>responseSchema</code> structured output validation, ensuring deterministic multi-track batch routing across 21 custom atmospheric folders without hallucinated crates.
+          </li>
           <li>
             <b>Vibes.app Acoustic &amp; Semantic Intelligence:</b> Integrates strictly read-only with
             <code>vibes.sqlite</code> to ingest 57 curated vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves in 3 fast batch queries. Persists these profiles locally in the <code>track_intelligence</code> table in <code>cratemind.db</code>.
