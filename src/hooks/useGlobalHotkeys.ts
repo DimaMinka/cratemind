@@ -29,6 +29,7 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
   const isSyncActive = driveSyncProgress?.isActive ?? false;
   const isLLMAnalyzing = useStore((state) => state.isLLMAnalyzing);
   const isTelegramDownloading = useStore((state) => state.isTelegramDownloading);
+  const isIndexingVibes = useStore((state) => state.isIndexingVibes);
 
   const setStatus = useStore((state) => state.setStatus);
   const addLog = useStore((state) => state.addLog);
@@ -71,9 +72,20 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
       return;
     }
 
-    // Guard 2: When Telegram download is active, block new sync and duplicate telegram triggers
+    // Guard 2: When Vibe DB Indexing is active, block all conflicting operations
+    if (isIndexingVibes) {
+      if (normInput === ' ' || ['s', 't', 'v', 'l', 'c'].includes(keyLower)) {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Vibe DB indexing is currently running. Please wait for completion.'
+        );
+      }
+      return;
+    }
+
+    // Guard 3: When Telegram download is active, block all conflicting operations
     if (isTelegramDownloading) {
-      if (keyLower === 's') {
+      if (normInput === ' ' || ['s', 'v', 'l', 'c'].includes(keyLower)) {
         addLog(
           'SYSTEM',
           'Action blocked: Telegram download is currently running. Please wait for completion.'
@@ -83,9 +95,10 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         addLog('SYSTEM', 'Action blocked: Telegram download is already in progress.');
         return;
       }
+      return;
     }
 
-    // Guard 3: When track analysis queue is active, block sync and vibe indexing to prevent race conditions
+    // Guard 4: When track analysis queue is active, block sync, vibe indexing, and telegram download
     if (status === 'listening' || isLLMAnalyzing) {
       if (keyLower === 's') {
         addLog(
@@ -97,6 +110,12 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
         addLog(
           'SYSTEM',
           'Action blocked: Track analysis is active. Press [Space] to pause analysis before indexing vibes.'
+        );
+        return;
+      } else if (keyLower === 't') {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Track analysis is active. Press [Space] to pause analysis before starting Telegram download.'
         );
         return;
       }

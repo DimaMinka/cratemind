@@ -12,12 +12,23 @@ import { useStore } from '../services/UIService.js';
 export function BottomBar(): React.JSX.Element {
   const driveSyncProgress = useStore((state) => state.driveSyncProgress);
   const isSyncActive = driveSyncProgress?.isActive ?? false;
+  const isIndexingVibes = useStore((state) => state.isIndexingVibes);
+  const isTelegramDownloading = useStore((state) => state.isTelegramDownloading);
 
+  let lockedTitle = '';
   if (isSyncActive) {
+    lockedTitle = '[Drive Mirror in progress...]';
+  } else if (isIndexingVibes) {
+    lockedTitle = '[Vibe Indexing in progress...]';
+  } else if (isTelegramDownloading) {
+    lockedTitle = '[Telegram Download in progress...]';
+  }
+
+  if (lockedTitle) {
     return (
       <Box flexDirection="row" justifyContent="center" marginTop={1} paddingX={1}>
         <Text color="yellowBright" bold>
-          [Drive Mirror in progress...]
+          {lockedTitle}
         </Text>
         <Text color="gray"> Hotkeys locked </Text>
         <Text color="gray"> | </Text>

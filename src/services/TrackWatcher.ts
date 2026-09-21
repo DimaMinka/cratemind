@@ -59,9 +59,9 @@ export async function initWatcher(): Promise<void> {
       return;
     }
 
-    // Do not process tracks while Drive Mirror / Sync is active
-    const isSyncActive = useStore.getState().driveSyncProgress?.isActive;
-    if (isSyncActive) {
+    // Do not process tracks while Drive Mirror / Sync, Vibe Indexing, or Telegram is active
+    const state = useStore.getState();
+    if (state.driveSyncProgress?.isActive || state.isIndexingVibes || state.isTelegramDownloading) {
       return;
     }
 
@@ -116,6 +116,22 @@ export async function initWatcher(): Promise<void> {
         addLog(
           'SYSTEM',
           'Action blocked: Cannot resume track analysis while drive synchronization is in progress.'
+        );
+        useStore.getState().setStatus('paused');
+        return;
+      }
+      if (state.isIndexingVibes) {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Cannot resume track analysis while vibe indexing is in progress.'
+        );
+        useStore.getState().setStatus('paused');
+        return;
+      }
+      if (state.isTelegramDownloading) {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Cannot resume track analysis while Telegram download is in progress.'
         );
         useStore.getState().setStatus('paused');
         return;
