@@ -224,6 +224,102 @@ function buildResultFromCache(playlistIds: Set<string>, trackKey: string): Netwo
   };
 }
 
+// ── Token Overlap & 2-Tier Local Search ─────────────────────────────────────
+
+function tokenize(s: string): Set<string> {
+  const words = cleanMetadataString(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+  return new Set(words);
+}
+
+function tokenOverlapScore(targetTokens: Set<string>, candidateTokens: Set<string>): number {
+  if (targetTokens.size === 0 || candidateTokens.size === 0) return 0;
+  let matches = 0;
+  for (const t of targetTokens) {
+    if (candidateTokens.has(t)) matches++;
+  }
+  return matches / Math.max(targetTokens.size, candidateTokens.size);
+}
+
+/**
+ * Searches local SQLite yt_playlist_items via 2 tiers:
+ * Tier 1: Exact lowercase artist + title match (fast indexed lookup).
+ * Tier 2: Token-overlap fuzzy match (>= 0.85 similarity on title + artist) across items.
+ */
+function findLocalPlaylistMatches(
+  artist: string,
+  title: string
+): { playlistIds: Set<string>; matchedKey: string } {
+  const trackKey = normalizeKey(artist, title);
+  const db = getDB();
+  const matchedIds = new Set<string>();
+
+  try {
+    const cleanArt = cleanMetadataString(artist).toLowerCase();
+    const cleanTtl = cleanMetadataString(title).toLowerCase();
+
+    // Tier 1: Exact lowercase match
+    const exactRows = db
+      .prepare(
+        'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
+      )
+      .all(cleanArt, cleanTtl) as { playlist_id: string }[];
+
+    if (exactRows.length > 0) {
+      for (const row of exactRows) {
+        matchedIds.add(row.playlist_id);
+      }
+      return { playlistIds: matchedIds, matchedKey: trackKey };
+    }
+
+    // Tier 2: Token overlap fuzzy match on title & artist
+    const targetTitleTokens = tokenize(title);
+    const targetArtistTokens = tokenize(artist);
+
+    // Filter candidate items matching any title token
+    const firstTitleWord = Array.from(targetTitleTokens)[0];
+    if (firstTitleWord) {
+      const candidates = db
+        .prepare(
+          'SELECT DISTINCT playlist_id, artist, title FROM yt_playlist_items WHERE LOWER(title) LIKE ? LIMIT 100'
+        )
+        .all(`%${firstTitleWord}%`) as { playlist_id: string; artist: string; title: string }[];
+
+      let bestScore = 0;
+      let bestKey = trackKey;
+
+      for (const cand of candidates) {
+        const candTitleTokens = tokenize(cand.title);
+        const candArtistTokens = tokenize(cand.artist);
+
+        const titleScore = tokenOverlapScore(targetTitleTokens, candTitleTokens);
+        const artistScore =
+          targetArtistTokens.size > 0 && candArtistTokens.size > 0
+            ? tokenOverlapScore(targetArtistTokens, candArtistTokens)
+            : 1.0;
+
+        const combinedScore = titleScore * 0.7 + artistScore * 0.3;
+        if (combinedScore >= 0.85 && combinedScore > bestScore) {
+          bestScore = combinedScore;
+          matchedIds.add(cand.playlist_id);
+          bestKey = normalizeKey(cand.artist, cand.title);
+        }
+      }
+
+      if (matchedIds.size > 0) {
+        return { playlistIds: matchedIds, matchedKey: bestKey };
+      }
+    }
+  } catch {
+    // Ignore SQLite read errors
+  }
+
+  return { playlistIds: matchedIds, matchedKey: trackKey };
+}
+
 // ── Mock Implementation ─────────────────────────────────────────────────────
 
 async function getMockContext(artist: string, title: string): Promise<NetworkScoutResult> {
@@ -231,32 +327,23 @@ async function getMockContext(artist: string, title: string): Promise<NetworkSco
 
   // 1. Check in-memory cache
   let cachedPlaylistIds = trackIndex.get(trackKey);
+  let resolvedKey = trackKey;
 
-  // 2. If memory cache miss, check SQLite database
+  // 2. If memory cache miss, run 2-tier SQLite search
   if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
-    const db = getDB();
-    try {
-      const cleanArt = cleanMetadataString(artist).toLowerCase();
-      const cleanTtl = cleanMetadataString(title).toLowerCase();
-      const rows = db
-        .prepare(
-          'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
-        )
-        .all(cleanArt, cleanTtl) as { playlist_id: string }[];
-      if (rows.length > 0) {
-        for (const row of rows) {
-          loadPlaylistFromDB(row.playlist_id);
-        }
-        cachedPlaylistIds = trackIndex.get(trackKey);
+    const localMatch = findLocalPlaylistMatches(artist, title);
+    if (localMatch.playlistIds.size > 0) {
+      for (const plId of localMatch.playlistIds) {
+        loadPlaylistFromDB(plId);
       }
-    } catch {
-      // Ignore SQLite read errors
+      resolvedKey = localMatch.matchedKey;
+      cachedPlaylistIds = trackIndex.get(resolvedKey) ?? localMatch.playlistIds;
     }
   }
 
   // 3. Return cache hit if found
   if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
-    return buildResultFromCache(cachedPlaylistIds, trackKey);
+    return buildResultFromCache(cachedPlaylistIds, resolvedKey);
   }
 
   // 4. Simulate network latency
@@ -350,31 +437,23 @@ function parseTracklist(description: string, playlistId: string): YouTubePlaylis
 async function getRealYouTubeContext(artist: string, title: string): Promise<NetworkScoutResult> {
   const trackKey = normalizeKey(artist, title);
 
-  // 1. Check memory cache and SQLite first
+  // 1. Check memory cache and 2-tier SQLite first
   let cachedPlaylistIds = trackIndex.get(trackKey);
+  let resolvedKey = trackKey;
+
   if (!cachedPlaylistIds || cachedPlaylistIds.size === 0) {
-    const db = getDB();
-    try {
-      const cleanArt = cleanMetadataString(artist).toLowerCase();
-      const cleanTtl = cleanMetadataString(title).toLowerCase();
-      const rows = db
-        .prepare(
-          'SELECT DISTINCT playlist_id FROM yt_playlist_items WHERE LOWER(artist) = ? AND LOWER(title) = ?'
-        )
-        .all(cleanArt, cleanTtl) as { playlist_id: string }[];
-      if (rows.length > 0) {
-        for (const row of rows) {
-          loadPlaylistFromDB(row.playlist_id);
-        }
-        cachedPlaylistIds = trackIndex.get(trackKey);
+    const localMatch = findLocalPlaylistMatches(artist, title);
+    if (localMatch.playlistIds.size > 0) {
+      for (const plId of localMatch.playlistIds) {
+        loadPlaylistFromDB(plId);
       }
-    } catch {
-      // Ignore read errors
+      resolvedKey = localMatch.matchedKey;
+      cachedPlaylistIds = trackIndex.get(resolvedKey) ?? localMatch.playlistIds;
     }
   }
 
   if (cachedPlaylistIds && cachedPlaylistIds.size > 0) {
-    const result = buildResultFromCache(cachedPlaylistIds, trackKey);
+    const result = buildResultFromCache(cachedPlaylistIds, resolvedKey);
     let logMsg = `\n================== YT SCOUT LOCAL CACHE HIT ==================\n`;
     logMsg += `Target Track: [${artist} - ${title}]\n`;
     logMsg += `Loaded ${result.playlists.length} playlists from SQLite database:\n`;

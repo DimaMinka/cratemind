@@ -166,6 +166,8 @@ export function getDB(): Database.Database {
     );
 
     CREATE INDEX IF NOT EXISTS idx_intel_folder ON track_intelligence(folder);
+    CREATE INDEX IF NOT EXISTS idx_yt_items_artist_title ON yt_playlist_items(artist, title);
+    CREATE INDEX IF NOT EXISTS idx_yt_items_title ON yt_playlist_items(title);
   `);
 
   // Clean exit handling
