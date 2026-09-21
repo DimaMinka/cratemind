@@ -111,7 +111,14 @@ export type OverrideState = {
 
 export type DriveSyncProgress = {
   isActive: boolean;
-  stage: 'idle' | 'archiving' | 'analyzing' | 'copying-music' | 'copying-library' | 'rewriting-db' | 'done';
+  stage:
+    | 'idle'
+    | 'archiving'
+    | 'analyzing'
+    | 'copying-music'
+    | 'copying-library'
+    | 'rewriting-db'
+    | 'done';
   stageLabel: string;
   currentFile?: string;
   currentFileIndex: number;

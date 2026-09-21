@@ -139,8 +139,11 @@ export async function sync(): Promise<void> {
     ]);
 
     let lastLoggedFolder = '';
+    let stdoutBuffer = '';
     rsync.stdout.on('data', (data: Buffer) => {
-      const lines = data.toString().split('\n');
+      stdoutBuffer += data.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() ?? '';
       for (const line of lines) {
         const trimmed = line.trim();
         if (
@@ -350,48 +353,141 @@ export function rewriteDatabasePaths(
 }
 
 /**
- * Spawns an rsync process with real-time TUI progress logging.
+ * Performs a dry-run rsync scan to determine exactly which audio tracks need to be copied.
  *
- * @param {string[]} args - Arguments to pass to rsync command.
- * @returns {Promise<void>} Resolves when rsync finishes successfully.
+ * @param {string} sourceDir - Source directory path.
+ * @param {string} destDir - Destination directory path.
+ * @returns {Promise<string[]>} Array of relative paths for audio files to be transferred.
  */
-function runRsync(args: string[]): Promise<void> {
-  const addLog = useStore.getState().addLog;
+export async function discoverFilesToTransfer(
+  sourceDir: string,
+  destDir: string
+): Promise<string[]> {
+  if (!fs.existsSync(sourceDir)) {
+    return [];
+  }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string[]>((resolve, reject) => {
+    const args = [
+      '-avn',
+      '--ignore-existing',
+      '--exclude=skipped',
+      '--exclude=.DS_Store',
+      '--exclude=.Spotlight*',
+      '--exclude=.Trashes',
+      '--exclude=.fseventsd',
+      '--exclude=.TemporaryItems',
+      '--exclude=.DocumentRevisions*',
+      sourceDir.endsWith('/') ? sourceDir : `${sourceDir}/`,
+      destDir.endsWith('/') ? destDir : `${destDir}/`
+    ];
+
     const rsync = spawn('rsync', args);
-    let lastLoggedItem = '';
+    const files: string[] = [];
+    let stdoutBuffer = '';
 
     rsync.stdout.on('data', (data: Buffer) => {
-      const lines = data.toString().split('\n');
-      for (const line of lines) {
-        const trimmed = line.trim();
+      stdoutBuffer += data.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() ?? '';
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
         if (
-          !trimmed ||
-          trimmed.startsWith('sending list') ||
-          trimmed.startsWith('sent ') ||
-          trimmed.startsWith('total size') ||
-          trimmed.startsWith('building file list')
+          !line ||
+          line.startsWith('sending incremental file list') ||
+          line.startsWith('sending list') ||
+          line.startsWith('sent ') ||
+          line.startsWith('total size') ||
+          line.startsWith('building file list') ||
+          line.endsWith('/')
         ) {
           continue;
         }
 
-        let cleanLine = trimmed;
-        if (cleanLine.startsWith('skip existing ')) {
-          cleanLine = cleanLine.substring('skip existing '.length);
-        } else if (cleanLine.startsWith('deleting ')) {
-          cleanLine = cleanLine.substring('deleting '.length);
+        const ext = path.extname(line).toLowerCase();
+        if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+          files.push(line);
         }
-        cleanLine = cleanLine.replace(/^['"]|['"]$/g, '');
+      }
+    });
 
+    rsync.on('close', (code) => {
+      if (stdoutBuffer.trim()) {
+        const line = stdoutBuffer.trim();
+        const ext = path.extname(line).toLowerCase();
+        if (!line.endsWith('/') && (AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+          files.push(line);
+        }
+      }
+      if (code === 0) {
+        resolve(files);
+      } else {
+        reject(new Error(`rsync dry-run discovery failed with code ${code}`));
+      }
+    });
+
+    rsync.on('error', (err) => reject(err));
+  });
+}
+
+/**
+ * Spawns an rsync process with line-buffered stdout streaming and real-time item callbacks.
+ *
+ * @param {string[]} args - Arguments to pass to rsync command.
+ * @param {(line: string) => void} [onFileLine] - Optional callback for each file transferred.
+ * @returns {Promise<void>} Resolves when rsync finishes successfully.
+ */
+function runRsync(args: string[], onFileLine?: (line: string) => void): Promise<void> {
+  const addLog = useStore.getState().addLog;
+
+  return new Promise<void>((resolve, reject) => {
+    const rsync = spawn('rsync', args);
+    let stdoutBuffer = '';
+    let lastLoggedFolder = '';
+
+    const processLine = (rawLine: string) => {
+      const trimmed = rawLine.trim();
+      if (
+        !trimmed ||
+        trimmed.startsWith('sending incremental file list') ||
+        trimmed.startsWith('sending list') ||
+        trimmed.startsWith('sent ') ||
+        trimmed.startsWith('total size') ||
+        trimmed.startsWith('building file list')
+      ) {
+        return;
+      }
+
+      let cleanLine = trimmed;
+      if (cleanLine.startsWith('skip existing ')) {
+        cleanLine = cleanLine.substring('skip existing '.length);
+      } else if (cleanLine.startsWith('deleting ')) {
+        cleanLine = cleanLine.substring('deleting '.length);
+      }
+      cleanLine = cleanLine.replace(/^['"]|['"]$/g, '');
+
+      if (onFileLine) {
+        onFileLine(cleanLine);
+      } else {
+        // Fallback: log top-level directory updates
         const parts = cleanLine.split('/');
         if (parts.length > 0 && parts[0]) {
           const topFolder = parts[0];
-          if (topFolder !== lastLoggedItem && topFolder !== '.' && topFolder !== '..') {
-            lastLoggedItem = topFolder;
+          if (topFolder !== lastLoggedFolder && topFolder !== '.' && topFolder !== '..') {
+            lastLoggedFolder = topFolder;
             addLog('SYSTEM', `Syncing: ${topFolder}...`);
           }
         }
+      }
+    };
+
+    rsync.stdout.on('data', (data: Buffer) => {
+      stdoutBuffer += data.toString();
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop() ?? '';
+      for (const line of lines) {
+        processLine(line);
       }
     });
 
@@ -403,6 +499,9 @@ function runRsync(args: string[]): Promise<void> {
     });
 
     rsync.on('close', (code) => {
+      if (stdoutBuffer.trim()) {
+        processLine(stdoutBuffer);
+      }
       if (code === 0) {
         resolve();
       } else {
@@ -420,18 +519,18 @@ function runRsync(args: string[]): Promise<void> {
  * Executes a full mirror synchronization from the Master SD card to the Target backup drive.
  *
  * Workflow:
- * 1. Verifies drive connectivity.
- * 2. Safely moves tracks missing on SD from target to 'Removed from SD/' archive.
- * 3. Rsyncs Music Collection (--ignore-existing).
- * 4. Rsyncs Engine Library (--delete, excluding journals).
- * 5. Rewrites target SQLite database paths (m.db, hm.db) to target volume name.
- * 6. Logs complete duration, track delta, and archive statistics.
+ * 1. [1/4] Safely moves tracks missing on SD from target to 'Removed from SD/' archive.
+ * 2. [2/4] Discovers exact list of audio tracks to transfer using dry-run rsync.
+ * 3. [3/4] Rsyncs Music Collection with real-time per-file telemetry and percentage progress.
+ * 4. [4/4] Rsyncs Engine Library (--delete) and rewrites target SQLite database paths.
+ * 5. Logs complete duration, track delta, and archive statistics.
  *
  * @param {string} [customSource] - Optional source path override.
  * @param {string} [customDest] - Optional destination path override.
  */
 export async function syncDrives(customSource?: string, customDest?: string): Promise<void> {
   const addLog = useStore.getState().addLog;
+  const setDriveSyncProgress = useStore.getState().setDriveSyncProgress;
 
   if (isSyncing) {
     addLog('SYSTEM', 'Sync already in progress.');
@@ -465,54 +564,169 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
 
     const countBefore = MOCK_MODE ? 0 : countAudioFiles(destMusic);
 
+    // Initial Progress
+    setDriveSyncProgress({
+      isActive: true,
+      stage: 'archiving',
+      stageLabel: '[1/4] Archiving obsolete files...',
+      currentFileIndex: 0,
+      totalFiles: 0,
+      percent: 0,
+      archivedCount: 0
+    });
+
     // Step 1: Safely archive files removed from SD
     let archivedCount = 0;
     if (fs.existsSync(sourceMusic) && fs.existsSync(destMusic)) {
-      addLog('SYSTEM', 'Checking for obsolete tracks on target drive...');
+      addLog('SYSTEM', '[1/4] Checking for obsolete tracks on target drive...');
       archivedCount = archiveRemovedFiles(sourceMusic, destMusic, archiveDir);
       if (archivedCount > 0) {
         addLog(
           'SYSTEM',
-          `Safely moved ${archivedCount} obsolete tracks to "${DRIVE_SYNC_ARCHIVE_DIR}".`
+          `[1/4] Safely moved ${archivedCount} obsolete tracks to "${DRIVE_SYNC_ARCHIVE_DIR}".`
         );
+      } else {
+        addLog('SYSTEM', '[1/4] No obsolete tracks to archive.');
       }
     }
 
     if (MOCK_MODE) {
       addLog('SYSTEM', 'MOCK MODE: Simulating drive mirror transfer...');
-      await new Promise((res) => setTimeout(res, 600));
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'analyzing',
+        stageLabel: '[2/4] Analyzing files to transfer...',
+        currentFileIndex: 0,
+        totalFiles: 5,
+        percent: 0,
+        archivedCount
+      });
+      await new Promise((res) => setTimeout(res, 400));
+      for (let i = 1; i <= 5; i++) {
+        const pct = Math.round((i / 5) * 100);
+        setDriveSyncProgress({
+          isActive: true,
+          stage: 'copying-music',
+          stageLabel: '[3/4] Mirroring Music Collection...',
+          currentFile: `mock_track_${i}.mp3`,
+          currentFileIndex: i,
+          totalFiles: 5,
+          percent: pct,
+          archivedCount
+        });
+        addLog('SYSTEM', `[${i}/5] (${pct}%) Copying: mock_track_${i}.mp3`);
+        await new Promise((res) => setTimeout(res, 200));
+      }
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'done',
+        stageLabel: 'Drive mirror complete!',
+        currentFileIndex: 5,
+        totalFiles: 5,
+        percent: 100,
+        archivedCount
+      });
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       addLog(
         'SYSTEM',
-        `Drive mirror complete in ${duration}s — Before: 0 | After: 0 | Archived: ${archivedCount}`
+        `Drive mirror complete in ${duration}s — Before: 0 | After: 5 | Archived: ${archivedCount}`
       );
+      setTimeout(() => {
+        useStore.getState().setDriveSyncProgress(null);
+      }, 3000);
       isSyncing = false;
       return;
     }
 
-    // Step 2: Rsync Music Collection
+    // Step 2: Dry-run discovery of audio tracks
+    setDriveSyncProgress({
+      isActive: true,
+      stage: 'analyzing',
+      stageLabel: '[2/4] Analyzing files to transfer...',
+      currentFileIndex: 0,
+      totalFiles: 0,
+      percent: 0,
+      archivedCount
+    });
+    addLog('SYSTEM', '[2/4] Analyzing files to transfer...');
+
+    fs.mkdirSync(destMusic, { recursive: true });
+    const filesToTransfer = await discoverFilesToTransfer(sourceMusic, destMusic);
+    const totalFiles = filesToTransfer.length;
+    addLog('SYSTEM', `[2/4] Identified ${totalFiles} tracks to copy.`);
+
+    // Step 3: Rsync Music Collection with live telemetry
     if (fs.existsSync(sourceMusic)) {
-      fs.mkdirSync(destMusic, { recursive: true });
-      addLog('SYSTEM', 'Mirroring Music Collection...');
-      await runRsync([
-        '-av',
-        '--ignore-existing',
-        '--exclude=skipped',
-        '--exclude=.DS_Store',
-        '--exclude=.Spotlight*',
-        '--exclude=.Trashes',
-        '--exclude=.fseventsd',
-        '--exclude=.TemporaryItems',
-        '--exclude=.DocumentRevisions*',
-        sourceMusic + '/',
-        destMusic + '/'
-      ]);
+      if (totalFiles === 0) {
+        addLog('SYSTEM', '[3/4] Music Collection is up to date (0 tracks to transfer).');
+      } else {
+        addLog('SYSTEM', `[3/4] Transferring ${totalFiles} tracks to Music Collection...`);
+        let copiedCount = 0;
+
+        setDriveSyncProgress({
+          isActive: true,
+          stage: 'copying-music',
+          stageLabel: '[3/4] Mirroring Music Collection...',
+          currentFile: '',
+          currentFileIndex: 0,
+          totalFiles,
+          percent: 0,
+          archivedCount
+        });
+
+        await runRsync(
+          [
+            '-av',
+            '--ignore-existing',
+            '--exclude=skipped',
+            '--exclude=.DS_Store',
+            '--exclude=.Spotlight*',
+            '--exclude=.Trashes',
+            '--exclude=.fseventsd',
+            '--exclude=.TemporaryItems',
+            '--exclude=.DocumentRevisions*',
+            sourceMusic + '/',
+            destMusic + '/'
+          ],
+          (cleanLine) => {
+            if (cleanLine.endsWith('/')) return;
+            const ext = path.extname(cleanLine).toLowerCase();
+            if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+              copiedCount++;
+              const pct = Math.min(100, Math.round((copiedCount / totalFiles) * 100));
+              const fileName = path.basename(cleanLine);
+              setDriveSyncProgress({
+                isActive: true,
+                stage: 'copying-music',
+                stageLabel: '[3/4] Mirroring Music Collection...',
+                currentFile: fileName,
+                currentFileIndex: copiedCount,
+                totalFiles,
+                percent: pct,
+                archivedCount
+              });
+              addLog('SYSTEM', `[${copiedCount}/${totalFiles}] (${pct}%) Copying: ${fileName}`);
+            }
+          }
+        );
+      }
     }
 
-    // Step 3: Rsync Engine Library
+    // Step 4: Rsync Engine Library and rewrite database paths
     if (fs.existsSync(sourceEngine)) {
       fs.mkdirSync(destEngine, { recursive: true });
-      addLog('SYSTEM', 'Mirroring Engine Library metadata and databases...');
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'copying-library',
+        stageLabel: '[4/4] Mirroring Engine Library metadata...',
+        currentFile: 'Engine Library',
+        currentFileIndex: totalFiles,
+        totalFiles,
+        percent: 95,
+        archivedCount
+      });
+      addLog('SYSTEM', '[4/4] Mirroring Engine Library metadata and databases...');
+
       await runRsync([
         '-av',
         '--delete',
@@ -526,7 +740,17 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
         destEngine + '/'
       ]);
 
-      // Step 4: Rewrite SQLite database paths
+      // Step 4b: Rewrite SQLite database paths
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'rewriting-db',
+        stageLabel: '[4/4] Rewriting database paths in m.db and hm.db...',
+        currentFile: 'Database2/m.db',
+        currentFileIndex: totalFiles,
+        totalFiles,
+        percent: 98,
+        archivedCount
+      });
       const destDbDir = path.join(destEngine, 'Database2');
       rewriteDatabasePaths(destDbDir, sourceRoot, destRoot);
     }
@@ -536,13 +760,29 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
     const addedCount = countAfter - (countBefore - archivedCount);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
+    setDriveSyncProgress({
+      isActive: true,
+      stage: 'done',
+      stageLabel: 'Drive mirror complete!',
+      currentFile: '',
+      currentFileIndex: totalFiles,
+      totalFiles,
+      percent: 100,
+      archivedCount
+    });
+
     addLog(
       'SYSTEM',
       `Drive mirror complete in ${duration}s — Before: ${countBefore} | After: ${countAfter} | New: ${addedCount} | Archived: ${archivedCount}`
     );
+
+    setTimeout(() => {
+      useStore.getState().setDriveSyncProgress(null);
+    }, 4000);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     addLog('ERROR', `Drive sync failed: ${msg}`);
+    useStore.getState().setDriveSyncProgress(null);
   } finally {
     isSyncing = false;
   }
