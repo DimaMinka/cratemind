@@ -56,11 +56,14 @@
 - **Automatic Log Rotation**:
   - Capped local logging size to prevent infinite disk usage. The file `cratemind.log` is automatically rotated and backed up as `cratemind.old.log` when it reaches 5MB.
 - **Native Audio Preview**:
-- **Single Active Process & Hotkey Interlocking**:
-  - Guarantees strict mutual exclusion across resource-intensive and I/O-heavy operations (Drive Mirroring, Track Analysis / Gemini LLM routing, Telegram Bulk Downloader, and Vibe Indexing).
-  - When Drive Mirroring is in progress, conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the `BottomBar` dynamically displays `[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter`.
-  - Blocks starting a Sync or manual vibe indexing while the analysis queue is actively listening or classifying tracks in Gemini.
-  - Automatically defers pending watcher batches and resets listener status to `paused` if analysis is toggled during an active mirror.
+- **Single Active Process & Universal Hotkey Interlocking**:
+  - Guarantees strict mutual exclusion across all 4 major operations: Drive Mirroring / Sync (`SyncService`), Track Analysis / Gemini LLM routing (`TrackWatcher` / `TrackProcessor`), Telegram Bulk Downloader (`TelegramService`), and Vibe DB Indexing (`VibeIndexerService`).
+  - When any heavy process is active (Drive Mirror, Vibe Indexing, or Telegram Download), conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the `BottomBar` dynamically renders a contextual status banner:
+    - `[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter`
+    - `[Vibe Indexing in progress...] Hotkeys locked | [Q] Exit Sorter`
+    - `[Telegram Download in progress...] Hotkeys locked | [Q] Exit Sorter`
+  - Blocks starting a Sync (`[S]`), Vibe Indexing (`[V]`), or Telegram Download (`[T]`) while the track analysis queue is active (`status === 'listening'` or `isLLMAnalyzing`), prompting the user to pause analysis first via `[Space]`.
+  - Automatically defers pending watcher batches and resets listener status to `paused` if analysis is toggled during an active mirror, vibe indexing, or telegram download.
 
 ---
 
@@ -187,7 +190,7 @@ npm start
 - `[S]` — Sync to Collection via rsync (Syncs local `Sorted/` to SD, or runs full Drive-to-Drive mirror `[D]` if target drive is connected)
 - `[Q]` — Quit CrateMind safely
 
-> **Note on Process Interlocking**: To prevent USB I/O contention and Gemini API rate limits, only one major process can run at a time. When Drive Mirroring is running, conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the status bar displays `[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter`. Starting a Sync is likewise blocked if track analysis is actively listening or querying LLM.
+> **Note on Universal Process Interlocking**: To protect disk I/O, network bandwidth, and Gemini API rate limits, only one major process can run at a time. While Drive Mirroring, Vibe Indexing, or Telegram Downloading is in progress, conflicting hotkeys are locked out and the bottom bar displays an alert banner. Starting any background task is likewise blocked if track analysis is actively listening or querying LLM.
 
 ---
 

@@ -906,7 +906,7 @@
             <code>dbRewriter</code> (Engine DJ SQLite database absolute path updates via <code>better-sqlite3</code>).
           </li>
           <li>
-            <b>Process Mutual Exclusion &amp; Concurrency Lock:</b> Enforces single-process execution across Drive Mirroring, Track Analysis / Gemini LLM routing, Telegram downloads, and Vibe DB indexing. Dynamic hotkey interlocking (<code>useGlobalHotkeys</code>) blocks conflicting inputs during active mirrors with responsive UI warnings, and watcher-level concurrency checks (<code>TrackWatcher</code>) automatically defer pending batches and reset status to <code>paused</code> if analysis is triggered during a mirror.
+            <b>Universal Process Mutual Exclusion:</b> Enforces strict single-process isolation across all 4 major operations: Drive Mirroring / Sync, Track Analysis (Gemini LLM routing), Telegram Bulk Downloader, and Vibe DB Indexing. Dynamic hotkey interlocking (<code>useGlobalHotkeys</code>) blocks conflicting keystrokes whenever any heavy background task is running, while service-level pre-flight guards and watcher locks (<code>TrackWatcher</code>) automatically defer pending batches and ensure zero resource contention.
           </li>
         </ul>
 
@@ -924,7 +924,11 @@
             <b>Drive-to-Drive Mirror Sync:</b> Integrated directly into <code>[S]</code> Sync to Collection. When both the master SD card and the target backup drive are mounted, displays an interactive dual prompt: <code>[Y] Sorted &rarr; SD</code> or <code>[D] Mirror SD &rarr; EngineDJ Drive</code>. Performs smart track relocation for reorganized crates (e.g. into <code>Atmosphere/</code> subcrates) via instant target disk filesystem operations (avoiding redundant USB re-transfers), safely recovers any active tracks previously archived in <code>Removed from SD/</code>, and archives genuinely deleted tracks preserving folder structure. Automatically rewrites absolute paths in target Engine DJ databases (<code>m.db</code> and <code>hm.db</code>) to match the target drive volume prefix. Features a structured 4-stage pipeline (<code>[1/4] Checking obsolete &amp; relocated tracks</code>, <code>[2/4] Dry-run discovery</code>, <code>[3/4] Music Collection mirror</code>, <code>[4/4] Engine Library &amp; DB rewrite</code>) with real-time ASCII progress telemetry (<code>SyncProgressBanner</code>) powered by targeted file transfers (<code>--files-from</code>) and <code>--progress</code> unbuffered streaming, displaying live file counters, percentages, and active track filenames without 64 KB block buffering lag.
           </li>
           <li>
-            <b>Single Active Process &amp; Dynamic BottomBar Lock:</b> Guarantees complete isolation of resource-intensive tasks. During active Drive Mirroring, the TUI's <code>BottomBar</code> dynamically transitions into an amber locked status banner: <code>[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter</code>, preventing accidental concurrent execution of LLM prompts, Telegram downloads, or disk-heavy audio analysis. Attempting to start a sync or manual indexing while analysis is running prompts the user to pause first.
+            <b>Universal Process Lock &amp; Contextual BottomBar Banners:</b> Guarantees complete isolation of resource-intensive tasks. Whenever Drive Mirroring, Vibe Indexing, or Telegram Downloading is in progress, conflicting hotkeys are locked out and the TUI's <code>BottomBar</code> dynamically transitions into an amber status banner:
+            <code>[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter</code>,
+            <code>[Vibe Indexing in progress...] Hotkeys locked | [Q] Exit Sorter</code>, or
+            <code>[Telegram Download in progress...] Hotkeys locked | [Q] Exit Sorter</code>.
+            Attempting to trigger any background task while track analysis is actively listening or classifying tracks prompts the user to pause first.
           </li>
           <li>
             <b>Live Stats Header:</b> Single-line status bar showing real-time
