@@ -282,3 +282,88 @@ export type LLMDetailedResponse = {
   };
   segments: TrackSegment[];
 };
+
+// ── Vibes.app Acoustic & Semantic Intelligence Types ───────────────────────
+
+export interface AssignedVibe {
+  name: string;
+  category: string;
+}
+
+export interface VibesTrackData {
+  id: number;
+  filename: string;
+  filepath: string;
+  title: string | null;
+  artist: string | null;
+  bpm: number | null;
+  key: string | null;
+  duration: number | null;
+  energy: number | null;
+  loudness: number | null;
+  spectralCentroid: number | null;
+  danceability: number | null;
+  clapEmbedding?: Buffer | null;
+  vibeFeatures?: {
+    band_sub_bass_mean?: number;
+    band_sub_bass_std?: number;
+    band_bass_mean?: number;
+    band_bass_std?: number;
+    band_mid_mean?: number;
+    band_mid_std?: number;
+    band_high_mean?: number;
+    band_high_std?: number;
+    onset_density?: number;
+    spec_centroid_mean?: number;
+    spec_centroid_std?: number;
+    spec_flatness_mean?: number;
+  } | null;
+}
+
+export interface VibesSoundProfile {
+  trackId: number;
+  avgEnergy: number;
+  peakEnergy: number;
+  energyVariance: number;
+  energySlope?: number;
+  dropRatio?: number;
+  buildupRatio?: number;
+  breakdownRatio?: number;
+  energyShape: number[];
+  drumShape: number[];
+}
+
+export interface VibesIntelligence {
+  track: VibesTrackData;
+  assignedVibes: AssignedVibe[];
+  soundProfile: VibesSoundProfile | null;
+}
+
+export interface TrackIntelligenceRecord {
+  artist: string;
+  title: string;
+  filepath?: string | null;
+  folder: string;
+  bpm?: number | null;
+  key?: string | null;
+  energyFeel?: string | null;
+  djRole?: string | null;
+  assignedVibes: AssignedVibe[];
+  subBassDb?: number | null;
+  bassDb?: number | null;
+  midDb?: number | null;
+  highDb?: number | null;
+  onsetDensity?: number | null;
+  peakEnergy?: number | null;
+  avgEnergy?: number | null;
+  energyVariance?: number | null;
+  specCentroid?: number | null;
+  specFlatness?: number | null;
+  energyShape?: number[] | null;
+  drumShape?: number[] | null;
+  dropRatio?: number | null;
+  buildupRatio?: number | null;
+  breakdownRatio?: number | null;
+  clapEmbedding?: Buffer | null;
+  createdAt?: number;
+}

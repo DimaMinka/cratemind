@@ -49,6 +49,10 @@ export const RAG_MEMORY_FILE = './cratemind-memory.json';
 export const RAG_EXAMPLES_PER_FOLDER = 5;
 export const RAG_SCAN_ON_BOOT = true;
 export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Library/Database2/m.db';
+export const VIBES_DB_PATH =
+  process.env.VIBES_DB_PATH ??
+  `${process.env.HOME}/Library/Application Support/com.benmdg.vibes/vibes.sqlite`;
+
 export const SD_CARD_SYNC_PATH =
   process.env.SD_CARD_SYNC_PATH ?? '/Volumes/EngineDJ SD/Music Collection/Atmosphere';
 export const DRIVE_SYNC_SOURCE_PATH = process.env.DRIVE_SYNC_SOURCE_PATH ?? '/Volumes/EngineDJ SD';
