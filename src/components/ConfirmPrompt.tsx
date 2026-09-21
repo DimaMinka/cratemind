@@ -26,7 +26,7 @@ export function ConfirmPrompt({ prompt }: ConfirmPromptProps): React.JSX.Element
     } else if (keyLower === 'n' || key.escape) {
       prompt.resolve(false);
     } else if (prompt.thirdKey && keyLower === prompt.thirdKey.toLowerCase()) {
-      prompt.resolve('download-only');
+      prompt.resolve(prompt.thirdResult ?? 'download-only');
     }
   });
 

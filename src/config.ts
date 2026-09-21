@@ -51,6 +51,9 @@ export const RAG_SCAN_ON_BOOT = true;
 export const ENGINE_DB_PATH = process.env.ENGINE_DB_PATH ?? '~/Music/Engine Library/Database2/m.db';
 export const SD_CARD_SYNC_PATH =
   process.env.SD_CARD_SYNC_PATH ?? '/Volumes/EngineDJ SD/Music Collection/Atmosphere';
+export const DRIVE_SYNC_SOURCE_PATH = process.env.DRIVE_SYNC_SOURCE_PATH ?? '/Volumes/EngineDJ SD';
+export const DRIVE_SYNC_DEST_PATH = process.env.DRIVE_SYNC_DEST_PATH ?? '/Volumes/EngineDJ';
+export const DRIVE_SYNC_ARCHIVE_DIR = process.env.DRIVE_SYNC_ARCHIVE_DIR ?? 'Removed from SD';
 export const MAX_TRACK_DURATION_MINUTES = parseInt(
   process.env.MAX_TRACK_DURATION_MINUTES || '20',
   10

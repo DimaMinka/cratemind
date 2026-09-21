@@ -69,6 +69,8 @@ export type RagMemory = {
   lastScanDir: string | null;
 };
 
+export type BootPromptResult = boolean | 'download-only' | 'drive-sync';
+
 export type BootPromptState = {
   message: string;
   detail: string;
@@ -76,7 +78,8 @@ export type BootPromptState = {
   noLabel?: string;
   thirdLabel?: string;
   thirdKey?: string;
-  resolve: (result: boolean | 'download-only') => void;
+  thirdResult?: BootPromptResult;
+  resolve: (result: BootPromptResult) => void;
 };
 
 export type EngineTrack = {
