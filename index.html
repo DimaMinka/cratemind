@@ -656,6 +656,12 @@
         </p>
         <ul>
           <li>
+            <b>Vibes.app Acoustic & Semantic Blueprint:</b> Preloads 57 vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves from <code>vibes.sqlite</code>, persisting permanent profiles to local <code>track_intelligence</code>.
+          </li>
+          <li>
+            <b>2-Tier Local YouTube Network Scout:</b> Eliminates YouTube API quota burn via indexed exact matching on <code>yt_playlist_items(artist, title)</code> and token overlap fuzzy matching (≥ 0.85 Jaccard similarity) before triggering network requests.
+          </li>
+          <li>
             <b>SHA-256 Context-Aware Cache:</b> Offlines LLM responses using deterministic hashing
             of track features, neighbor references, and YouTube contexts.
           </li>
@@ -668,10 +674,6 @@
             <b>Engine DJ Tier 1 Backup Match:</b> Directly resolves folders using local SQLite
             references in Denon DJ's <code>m.db</code>, bypassing LLM processing entirely for
             previously sorted tracks.
-          </li>
-          <li>
-            <b>YouTube Scout Cache:</b> Caches YouTube scraping results to prevent duplicate network
-            calls and conserve tokens on neighboring tracks in similar mixes.
           </li>
         </ul>
         <p>

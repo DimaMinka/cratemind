@@ -40,6 +40,10 @@
 - **Vibes.app Acoustic & Semantic Intelligence Storage**:
   - Connects strictly read-only to Vibes.app SQLite database (`vibes.sqlite`) to preload 57 curated vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves in 3 batch queries.
   - Stores permanent acoustic and structural profiles in CrateMind's local `track_intelligence` SQLite table, ensuring vibe and sound characteristics persist even if tracks are moved or removed from external apps.
+- **2-Tier Local YouTube Network Scout**:
+  - Eliminates YouTube Data API quota exhaustion via a local 2-tier lookup before calling external endpoints.
+  - **Tier 1 (Exact Match)**: Instant indexed lookup against `yt_playlist_items(artist, title)` in local SQLite `cratemind.db`.
+  - **Tier 2 (Token Overlap Fuzzy Match)**: Calculates Jaccard token overlap similarity across candidate mix items (70% title + 30% artist tokens, threshold ≥ 0.85) to catch minor spelling or label differences locally with zero API cost.
 - **Self-Reflective RAG (Prompt Adaptation)**:
   - Automatically learns from your manual overrides, generating inline prompt adjustments to align the LLM's classification criteria with your precise taste.
 - **Engine DJ Integration (Strictly Read-Only)**:
