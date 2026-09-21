@@ -1055,6 +1055,14 @@
             classification pipeline.
           </li>
           <li>
+            <b>Local Audio ML &amp; Vibes.app Engine Integration (Hybrid Local-First RAG):</b>
+            Inspired by <b><a href="https://vibesdj.io" target="_blank" rel="noopener" style="color: #5599ff; text-decoration: underline;">Vibes</a></b> (developed by European DJ/producer <b>Ben Modigell</b>, artist alias <i>"so I so"</i>, pioneering Energy-Based Mixing).
+            Bridges CrateMind with local deep-learning audio models (such as LAION-CLAP, SKey CoreML, and Beat This!).
+            Enables 512-dimensional zero-shot audio embeddings to compare raw waveform signatures against existing crate folders via cosine similarity (solving the "Unknown Artist" dilemma),
+            detects structural track transitions (drops, breakdowns, verses) for automatic Engine DJ hot cue placement,
+            and allows bidirectional sync with the local <code>vibes.sqlite</code> database for unified DJ library management.
+          </li>
+          <li>
             <b>Beatport Purchase Integration:</b> Automatically search Beatport for identified tracks
             to retrieve purchase links, and write them directly into the audio files' ID3 tags (e.g. inside Comments or custom URL frames) for quick reference when building live DJ libraries.
           </li>

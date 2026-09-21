@@ -199,6 +199,12 @@ npm start
 - **Model Context Protocol (MCP) Server**: Expose CrateMind's RAG memory and vibe-routing logic as an MCP server. This allows IDE agents to query library rules, inspect track metadata, and suggest playlist changes.
 - **Antigravity SDK (AGY CLI) Integration**: Orchestrate autonomous multi-agent music curations. For example, let one subagent scour charts and new releases, while CrateMind acts as the local routing agent.
 - **Streaming Playlists Import (Apple Music / Spotify)**: Automatically monitor or import tracklists from Apple Music and Spotify playlist URLs. The system can scrape track names and artists from the web pages, search and download high-quality audio files using `yt-dlp` directly into the `Incoming` folder, and run the RAG-vibe classification pipeline.
+- **Local Audio ML & Vibes.app Engine Integration (Hybrid Local-First RAG)**:
+  - **Inspiration & Ecosystem Partner**: Inspired by **[Vibes](https://vibesdj.io)** (developed by DJ/producer **Ben Modigell**, aka *"so I so"*), an offline-first DJ library management suite that champions Energy-Based Mixing and local audio intelligence.
+  - **Zero-Shot Audio Embeddings (LAION-CLAP)**: Extract 512-dimensional audio embeddings directly on macOS to compare raw sound signatures against existing crate folders via cosine similarity, resolving "Unknown Artist / Track 01" files without text metadata.
+  - **Structural Track Segmentation & Hot Cues**: Detect song phases (`intro`, `drop`, `verse`, `breakdown`, `outro`) using phrase boundaries (8/16 bars) and energy shifts, automatically tagging cues into Engine DJ (`PerformanceData.quickCues`).
+  - **Apple Neural Engine Key & BPM**: Run hardware-accelerated musical key analysis (SKey via Apple CoreML) and downbeat tracking (Beat This!) completely offline.
+  - **Two-Way Ecosystem Bridge with Vibes.app**: Ingest analyzed features (`energy`, `kick_strength`, `spectral_centroid`) from `vibes.sqlite` and synchronize Gemini-curated vibe sets back into the Vibes desktop UI.
 - **Beatport Purchase Integration**: Automatically search Beatport for identified tracks to retrieve purchase links. The system can append these store links directly to the ID3 tags (e.g., inside the Comments or a custom URL frame) to streamline buying tracks for live DJ sets.
 
 ---
