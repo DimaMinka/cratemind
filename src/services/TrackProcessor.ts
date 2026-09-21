@@ -80,6 +80,7 @@ interface TrackBatchState {
   errorMsg?: string;
   bypassed?: boolean;
   passportSummary?: string;
+  passportSummaryForPlayer?: string;
 }
 
 export async function processTracksBatch(filepaths: string[]): Promise<void> {
@@ -463,7 +464,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         ytPlaylists: scoutResult?.playlists ?? [],
         vibesData
       });
-      const passportSummary = buildPassportSummary(passport, vibesData);
+      const passportSummary = buildPassportSummary(passport, vibesData, true);
+      const passportSummaryForPlayer = buildPassportSummary(passport, vibesData, false);
       addLog('PASSPORT', passportSummary);
       logToFile(
         'PASSPORT_FULL',
@@ -505,7 +507,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         ragHit: false,
         cacheHit: !!cachedResponse,
         llmResponse: cachedResponse || undefined,
-        passportSummary
+        passportSummary,
+        passportSummaryForPlayer
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -693,7 +696,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         key: s.meta.key,
         artist: s.meta.artist,
         title: s.meta.title,
-        passportSummary: s.passportSummary
+        passportSummary: s.passportSummaryForPlayer || s.passportSummary
       });
 
       let isApprovedSuggestion = false;

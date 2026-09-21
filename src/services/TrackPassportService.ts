@@ -291,10 +291,14 @@ export function buildPassport(params: PassportParams): TrackPassport {
  */
 export function buildPassportSummary(
   passport: TrackPassport,
-  vibesData?: VibesIntelligence | null
+  vibesData?: VibesIntelligence | null,
+  includeTitle = true
 ): string {
   const f = passport.fields;
-  const parts: string[] = [`${f.artist} - ${f.title}`];
+  const parts: string[] = [];
+  if (includeTitle) {
+    parts.push(`${f.artist} - ${f.title}`);
+  }
 
   if (f.bpm) parts.push(`${f.bpm} BPM`);
   if (f.key) parts.push(`Key: ${f.key}`);
