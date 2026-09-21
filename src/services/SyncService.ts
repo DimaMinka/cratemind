@@ -592,48 +592,109 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
 
     if (MOCK_MODE) {
       addLog('SYSTEM', 'MOCK MODE: Simulating drive mirror transfer...');
+      // Stage 1: Archiving
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'archiving',
+        stageLabel: '[1/4] Archiving obsolete files...',
+        currentFileIndex: 0,
+        totalFiles: 0,
+        percent: 0,
+        archivedCount: 2
+      });
+      addLog('SYSTEM', '[1/4] Checking for obsolete tracks on target drive...');
+      await new Promise((res) => setTimeout(res, 800));
+      addLog('SYSTEM', '[1/4] Safely moved 2 obsolete tracks to "Removed from SD".');
+
+      // Stage 2: Analyzing (Dry-run)
       setDriveSyncProgress({
         isActive: true,
         stage: 'analyzing',
         stageLabel: '[2/4] Analyzing files to transfer...',
         currentFileIndex: 0,
-        totalFiles: 5,
+        totalFiles: 0,
         percent: 0,
-        archivedCount
+        archivedCount: 2
       });
-      await new Promise((res) => setTimeout(res, 400));
-      for (let i = 1; i <= 5; i++) {
-        const pct = Math.round((i / 5) * 100);
+      addLog('SYSTEM', '[2/4] Analyzing files to transfer...');
+      await new Promise((res) => setTimeout(res, 1000));
+      addLog('SYSTEM', '[2/4] Identified 6 tracks to copy.');
+
+      // Stage 3: Copying Music Collection
+      const mockFiles = [
+        'Solomun - Customer Is King.mp3',
+        'Tale Of Us - Astral.flac',
+        'ARTBAT - Upperground.wav',
+        'Bicep - Glue.mp3',
+        'Boris Brejcha - Gravity.mp3',
+        'Stephan Bodzin - Singularity.flac'
+      ];
+      const totalMock = mockFiles.length;
+
+      for (let i = 0; i < totalMock; i++) {
+        const fileIdx = i + 1;
+        const pct = Math.round((fileIdx / totalMock) * 100);
+        const fileName = mockFiles[i]!;
         setDriveSyncProgress({
           isActive: true,
           stage: 'copying-music',
           stageLabel: '[3/4] Mirroring Music Collection...',
-          currentFile: `mock_track_${i}.mp3`,
-          currentFileIndex: i,
-          totalFiles: 5,
+          currentFile: fileName,
+          currentFileIndex: fileIdx,
+          totalFiles: totalMock,
           percent: pct,
-          archivedCount
+          archivedCount: 2
         });
-        addLog('SYSTEM', `[${i}/5] (${pct}%) Copying: mock_track_${i}.mp3`);
-        await new Promise((res) => setTimeout(res, 200));
+        addLog('SYSTEM', `[${fileIdx}/${totalMock}] (${pct}%) Copying: ${fileName}`);
+        await new Promise((res) => setTimeout(res, 700));
       }
+
+      // Stage 4: Copying Engine Library & Rewriting DB
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'copying-library',
+        stageLabel: '[4/4] Mirroring Engine Library metadata...',
+        currentFile: 'Engine Library/Database2/m.db',
+        currentFileIndex: totalMock,
+        totalFiles: totalMock,
+        percent: 92,
+        archivedCount: 2
+      });
+      addLog('SYSTEM', '[4/4] Mirroring Engine Library metadata and databases...');
+      await new Promise((res) => setTimeout(res, 800));
+
+      setDriveSyncProgress({
+        isActive: true,
+        stage: 'rewriting-db',
+        stageLabel: '[4/4] Rewriting database paths in m.db and hm.db...',
+        currentFile: 'Database2/m.db',
+        currentFileIndex: totalMock,
+        totalFiles: totalMock,
+        percent: 98,
+        archivedCount: 2
+      });
+      addLog('SYSTEM', 'Rewrote 6 track paths in target m.db to /Volumes/EngineDJ/');
+      await new Promise((res) => setTimeout(res, 800));
+
+      // Done
       setDriveSyncProgress({
         isActive: true,
         stage: 'done',
         stageLabel: 'Drive mirror complete!',
-        currentFileIndex: 5,
-        totalFiles: 5,
+        currentFile: '',
+        currentFileIndex: totalMock,
+        totalFiles: totalMock,
         percent: 100,
-        archivedCount
+        archivedCount: 2
       });
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       addLog(
         'SYSTEM',
-        `Drive mirror complete in ${duration}s — Before: 0 | After: 5 | Archived: ${archivedCount}`
+        `Drive mirror complete in ${duration}s — Before: 42 | After: 48 | New: 6 | Archived: 2`
       );
       setTimeout(() => {
         useStore.getState().setDriveSyncProgress(null);
-      }, 3000);
+      }, 4000);
       isSyncing = false;
       return;
     }

@@ -37,9 +37,8 @@ export function SyncProgressBanner(): React.JSX.Element | null {
       {/* Top Header Row */}
       <Box justifyContent="space-between" width="100%">
         <Box>
-          <Text backgroundColor="cyan" color="black" bold>
-            {' '}
-            DRIVE MIRROR{' '}
+          <Text color="cyan" bold>
+            [DRIVE MIRROR]
           </Text>
           <Text color="white" bold>
             {' '}
