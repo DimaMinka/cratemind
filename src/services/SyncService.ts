@@ -1,7 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
-import Database from 'better-sqlite3';
 import { useStore } from './UIService.js';
 import {
   SD_CARD_SYNC_PATH,
@@ -12,35 +10,20 @@ import {
   MOCK_MODE,
   SORTED_DIR
 } from '../config.js';
+import { countAudioFiles, discoverFilesToTransfer, runRsync } from './sync/rsyncRunner.js';
+import { restoreRelocatedFromArchive, archiveRemovedFiles } from './sync/archiveManager.js';
+import { rewriteDatabasePaths } from './sync/dbRewriter.js';
+
+// Re-export submodules for seamless 100% backward compatibility
+export { countAudioFiles, discoverFilesToTransfer, runRsync } from './sync/rsyncRunner.js';
+export {
+  buildAudioFileIndex,
+  restoreRelocatedFromArchive,
+  archiveRemovedFiles
+} from './sync/archiveManager.js';
+export { rewriteDatabasePaths } from './sync/dbRewriter.js';
 
 let isSyncing = false;
-
-/**
- * Recursively scans a directory and counts the number of audio files matching the configured extensions.
- *
- * @param {string} dir - The directory to count files in.
- * @returns {number} The total count of audio files.
- */
-function countAudioFiles(dir: string): number {
-  let count = 0;
-  if (!fs.existsSync(dir)) {
-    return 0;
-  }
-
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      count += countAudioFiles(fullPath);
-    } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-        count++;
-      }
-    }
-  }
-  return count;
-}
 
 /**
  * Checks Sorted directory for folders with trailing spaces that duplicate other folders.
@@ -100,7 +83,6 @@ export async function sync(): Promise<void> {
 
     if (MOCK_MODE) {
       addLog('SYSTEM', 'MOCK MODE: Simulating rsync file transfer...');
-      // Read subdirectories to simulate folder progress
       if (fs.existsSync(resolvedSource)) {
         const entries = fs.readdirSync(resolvedSource, { withFileTypes: true });
         const folders = entries
@@ -124,12 +106,7 @@ export async function sync(): Promise<void> {
     }
 
     // 4. Run real rsync in spawn
-    // -a: archive mode
-    // -v: verbose (lists files to stdout to track progress)
-    // --ignore-existing: merge mode, don't overwrite existing destination files
-    // --exclude='skipped'
-    // --exclude='.DS_Store'
-    const rsync = spawn('rsync', [
+    await runRsync([
       '-av',
       '--ignore-existing',
       '--exclude=skipped',
@@ -137,64 +114,6 @@ export async function sync(): Promise<void> {
       resolvedSource + '/',
       resolvedDest + '/'
     ]);
-
-    let lastLoggedFolder = '';
-    let stdoutBuffer = '';
-    rsync.stdout.on('data', (data: Buffer) => {
-      stdoutBuffer += data.toString();
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop() ?? '';
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (
-          !trimmed ||
-          trimmed.startsWith('Transfer starting:') ||
-          trimmed.startsWith('sending incremental file list') ||
-          trimmed.startsWith('sending list') ||
-          trimmed.startsWith('sent ') ||
-          trimmed.startsWith('total size') ||
-          trimmed.startsWith('building file list') ||
-          /^skip existing/i.test(trimmed)
-        ) {
-          continue;
-        }
-
-        const cleanLine = trimmed.replace(/^['"]|['"]$/g, '');
-
-        // Extract top-level folder name (e.g., "club party/track.mp3" -> "club party")
-        const parts = cleanLine.split('/');
-        if (parts.length > 0 && parts[0]) {
-          const folder = parts[0];
-          // Check if this is a directory we care about
-          if (parts.length > 1 || cleanLine.endsWith('/')) {
-            if (folder !== lastLoggedFolder && folder !== '.' && folder !== '..') {
-              lastLoggedFolder = folder;
-              addLog('SYSTEM', `Syncing folder: ${folder}...`);
-            }
-          }
-        }
-      }
-    });
-
-    rsync.stderr.on('data', (data: Buffer) => {
-      const msg = data.toString().trim();
-      if (msg) {
-        addLog('ERROR', `rsync: ${msg}`);
-      }
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      rsync.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`rsync process exited with code ${code}`));
-        }
-      });
-      rsync.on('error', (err) => {
-        reject(err);
-      });
-    });
 
     // 5. Count after sync
     const countAfter = countAudioFiles(resolvedDest);
@@ -229,419 +148,11 @@ export function areDrivesConnected(
 }
 
 /**
- * Recursively scans a directory and builds a Map indexing audio filenames to their relative path.
- *
- * @param {string} rootDir - Root directory to index.
- * @returns {Map<string, string>} Mapping of lowercased filename to relative path.
- */
-export function buildAudioFileIndex(rootDir: string): Map<string, string> {
-  const map = new Map<string, string>();
-  if (!fs.existsSync(rootDir)) return map;
-
-  function walk(currentDir: string, currentRel: string): void {
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      const relPath = path.join(currentRel, entry.name);
-      const fullPath = path.join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        walk(fullPath, relPath);
-      } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          map.set(entry.name.toLowerCase(), relPath);
-        }
-      }
-    }
-  }
-
-  walk(rootDir, '');
-  return map;
-}
-
-/**
- * Inspects the archive directory and restores any tracks that still exist anywhere
- * on the source SD card back into their matching destination location.
- *
- * @param {string} archiveDir - Archive directory (e.g., '/Volumes/EngineDJ/Removed from SD').
- * @param {string} sourceMusicDir - Master SD audio directory (e.g., '/Volumes/EngineDJ SD/Music Collection').
- * @param {string} destMusicDir - Destination audio directory (e.g., '/Volumes/EngineDJ/Music Collection').
- * @returns {number} Number of tracks restored from archive.
- */
-export function restoreRelocatedFromArchive(
-  archiveDir: string,
-  sourceMusicDir: string,
-  destMusicDir: string
-): number {
-  const addLog = useStore.getState().addLog;
-  if (!fs.existsSync(archiveDir) || !fs.existsSync(sourceMusicDir)) {
-    return 0;
-  }
-
-  const sourceIndex = buildAudioFileIndex(sourceMusicDir);
-  let restoredCount = 0;
-
-  function walkArchive(currentDir: string, currentRel: string): void {
-    if (!fs.existsSync(currentDir)) return;
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      const relPath = path.join(currentRel, entry.name);
-      const fullPath = path.join(currentDir, entry.name);
-
-      if (entry.isDirectory()) {
-        walkArchive(fullPath, relPath);
-        try {
-          if (fs.readdirSync(fullPath).length === 0) {
-            fs.rmdirSync(fullPath);
-          }
-        } catch {
-          // ignore directory removal issues
-        }
-      } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          const sdRelPath = sourceIndex.get(entry.name.toLowerCase());
-          if (sdRelPath) {
-            // Track exists on SD! Restore it to destMusicDir at its current SD location
-            const targetPath = path.join(destMusicDir, sdRelPath);
-            fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-            fs.renameSync(fullPath, targetPath);
-            restoredCount++;
-            addLog(
-              'SYSTEM',
-              `Restored mislocated track from archive: "${entry.name}" -> "${sdRelPath}"`
-            );
-          }
-        }
-      }
-    }
-  }
-
-  walkArchive(archiveDir, '');
-  return restoredCount;
-}
-
-/**
- * Recursively scans destination directory and:
- * 1. If an audio file exists at the exact same path on source SD: leaves it untouched.
- * 2. If it was moved/relocated on SD (filename found elsewhere on SD): moves it locally on the destination disk to the new relative path.
- * 3. If it does not exist anywhere on SD: moves it to the archive directory preserving the relative path.
- *
- * @param {string} sourceMusicDir - Source audio collection root.
- * @param {string} destMusicDir - Destination audio collection root.
- * @param {string} archiveDir - Target archive root directory.
- * @returns {{ archivedCount: number; relocatedCount: number }} Summary of archived and relocated tracks.
- */
-export function archiveRemovedFiles(
-  sourceMusicDir: string,
-  destMusicDir: string,
-  archiveDir: string
-): { archivedCount: number; relocatedCount: number } {
-  const addLog = useStore.getState().addLog;
-  if (!fs.existsSync(destMusicDir) || !fs.existsSync(sourceMusicDir)) {
-    return { archivedCount: 0, relocatedCount: 0 };
-  }
-
-  const sourceIndex = buildAudioFileIndex(sourceMusicDir);
-  let archivedCount = 0;
-  let relocatedCount = 0;
-
-  function scanDirectory(currentRelative: string): void {
-    const fullDest = path.join(destMusicDir, currentRelative);
-    if (!fs.existsSync(fullDest)) return;
-
-    const entries = fs.readdirSync(fullDest, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      const relPath = path.join(currentRelative, entry.name);
-      const destEntryPath = path.join(destMusicDir, relPath);
-      const exactSourcePath = path.join(sourceMusicDir, relPath);
-
-      if (entry.isDirectory()) {
-        scanDirectory(relPath);
-        // Clean up empty directory in destination
-        try {
-          if (fs.readdirSync(destEntryPath).length === 0) {
-            fs.rmdirSync(destEntryPath);
-          }
-        } catch {
-          // Ignore directory removal issues
-        }
-      } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          // Check if file exists at exact same relative path on SD
-          if (fs.existsSync(exactSourcePath)) {
-            continue; // Perfect match, leave alone
-          }
-
-          // Check if file exists anywhere on SD under a different path
-          const newSdRelPath = sourceIndex.get(entry.name.toLowerCase());
-          if (newSdRelPath) {
-            // Relocate locally on destination disk
-            const targetDestPath = path.join(destMusicDir, newSdRelPath);
-            fs.mkdirSync(path.dirname(targetDestPath), { recursive: true });
-            if (!fs.existsSync(targetDestPath)) {
-              fs.renameSync(destEntryPath, targetDestPath);
-              relocatedCount++;
-              addLog('SYSTEM', `Relocated moved track: "${relPath}" -> "${newSdRelPath}"`);
-            } else {
-              // Target already exists, clean up old redundant copy
-              fs.unlinkSync(destEntryPath);
-            }
-          } else {
-            // File does NOT exist anywhere on SD — genuinely deleted!
-            const targetArchivePath = path.join(archiveDir, relPath);
-            fs.mkdirSync(path.dirname(targetArchivePath), { recursive: true });
-            fs.renameSync(destEntryPath, targetArchivePath);
-            archivedCount++;
-            addLog('SYSTEM', `Archived deleted track: "${relPath}"`);
-          }
-        }
-      }
-    }
-  }
-
-  scanDirectory('');
-  return { archivedCount, relocatedCount };
-}
-
-/**
- * Rewrites absolute file paths in target Engine DJ databases (m.db and hm.db)
- * from the source drive volume name to the target drive volume name.
- *
- * @param {string} destDbDir - Directory containing Database2 SQLite files.
- * @param {string} sourceVolume - Source drive volume root (e.g., '/Volumes/EngineDJ SD').
- * @param {string} destVolume - Destination drive volume root (e.g., '/Volumes/EngineDJ').
- * @returns {{ mCount: number; hmCount: number }} Number of records rewritten in m.db and hm.db.
- */
-export function rewriteDatabasePaths(
-  destDbDir: string,
-  sourceVolume: string,
-  destVolume: string
-): { mCount: number; hmCount: number } {
-  const addLog = useStore.getState().addLog;
-  const result = { mCount: 0, hmCount: 0 };
-  const sourcePrefix = sourceVolume.endsWith('/') ? sourceVolume : `${sourceVolume}/`;
-  const destPrefix = destVolume.endsWith('/') ? destVolume : `${destVolume}/`;
-
-  const mDbPath = path.join(destDbDir, 'm.db');
-  if (fs.existsSync(mDbPath)) {
-    try {
-      const db = new Database(mDbPath);
-      const updateStmt = db.prepare(
-        "UPDATE Track SET path = REPLACE(path, ?, ?) WHERE path LIKE ? || '%'"
-      );
-      const info = updateStmt.run(sourcePrefix, destPrefix, sourcePrefix);
-      result.mCount = info.changes;
-      db.close();
-      if (result.mCount > 0) {
-        addLog('SYSTEM', `Rewrote ${result.mCount} track paths in target m.db to ${destPrefix}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      addLog('ERROR', `Failed to rewrite paths in m.db: ${msg}`);
-    }
-  }
-
-  const hmDbPath = path.join(destDbDir, 'hm.db');
-  if (fs.existsSync(hmDbPath)) {
-    try {
-      const db = new Database(hmDbPath);
-      const updateStmt = db.prepare(
-        "UPDATE Track SET path = REPLACE(path, ?, ?) WHERE path LIKE ? || '%'"
-      );
-      const info = updateStmt.run(sourcePrefix, destPrefix, sourcePrefix);
-      result.hmCount = info.changes;
-      db.close();
-      if (result.hmCount > 0) {
-        addLog('SYSTEM', `Rewrote ${result.hmCount} track paths in target hm.db to ${destPrefix}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      addLog('ERROR', `Failed to rewrite paths in hm.db: ${msg}`);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Performs a dry-run rsync scan to determine exactly which audio tracks need to be copied.
- *
- * @param {string} sourceDir - Source directory path.
- * @param {string} destDir - Destination directory path.
- * @returns {Promise<string[]>} Array of relative paths for audio files to be transferred.
- */
-export async function discoverFilesToTransfer(
-  sourceDir: string,
-  destDir: string
-): Promise<string[]> {
-  if (!fs.existsSync(sourceDir)) {
-    return [];
-  }
-
-  return new Promise<string[]>((resolve, reject) => {
-    const args = [
-      '-avn',
-      '--ignore-existing',
-      '--exclude=skipped',
-      '--exclude=.DS_Store',
-      '--exclude=.Spotlight*',
-      '--exclude=.Trashes',
-      '--exclude=.fseventsd',
-      '--exclude=.TemporaryItems',
-      '--exclude=.DocumentRevisions*',
-      sourceDir.endsWith('/') ? sourceDir : `${sourceDir}/`,
-      destDir.endsWith('/') ? destDir : `${destDir}/`
-    ];
-
-    const rsync = spawn('rsync', args);
-    const files: string[] = [];
-    let stdoutBuffer = '';
-
-    rsync.stdout.on('data', (data: Buffer) => {
-      stdoutBuffer += data.toString();
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop() ?? '';
-
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (
-          !line ||
-          line.startsWith('Transfer starting:') ||
-          line.startsWith('sending incremental file list') ||
-          line.startsWith('sending list') ||
-          line.startsWith('sent ') ||
-          line.startsWith('total size') ||
-          line.startsWith('building file list') ||
-          line.endsWith('/') ||
-          /^skip existing/i.test(line)
-        ) {
-          continue;
-        }
-
-        const clean = line.replace(/^['"]|['"]$/g, '');
-        const ext = path.extname(clean).toLowerCase();
-        if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          files.push(clean);
-        }
-      }
-    });
-
-    rsync.on('close', (code) => {
-      if (stdoutBuffer.trim()) {
-        const line = stdoutBuffer.trim();
-        if (!line.endsWith('/') && !/^skip existing/i.test(line)) {
-          const clean = line.replace(/^['"]|['"]$/g, '');
-          const ext = path.extname(clean).toLowerCase();
-          if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-            files.push(clean);
-          }
-        }
-      }
-      if (code === 0) {
-        resolve(files);
-      } else {
-        reject(new Error(`rsync dry-run discovery failed with code ${code}`));
-      }
-    });
-
-    rsync.on('error', (err) => reject(err));
-  });
-}
-
-/**
- * Spawns an rsync process with line-buffered stdout streaming and real-time item callbacks.
- *
- * @param {string[]} args - Arguments to pass to rsync command.
- * @param {(line: string) => void} [onFileLine] - Optional callback for each file transferred.
- * @returns {Promise<void>} Resolves when rsync finishes successfully.
- */
-function runRsync(args: string[], onFileLine?: (line: string) => void): Promise<void> {
-  const addLog = useStore.getState().addLog;
-
-  return new Promise<void>((resolve, reject) => {
-    const rsync = spawn('rsync', args);
-    let stdoutBuffer = '';
-    let lastLoggedFolder = '';
-
-    const processLine = (rawLine: string) => {
-      const trimmed = rawLine.trim();
-      if (
-        !trimmed ||
-        trimmed.startsWith('Transfer starting:') ||
-        trimmed.startsWith('sending incremental file list') ||
-        trimmed.startsWith('sending list') ||
-        trimmed.startsWith('sent ') ||
-        trimmed.startsWith('total size') ||
-        trimmed.startsWith('building file list') ||
-        trimmed.endsWith('/')
-      ) {
-        return;
-      }
-
-      // Ignore skipped existing files and deleted files from progress callback
-      if (/^skip existing/i.test(trimmed) || /^deleting/i.test(trimmed)) {
-        return;
-      }
-
-      const cleanLine = trimmed.replace(/^['"]|['"]$/g, '');
-
-      if (onFileLine) {
-        onFileLine(cleanLine);
-      } else {
-        // Fallback: log top-level directory updates
-        const parts = cleanLine.split('/');
-        if (parts.length > 0 && parts[0]) {
-          const topFolder = parts[0];
-          if (topFolder !== lastLoggedFolder && topFolder !== '.' && topFolder !== '..') {
-            lastLoggedFolder = topFolder;
-            addLog('SYSTEM', `Syncing: ${topFolder}...`);
-          }
-        }
-      }
-    };
-
-    rsync.stdout.on('data', (data: Buffer) => {
-      stdoutBuffer += data.toString();
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop() ?? '';
-      for (const line of lines) {
-        processLine(line);
-      }
-    });
-
-    rsync.stderr.on('data', (data: Buffer) => {
-      const msg = data.toString().trim();
-      if (msg) {
-        addLog('ERROR', `rsync: ${msg}`);
-      }
-    });
-
-    rsync.on('close', (code) => {
-      if (stdoutBuffer.trim()) {
-        processLine(stdoutBuffer);
-      }
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`rsync exited with code ${code}`));
-      }
-    });
-
-    rsync.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
-
-/**
  * Executes a full mirror synchronization from the Master SD card to the Target backup drive.
  *
  * Workflow:
- * 1. [1/4] Safely moves tracks missing on SD from target to 'Removed from SD/' archive.
+ * 1. [1/4] Safely moves tracks missing on SD from target to 'Removed from SD/' archive,
+ *          recovering any mislocated active tracks and relocating moved crates locally.
  * 2. [2/4] Discovers exact list of audio tracks to transfer using dry-run rsync.
  * 3. [3/4] Rsyncs Music Collection with real-time per-file telemetry and percentage progress.
  * 4. [4/4] Rsyncs Engine Library (--delete) and rewrites target SQLite database paths.
