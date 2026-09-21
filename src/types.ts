@@ -109,6 +109,17 @@ export type OverrideState = {
   key?: string;
 };
 
+export type DriveSyncProgress = {
+  isActive: boolean;
+  stage: 'idle' | 'archiving' | 'analyzing' | 'copying-music' | 'copying-library' | 'rewriting-db' | 'done';
+  stageLabel: string;
+  currentFile?: string;
+  currentFileIndex: number;
+  totalFiles: number;
+  percent: number;
+  archivedCount?: number;
+};
+
 export type AppState = {
   status: 'listening' | 'paused';
   stats: {
@@ -140,6 +151,7 @@ export type AppState = {
   /** Real-time count of audio files currently sitting in the Incoming directory. */
   incomingCount: number;
   globalStats: GlobalStats;
+  driveSyncProgress: DriveSyncProgress | null;
   setStatus: (status: 'listening' | 'paused') => void;
   incrementStat: (key: 'processed' | 'overrides' | 'errors') => void;
   addLog: (type: LogEntry['type'], message: string) => void;
@@ -157,6 +169,7 @@ export type AppState = {
   setTelegramDownloadOnly: (isDownloadOnly: boolean) => void;
   setIncomingCount: (count: number) => void;
   setGlobalStats: (stats: GlobalStats) => void;
+  setDriveSyncProgress: (progress: DriveSyncProgress | null) => void;
   clearLogs: () => void;
 };
 

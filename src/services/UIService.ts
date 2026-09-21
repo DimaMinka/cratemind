@@ -34,6 +34,7 @@ export const useStore = create<AppState>((set) => ({
   telegramDownloadOnly: false,
   incomingCount: 0,
   globalStats: initialGlobalStats,
+  driveSyncProgress: null,
   setStatus: (status) => set({ status }),
   incrementStat: (key) =>
     set((state) => ({
@@ -74,6 +75,7 @@ export const useStore = create<AppState>((set) => ({
   setTelegramDownloadOnly: (telegramDownloadOnly) => set({ telegramDownloadOnly }),
   setIncomingCount: (incomingCount) => set({ incomingCount }),
   setGlobalStats: (globalStats) => set({ globalStats }),
+  setDriveSyncProgress: (driveSyncProgress) => set({ driveSyncProgress }),
   clearLogs: () => set({ log: [] })
 }));
 
