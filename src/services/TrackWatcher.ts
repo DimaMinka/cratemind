@@ -7,6 +7,7 @@ import { processTracksBatch } from './TrackProcessor.js';
 import { getGlobalStats } from './LocalDBService.js';
 import { MOCK_MODE, INCOMING_DIR, SORTED_DIR, AUDIO_EXTENSIONS, BATCH_SIZE } from '../config.js';
 import { MOCK_DISCOVERIES } from '../mocks/mockData.js';
+import { logToFile } from './LoggerService.js';
 
 const PQueueClass = ('default' in PQueue ? PQueue.default : PQueue) as unknown as new (opts: {
   concurrency: number;
@@ -78,8 +79,8 @@ export async function initWatcher(): Promise<void> {
 
     const remainingText =
       pendingFiles.length > 0 ? ` (${pendingFiles.length} remaining in queue)` : '';
-    addLog(
-      'SYSTEM',
+    logToFile(
+      'QUEUE',
       `Queueing batch of ${filesToProcess.length} track(s) for analysis${remainingText}...`
     );
     queue.add(async () => {

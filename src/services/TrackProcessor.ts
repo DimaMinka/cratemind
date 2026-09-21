@@ -518,6 +518,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       vibesContext: s.vibesProfile
     }));
 
+    addLog('SYSTEM', `Sending batch of ${needLLM.length} track(s) to Gemini for analysis...`);
+
     try {
       const batchResults = await LLMService.classifyTracksBatch(batchInputs);
 
