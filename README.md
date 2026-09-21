@@ -22,6 +22,11 @@
   - **Snippet & Preview Filter**: Skips files that fall below a minimum file size threshold (default: 10 MB for lossless formats like `.flac`, `.wav` and 3 MB for lossy formats like `.mp3`) to prevent downloading low-quality snippets or previews.
 - **Drive-to-Drive Mirror Synchronization (EngineDJ SD [Master] -> EngineDJ)**:
   - Smart dual-drive detection when pressing `[S]` (*Sync to Collection*). When both the master SD card and the target backup drive are mounted, CrateMind offers a dedicated option `[D] Mirror SD -> EngineDJ Drive`.
+  - **4-Stage Pipeline & Telemetry**:
+    - `[1/4] Archiving obsolete files`: Safely relocates files present on the target drive but missing on the master SD card into `Removed from SD/`, preserving folder hierarchy (never deleted).
+    - `[2/4] Analyzing files (Dry-Run)`: Performs a quick dry-run scan to discover and count the exact number of new/modified audio tracks to transfer.
+    - `[3/4] Mirroring Music Collection`: Transfers audio files via rsync with line-buffered stdout streaming, displaying a live TUI banner (`SyncProgressBanner`) with an ASCII progress bar (`[████░░░░] 50% (50/100 tracks)`), current track filename, and real-time percentage.
+    - `[4/4] Mirroring Engine Library & DB Rewrite`: Synchronizes `Engine Library` databases, cues, and loops, then automatically rewrites absolute paths in `m.db` and `hm.db` to match the target drive volume prefix.
   - **Safe Archiving of Obsolete Tracks**: Files present on the target drive but missing on the master SD card are **never deleted**. They are safely relocated to `Removed from SD/` preserving the original folder structure.
   - **Automated Database Path Rewrite**: After mirroring `Engine Library`, CrateMind automatically rewrites all absolute file paths in `m.db` and `hm.db` from the master mount point to the target drive prefix, allowing Denon DJ hardware and Engine DJ software to load tracks standalone without missing-file errors.
   - **Configurable Paths**: Source, target, and archive directory paths can be customized via `.env` (`DRIVE_SYNC_SOURCE_PATH`, `DRIVE_SYNC_DEST_PATH`, `DRIVE_SYNC_ARCHIVE_DIR`).
