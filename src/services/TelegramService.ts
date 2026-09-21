@@ -218,8 +218,31 @@ async function processMessageBatch(
 
 export async function downloadBulk(): Promise<void> {
   const addLog = useStore.getState().addLog;
+  const state = useStore.getState();
 
-  if (isDownloading) {
+  // Concurrency Guards: Ensure no conflicting process is active
+  if (state.driveSyncProgress?.isActive) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Cannot download from Telegram while drive synchronization is in progress.'
+    );
+    return;
+  }
+  if (state.status === 'listening' || state.isLLMAnalyzing) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Track analysis is active. Press [Space] to pause analysis before starting Telegram download.'
+    );
+    return;
+  }
+  if (state.isIndexingVibes) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Cannot download from Telegram while vibe indexing is in progress.'
+    );
+    return;
+  }
+  if (isDownloading || state.isTelegramDownloading) {
     addLog('SYSTEM', 'Telegram download is already in progress.');
     return;
   }

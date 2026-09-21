@@ -73,6 +73,14 @@ export async function sync(): Promise<void> {
     return;
   }
 
+  if (state.isIndexingVibes) {
+    addLog(
+      'ERROR',
+      'Sync aborted: Vibe DB indexing is currently running. Please wait for completion.'
+    );
+    return;
+  }
+
   if (isSyncing) {
     addLog('SYSTEM', 'Sync already in progress.');
     return;
@@ -198,6 +206,14 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
     addLog(
       'ERROR',
       'Drive mirror aborted: Telegram download is currently running. Please wait for completion.'
+    );
+    return;
+  }
+
+  if (state.isIndexingVibes) {
+    addLog(
+      'ERROR',
+      'Drive mirror aborted: Vibe DB indexing is currently running. Please wait for completion.'
     );
     return;
   }

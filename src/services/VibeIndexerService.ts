@@ -12,8 +12,31 @@ let isIndexing = false;
 
 export async function indexAllDBVibes(): Promise<void> {
   const addLog = useStore.getState().addLog;
+  const state = useStore.getState();
 
-  if (isIndexing) {
+  // Concurrency Guards: Ensure no conflicting heavy process is running
+  if (state.driveSyncProgress?.isActive) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Cannot index vibes while drive synchronization is in progress.'
+    );
+    return;
+  }
+  if (state.status === 'listening' || state.isLLMAnalyzing) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Track analysis is currently active. Press [Space] to pause analysis before indexing vibes.'
+    );
+    return;
+  }
+  if (state.isTelegramDownloading) {
+    addLog(
+      'SYSTEM',
+      'Action blocked: Telegram download is currently running. Please wait for completion.'
+    );
+    return;
+  }
+  if (isIndexing || state.isIndexingVibes) {
     addLog('SYSTEM', 'Vibe indexer is already running.');
     return;
   }
@@ -29,6 +52,7 @@ export async function indexAllDBVibes(): Promise<void> {
   }
 
   isIndexing = true;
+  useStore.getState().setIndexingVibes(true);
   addLog('SYSTEM', 'Scanning Engine DJ database (Paths & Playlists)...');
 
   try {
@@ -276,5 +300,6 @@ export async function indexAllDBVibes(): Promise<void> {
     addLog('ERROR', `Vibe Indexing failed: ${msg}`);
   } finally {
     isIndexing = false;
+    useStore.getState().setIndexingVibes(false);
   }
 }

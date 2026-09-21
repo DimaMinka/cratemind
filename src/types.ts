@@ -155,6 +155,7 @@ export type AppState = {
   isLLMAnalyzing: boolean;
   isTelegramDownloading: boolean;
   telegramDownloadOnly: boolean;
+  isIndexingVibes: boolean;
   /** Real-time count of audio files currently sitting in the Incoming directory. */
   incomingCount: number;
   globalStats: GlobalStats;
@@ -174,6 +175,7 @@ export type AppState = {
   setLLMAnalyzing: (isAnalyzing: boolean) => void;
   setTelegramDownloading: (isDownloading: boolean) => void;
   setTelegramDownloadOnly: (isDownloadOnly: boolean) => void;
+  setIndexingVibes: (isIndexing: boolean) => void;
   setIncomingCount: (count: number) => void;
   setGlobalStats: (stats: GlobalStats) => void;
   setDriveSyncProgress: (progress: DriveSyncProgress | null) => void;
