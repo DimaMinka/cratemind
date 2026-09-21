@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { MOCK_MODE } from '../config.js';
+import { useStore } from '../services/UIService.js';
 
 /**
  * BottomBar.tsx
@@ -9,6 +10,25 @@ import { MOCK_MODE } from '../config.js';
  * Color-coded keys: [Space] yellowBright, [R] green, [Q] red.
  */
 export function BottomBar(): React.JSX.Element {
+  const driveSyncProgress = useStore((state) => state.driveSyncProgress);
+  const isSyncActive = driveSyncProgress?.isActive ?? false;
+
+  if (isSyncActive) {
+    return (
+      <Box flexDirection="row" justifyContent="center" marginTop={1} paddingX={1}>
+        <Text color="yellowBright" bold>
+          [Drive Mirror in progress...]
+        </Text>
+        <Text color="gray"> Hotkeys locked </Text>
+        <Text color="gray"> | </Text>
+        <Text color="red" bold>
+          [Q]
+        </Text>
+        <Text color="gray"> Exit Sorter</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="row" justifyContent="center" marginTop={1} paddingX={1}>
       <Text color="yellowBright" bold>

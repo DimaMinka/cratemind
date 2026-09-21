@@ -59,6 +59,12 @@ export async function initWatcher(): Promise<void> {
       return;
     }
 
+    // Do not process tracks while Drive Mirror / Sync is active
+    const isSyncActive = useStore.getState().driveSyncProgress?.isActive;
+    if (isSyncActive) {
+      return;
+    }
+
     if (!force && pendingFiles.length < BATCH_SIZE) {
       return;
     }
@@ -93,13 +99,8 @@ export async function initWatcher(): Promise<void> {
     const isDownloading = state.isTelegramDownloading;
     if (wasDownloading && !isDownloading) {
       wasDownloading = false;
-      if (pendingFiles.length > 0) {
-        addLog(
-          'SYSTEM',
-          'Telegram download completed. Processing remaining tracks in incoming queue...'
-        );
-        processPendingBatch(true);
-      }
+      addLog('SYSTEM', 'Telegram download complete. Processing any remaining tracks in queue...');
+      processPendingBatch(true);
     } else if (!wasDownloading && isDownloading) {
       wasDownloading = true;
     }
@@ -111,6 +112,14 @@ export async function initWatcher(): Promise<void> {
     const currentStatus = state.status;
     if (prevStatus === 'paused' && currentStatus === 'listening') {
       prevStatus = currentStatus;
+      if (state.driveSyncProgress?.isActive) {
+        addLog(
+          'SYSTEM',
+          'Action blocked: Cannot resume track analysis while drive synchronization is in progress.'
+        );
+        useStore.getState().setStatus('paused');
+        return;
+      }
       if (pendingFiles.length > 0) {
         addLog('SYSTEM', 'System resumed. Initiating analysis for pending tracks...');
         processPendingBatch(false);
