@@ -148,7 +148,14 @@ export function togglePausePreview(): void {
       isPaused: false,
       lastStartedAt: Date.now()
     });
-    previewAudio(playback.filepath, playback.offset, playback.duration, playback.bpm, playback.key);
+    previewAudio(
+      playback.filepath,
+      playback.offset,
+      playback.duration,
+      playback.bpm,
+      playback.key,
+      playback.passportSummary
+    );
   }
 }
 
@@ -184,5 +191,12 @@ export function seekPlayback(deltaSeconds: number): void {
     newOffset = playback.duration - 2;
   }
 
-  previewAudio(playback.filepath, newOffset, playback.duration, playback.bpm, playback.key);
+  previewAudio(
+    playback.filepath,
+    newOffset,
+    playback.duration,
+    playback.bpm,
+    playback.key,
+    playback.passportSummary
+  );
 }
