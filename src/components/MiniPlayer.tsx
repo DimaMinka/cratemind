@@ -83,7 +83,7 @@ export function MiniPlayer(): React.JSX.Element | null {
 
       {/* Passport Summary Row */}
       {playback.passportSummary ? (
-        <Box marginBottom={1} paddingX={1} borderStyle="single" borderColor="#38bdf8">
+        <Box marginBottom={1}>
           <Text backgroundColor="#38bdf8" color="black" bold>
             {' '}
             PASSPORT{' '}
