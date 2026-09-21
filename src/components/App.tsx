@@ -8,6 +8,7 @@ import { LiveStream } from './LiveStream.js';
 import { ManualOverride } from './ManualOverride.js';
 import { BottomBar } from './BottomBar.js';
 import { MiniPlayer } from './MiniPlayer.js';
+import { SyncProgressBanner } from './SyncProgressBanner.js';
 import { useGlobalHotkeys } from '../hooks/useGlobalHotkeys.js';
 import { useStdoutDimensions } from '../hooks/useStdoutDimensions.js';
 
@@ -88,6 +89,9 @@ export function App(): React.JSX.Element {
           incomingCount={incomingCount}
           globalStats={globalStats}
         />
+
+        {/* Real-time drive mirror telemetry banner */}
+        <SyncProgressBanner />
 
         {/* Main Panel split (Live stream vs Manual Override check boxes) */}
         <Box flexDirection="row" flexGrow={1} minHeight={12} width="100%">
