@@ -11,6 +11,7 @@ import * as NetworkScoutService from './NetworkScoutService.js';
 import * as EngineDBService from './EngineDBService.js';
 import * as EmbeddingService from './EmbeddingService.js';
 import * as VibesDBService from './VibesDBService.js';
+import { buildPassport, buildPassportSummary } from './TrackPassportService.js';
 import { logToFile } from './LoggerService.js';
 import {
   YT_SCOUT_ENABLED,
@@ -453,6 +454,20 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           // ignore
         }
       }
+
+      // Assemble semantic track passport and log diagnostics
+      const passport = buildPassport({
+        meta,
+        spotify: spotifyFeatures,
+        ytPlaylists: scoutResult?.playlists ?? [],
+        vibesData
+      });
+      const passportSummary = buildPassportSummary(passport, vibesData);
+      addLog('PASSPORT', passportSummary);
+      logToFile(
+        'PASSPORT_FULL',
+        `\n--- Track Passport: ${meta.artist} - ${meta.title} ---\n${passport.text}\n---------------------------------------------------`
+      );
 
       const vectorContextFormatted = LLMService.formatVectorNeighborsContext(
         vectorNeighbors.slice(0, 5)

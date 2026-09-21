@@ -116,6 +116,12 @@ export function LiveStream({ log }: LiveStreamProps): React.JSX.Element {
                 messageColor = 'yellow';
                 isBold = true;
                 break;
+              case 'PASSPORT':
+                prefixLabel = 'PASSPORT';
+                prefixColor = '#38bdf8';
+                messageColor = '#7dd3fc';
+                isBold = true;
+                break;
               case 'YT_SEARCH':
                 prefixLabel = 'YT';
                 prefixColor = '#ff6b6b';

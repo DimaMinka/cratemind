@@ -8,6 +8,7 @@ export type LogEntry = {
     | 'NEEDS_MANUAL'
     | 'RAG'
     | 'SYSTEM'
+    | 'PASSPORT'
     | 'YT_SEARCH'
     | 'YT_HIT'
     | 'YT_CACHE_HIT';

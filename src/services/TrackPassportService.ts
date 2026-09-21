@@ -284,3 +284,40 @@ export function buildPassport(params: PassportParams): TrackPassport {
     }
   };
 }
+
+/**
+ * Produces a concise, single-line summary of the track passport for UI/TUI display.
+ * e.g. "Gumm - Shuffer | 126 BPM | Key: 8A | Vibes: Deep (3), Peak: 0.82 | Tags: tech house, driving"
+ */
+export function buildPassportSummary(
+  passport: TrackPassport,
+  vibesData?: VibesIntelligence | null
+): string {
+  const f = passport.fields;
+  const parts: string[] = [`${f.artist} - ${f.title}`];
+
+  if (f.bpm) parts.push(`${f.bpm} BPM`);
+  if (f.key) parts.push(`Key: ${f.key}`);
+  if (f.durationFormatted) parts.push(f.durationFormatted);
+
+  if (vibesData && vibesData.assignedVibes.length > 0) {
+    const topVibes = vibesData.assignedVibes
+      .slice(0, 3)
+      .map((v) => v.name)
+      .join(', ');
+    const peak = vibesData.soundProfile
+      ? ` (Peak: ${vibesData.soundProfile.peakEnergy.toFixed(2)})`
+      : '';
+    parts.push(`Vibes: ${topVibes}${peak}`);
+  }
+
+  if (f.genreTags.length > 0) {
+    parts.push(`Tags: ${f.genreTags.slice(0, 3).join(', ')}`);
+  }
+
+  if (f.ytVibeContext.length > 0) {
+    parts.push(`YT: ${f.ytVibeContext.slice(0, 2).join(' / ')}`);
+  }
+
+  return parts.join(' | ');
+}
