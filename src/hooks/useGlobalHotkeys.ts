@@ -109,18 +109,44 @@ export function useGlobalHotkeys(isOverlayActive: boolean): void {
       });
     } else if (keyLower === 's') {
       const setBootPrompt = useStore.getState().setBootPrompt;
-      setBootPrompt({
-        message: 'Sync Sorted to external collection?',
-        detail: `Destination: ${SD_CARD_SYNC_PATH}`,
-        resolve: (confirmed) => {
-          setBootPrompt(null);
-          if (confirmed) {
-            SyncService.sync().catch((err) => {
-              addLog('ERROR', `Sync invocation failed: ${err}`);
-            });
+      const drivesConnected = SyncService.areDrivesConnected();
+
+      if (drivesConnected) {
+        setBootPrompt({
+          message: 'Choose synchronization mode:',
+          detail: `[Y] Sorted -> SD Card | [D] Mirror SD -> EngineDJ Drive`,
+          yesLabel: 'Sorted -> SD',
+          thirdLabel: 'SD -> EngineDJ Drive',
+          thirdKey: 'd',
+          thirdResult: 'drive-sync',
+          noLabel: 'Cancel',
+          resolve: (result) => {
+            setBootPrompt(null);
+            if (result === true) {
+              SyncService.sync().catch((err) => {
+                addLog('ERROR', `Sync invocation failed: ${err}`);
+              });
+            } else if (result === 'drive-sync') {
+              SyncService.syncDrives().catch((err) => {
+                addLog('ERROR', `Drive mirror failed: ${err}`);
+              });
+            }
           }
-        }
-      });
+        });
+      } else {
+        setBootPrompt({
+          message: 'Sync Sorted to external collection?',
+          detail: `Destination: ${SD_CARD_SYNC_PATH}`,
+          resolve: (confirmed) => {
+            setBootPrompt(null);
+            if (confirmed) {
+              SyncService.sync().catch((err) => {
+                addLog('ERROR', `Sync invocation failed: ${err}`);
+              });
+            }
+          }
+        });
+      }
     } else if (key.leftArrow) {
       seekPlayback(-10);
     } else if (key.rightArrow) {
