@@ -148,21 +148,18 @@ export async function sync(): Promise<void> {
         const trimmed = line.trim();
         if (
           !trimmed ||
+          trimmed.startsWith('Transfer starting:') ||
+          trimmed.startsWith('sending incremental file list') ||
           trimmed.startsWith('sending list') ||
           trimmed.startsWith('sent ') ||
           trimmed.startsWith('total size') ||
-          trimmed.startsWith('building file list')
+          trimmed.startsWith('building file list') ||
+          /^skip existing/i.test(trimmed)
         ) {
           continue;
         }
 
-        // Clean up rsync skip messages (e.g. "skip existing 'magic forest/track.mp3'")
-        let cleanLine = trimmed;
-        if (cleanLine.startsWith('skip existing ')) {
-          cleanLine = cleanLine.substring('skip existing '.length);
-        }
-        // Remove surrounding quotes if present
-        cleanLine = cleanLine.replace(/^['"]|['"]$/g, '');
+        const cleanLine = trimmed.replace(/^['"]|['"]$/g, '');
 
         // Extract top-level folder name (e.g., "club party/track.mp3" -> "club party")
         const parts = cleanLine.split('/');
@@ -395,19 +392,22 @@ export async function discoverFilesToTransfer(
         const line = rawLine.trim();
         if (
           !line ||
+          line.startsWith('Transfer starting:') ||
           line.startsWith('sending incremental file list') ||
           line.startsWith('sending list') ||
           line.startsWith('sent ') ||
           line.startsWith('total size') ||
           line.startsWith('building file list') ||
-          line.endsWith('/')
+          line.endsWith('/') ||
+          /^skip existing/i.test(line)
         ) {
           continue;
         }
 
-        const ext = path.extname(line).toLowerCase();
+        const clean = line.replace(/^['"]|['"]$/g, '');
+        const ext = path.extname(clean).toLowerCase();
         if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          files.push(line);
+          files.push(clean);
         }
       }
     });
@@ -415,9 +415,12 @@ export async function discoverFilesToTransfer(
     rsync.on('close', (code) => {
       if (stdoutBuffer.trim()) {
         const line = stdoutBuffer.trim();
-        const ext = path.extname(line).toLowerCase();
-        if (!line.endsWith('/') && (AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-          files.push(line);
+        if (!line.endsWith('/') && !/^skip existing/i.test(line)) {
+          const clean = line.replace(/^['"]|['"]$/g, '');
+          const ext = path.extname(clean).toLowerCase();
+          if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+            files.push(clean);
+          }
         }
       }
       if (code === 0) {
@@ -450,22 +453,23 @@ function runRsync(args: string[], onFileLine?: (line: string) => void): Promise<
       const trimmed = rawLine.trim();
       if (
         !trimmed ||
+        trimmed.startsWith('Transfer starting:') ||
         trimmed.startsWith('sending incremental file list') ||
         trimmed.startsWith('sending list') ||
         trimmed.startsWith('sent ') ||
         trimmed.startsWith('total size') ||
-        trimmed.startsWith('building file list')
+        trimmed.startsWith('building file list') ||
+        trimmed.endsWith('/')
       ) {
         return;
       }
 
-      let cleanLine = trimmed;
-      if (cleanLine.startsWith('skip existing ')) {
-        cleanLine = cleanLine.substring('skip existing '.length);
-      } else if (cleanLine.startsWith('deleting ')) {
-        cleanLine = cleanLine.substring('deleting '.length);
+      // Ignore skipped existing files and deleted files from progress callback
+      if (/^skip existing/i.test(trimmed) || /^deleting/i.test(trimmed)) {
+        return;
       }
-      cleanLine = cleanLine.replace(/^['"]|['"]$/g, '');
+
+      const cleanLine = trimmed.replace(/^['"]|['"]$/g, '');
 
       if (onFileLine) {
         onFileLine(cleanLine);
