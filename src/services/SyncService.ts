@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { useStore } from './UIService.js';
 import {
   SD_CARD_SYNC_PATH,
@@ -108,6 +109,7 @@ export async function sync(): Promise<void> {
     // 4. Run real rsync in spawn
     await runRsync([
       '-av',
+      '--progress',
       '--ignore-existing',
       '--exclude=skipped',
       '--exclude=.DS_Store',
@@ -388,41 +390,57 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
           archivedCount
         });
 
-        await runRsync(
-          [
-            '-av',
-            '--ignore-existing',
-            '--exclude=skipped',
-            '--exclude=.DS_Store',
-            '--exclude=.Spotlight*',
-            '--exclude=.Trashes',
-            '--exclude=.fseventsd',
-            '--exclude=.TemporaryItems',
-            '--exclude=.DocumentRevisions*',
-            sourceMusic + '/',
-            destMusic + '/'
-          ],
-          (cleanLine) => {
-            if (cleanLine.endsWith('/')) return;
-            const ext = path.extname(cleanLine).toLowerCase();
-            if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
-              copiedCount++;
-              const pct = Math.min(100, Math.round((copiedCount / totalFiles) * 100));
-              const fileName = path.basename(cleanLine);
-              setDriveSyncProgress({
-                isActive: true,
-                stage: 'copying-music',
-                stageLabel: '[3/4] Mirroring Music Collection...',
-                currentFile: fileName,
-                currentFileIndex: copiedCount,
-                totalFiles,
-                percent: pct,
-                archivedCount
-              });
-              addLog('SYSTEM', `[${copiedCount}/${totalFiles}] (${pct}%) Copying: ${fileName}`);
-            }
-          }
+        const tempTransferList = path.join(
+          os.tmpdir(),
+          `cratemind-transfer-${Date.now()}-${process.pid}.txt`
         );
+        fs.writeFileSync(tempTransferList, filesToTransfer.join('\n'));
+
+        try {
+          await runRsync(
+            [
+              '-av',
+              '--progress',
+              `--files-from=${tempTransferList}`,
+              '--exclude=.DS_Store',
+              '--exclude=.Spotlight*',
+              '--exclude=.Trashes',
+              '--exclude=.fseventsd',
+              '--exclude=.TemporaryItems',
+              '--exclude=.DocumentRevisions*',
+              sourceMusic + '/',
+              destMusic + '/'
+            ],
+            (cleanLine) => {
+              if (cleanLine.endsWith('/')) return;
+              const ext = path.extname(cleanLine).toLowerCase();
+              if ((AUDIO_EXTENSIONS as readonly string[]).includes(ext)) {
+                copiedCount++;
+                const pct = Math.min(100, Math.round((copiedCount / totalFiles) * 100));
+                const fileName = path.basename(cleanLine);
+                setDriveSyncProgress({
+                  isActive: true,
+                  stage: 'copying-music',
+                  stageLabel: '[3/4] Mirroring Music Collection...',
+                  currentFile: fileName,
+                  currentFileIndex: copiedCount,
+                  totalFiles,
+                  percent: pct,
+                  archivedCount
+                });
+                addLog('SYSTEM', `[${copiedCount}/${totalFiles}] (${pct}%) Copying: ${fileName}`);
+              }
+            }
+          );
+        } finally {
+          try {
+            if (fs.existsSync(tempTransferList)) {
+              fs.unlinkSync(tempTransferList);
+            }
+          } catch {
+            // Ignore temp file cleanup error
+          }
+        }
       }
     }
 
