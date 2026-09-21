@@ -56,9 +56,14 @@
 - **Automatic Log Rotation**:
   - Capped local logging size to prevent infinite disk usage. The file `cratemind.log` is automatically rotated and backed up as `cratemind.old.log` when it reaches 5MB.
 - **Native Audio Preview**:
-  - Native background previews via `ffplay` with pause/resume and precise seeking hotkeys.
+- **Single Active Process & Hotkey Interlocking**:
+  - Guarantees strict mutual exclusion across resource-intensive and I/O-heavy operations (Drive Mirroring, Track Analysis / Gemini LLM routing, Telegram Bulk Downloader, and Vibe Indexing).
+  - When Drive Mirroring is in progress, conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the `BottomBar` dynamically displays `[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter`.
+  - Blocks starting a Sync or manual vibe indexing while the analysis queue is actively listening or classifying tracks in Gemini.
+  - Automatically defers pending watcher batches and resets listener status to `paused` if analysis is toggled during an active mirror.
 
 ---
+
 
 ## 🛠️ Technical Architecture
 
@@ -79,6 +84,7 @@ CrateMind is built on a clean service-oriented modular architecture:
   - `archiveManager`: In-memory audio file indexing, smart zero-transfer crate relocation, and automatic recovery of active tracks from `Removed from SD/`.
   - `dbRewriter`: Fast Engine DJ SQLite database path rewriting (`m.db`, `hm.db`) via `better-sqlite3`.
 - **UIService**: Manages TUI states via a Zustand state store and mounts the Ink rendering loop.
+- **Process Mutual Exclusion & Concurrency Lock**: Enforces a strict single-active-process policy. Prevents resource conflicts between Drive Mirroring / Sync (`SyncService`), Track Analysis / Gemini LLM routing (`TrackWatcher` / `TrackProcessor`), Telegram downloads (`TelegramService`), and Vibe DB indexing. Dynamic hotkey interlocking (`useGlobalHotkeys`) and watcher-level concurrency locks guarantee safe single-task execution.
 
 ---
 
@@ -180,6 +186,8 @@ npm start
 - `[T]` — Start Telegram channel downloader sync
 - `[S]` — Sync to Collection via rsync (Syncs local `Sorted/` to SD, or runs full Drive-to-Drive mirror `[D]` if target drive is connected)
 - `[Q]` — Quit CrateMind safely
+
+> **Note on Process Interlocking**: To prevent USB I/O contention and Gemini API rate limits, only one major process can run at a time. When Drive Mirroring is running, conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the status bar displays `[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter`. Starting a Sync is likewise blocked if track analysis is actively listening or querying LLM.
 
 ---
 
