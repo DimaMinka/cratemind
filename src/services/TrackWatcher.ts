@@ -86,12 +86,35 @@ export async function initWatcher(): Promise<void> {
     queue.add(async () => {
       await processTracksBatch(filesToProcess);
       useStore.getState().setGlobalStats(getGlobalStats());
-    });
 
-    if (pendingFiles.length > 0) {
-      if (batchTimeout) clearTimeout(batchTimeout);
-      batchTimeout = setTimeout(() => processPendingBatch(force), 1000);
-    }
+      // If there are still pending files, ask the user before processing the next batch
+      if (pendingFiles.length > 0) {
+        const nextBatchCount = Math.min(pendingFiles.length, BATCH_SIZE);
+        const shouldContinue = await new Promise<boolean>((resolve) => {
+          useStore.getState().setBootPrompt({
+            message: `Batch completed. Process next batch of ${nextBatchCount} track(s)?`,
+            detail: `${pendingFiles.length} track(s) remaining in queue. Press [Y] to proceed, [N] to pause.`,
+            yesLabel: 'Process next batch',
+            noLabel: 'Pause',
+            resolve: (val) => {
+              useStore.getState().setBootPrompt(null);
+              resolve(Boolean(val));
+            }
+          });
+        });
+
+        if (shouldContinue) {
+          addLog('SYSTEM', `User approved next batch (${nextBatchCount} tracks). Continuing...`);
+          processPendingBatch(force);
+        } else {
+          addLog(
+            'SYSTEM',
+            `Batch processing paused by user (${pendingFiles.length} tracks remaining). Press [Space] to resume.`
+          );
+          useStore.getState().setStatus('paused');
+        }
+      }
+    });
   };
 
   // Subscribe to Telegram download completion to process remaining queue
