@@ -90,7 +90,7 @@ CrateMind is built on a clean service-oriented modular architecture:
 - **AubioService**: Establishes tempo and key estimates on macOS.
 - **ID3Service**: Fast metadata reader (via `music-metadata`) and safe tag writer. Uses a local database metadata cache to speed up bootstrap scans.
 - **EmbeddingService**: Generates vector embeddings (`gemini-embedding-2`) and runs cosine similarity searches to match tracks.
-- **LLMService**: Interfaces with the Gemini API with structured Zod schema output validation, daily request limit checks, and offline cache fallbacks.
+- **LLMService**: Interfaces with the Gemini API (`gemini-3.5-flash-lite`) with native `responseSchema` structured output validation, RAG few-shot contextual injection, deterministic vibe-to-crate rules, and offline cache fallbacks.
 - **SyncService & Modular Sync Subsystem**: Coordinates collection syncing (`Sorted/ -> SD`) and full Drive-to-Drive Mirroring (`EngineDJ SD -> EngineDJ`) through dedicated submodules in `src/services/sync/`:
   - `rsyncRunner`: Line-buffered stdout stream parsing, dry-run change detection, and audio file counting.
   - `archiveManager`: In-memory audio file indexing, smart zero-transfer crate relocation, and automatic recovery of active tracks from `Removed from SD/`.
