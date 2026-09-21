@@ -67,7 +67,7 @@ export async function discoverFilesToTransfer(
 
     rsync.stdout.on('data', (data: Buffer) => {
       stdoutBuffer += data.toString();
-      const lines = stdoutBuffer.split('\n');
+      const lines = stdoutBuffer.split(/\r?\n|\r/);
       stdoutBuffer = lines.pop() ?? '';
 
       for (const rawLine of lines) {
@@ -141,6 +141,10 @@ export function runRsync(args: string[], onFileLine?: (line: string) => void): P
         trimmed.startsWith('sent ') ||
         trimmed.startsWith('total size') ||
         trimmed.startsWith('building file list') ||
+        trimmed.includes('speedup is') ||
+        trimmed.includes('to-check=') ||
+        trimmed.includes('xfer#') ||
+        /\b\d+%\b/.test(trimmed) ||
         trimmed.endsWith('/')
       ) {
         return;
@@ -170,7 +174,7 @@ export function runRsync(args: string[], onFileLine?: (line: string) => void): P
 
     rsync.stdout.on('data', (data: Buffer) => {
       stdoutBuffer += data.toString();
-      const lines = stdoutBuffer.split('\n');
+      const lines = stdoutBuffer.split(/\r?\n|\r/);
       stdoutBuffer = lines.pop() ?? '';
       for (const line of lines) {
         processLine(line);
@@ -186,7 +190,10 @@ export function runRsync(args: string[], onFileLine?: (line: string) => void): P
 
     rsync.on('close', (code) => {
       if (stdoutBuffer.trim()) {
-        processLine(stdoutBuffer);
+        const remainingLines = stdoutBuffer.split(/\r?\n|\r/);
+        for (const line of remainingLines) {
+          processLine(line);
+        }
       }
       if (code === 0) {
         resolve();
