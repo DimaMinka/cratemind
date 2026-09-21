@@ -46,6 +46,7 @@ export interface BatchTrackInput {
   acousticness?: number | null;
   vectorNeighbors?: VectorNeighbor[];
   youtubeContext?: string;
+  vibesContext?: string;
 }
 
 const TrackResultSchema = z.object({
@@ -129,9 +130,21 @@ Crate Definitions & Rules:
 - intro outro: Functional, flat, dry structural suspense/noise for mixing. No melodic narrative.
 
 Feature Logic:
-- Spotify Energy: >0.75 -> club party, psy, peak-time mountain sunset. <0.40 -> nargila vibe, mantra, iceland.
-- Spotify Acousticness: >0.60 -> earth, magic forest. <0.25 -> galaxy trip, club party, robotic.
-- Spotify Valence: >0.60 -> new day vibe, beach party, retro. <0.30 -> iceland, nargila vibe, mountain sunset.
+- Vibes.app Tags & Dynamics:
+  * "Sunset", "Orange", "Warm" with progressive rising energy shape -> favors 'mountain sunset'.
+  * "Forest", "Organic", "Green" with harmonic flatness (<0.05) -> favors 'magic forest'.
+  * "Driving", "Peak-time", "Club", "Tool" with sustained high energy plateau -> favors 'club party'.
+  * "Tense", "Steady", "Night", "Subdued" -> favors 'nargila vibe'.
+  * "Cold", "Sparse", "Dark Blue" with low spectral centroid (<2000 Hz) -> favors 'iceland'.
+  * "Sunrise", "Yellow", "Morning", "Bright" with high spectral centroid (>3500 Hz) -> favors 'new day vibe'.
+  * "Afro", "Tribal", "Percussion" -> favors 'tropical vibe'.
+  * "Cosmic", "Space", "Sci-Fi" -> favors 'galaxy trip'.
+  * "Psychedelic", "Hypnotic" with BPM > 135 -> favors 'psy'.
+- Acoustic Physics:
+  * Sub-bass > 45 dB with onset density > 7.0 onsets/sec indicates heavy driving club bass -> favors 'club party' or 'psy'.
+  * Spectral Flatness < 0.05 indicates pure melodic/harmonic content -> favors 'magic forest', 'mantra', 'earth'.
+  * Spectral Flatness > 0.15 indicates noisy/industrial or mechanical texture -> favors 'robotic' or 'intro outro'.
+- Legacy Spotify Features: Energy >0.75 -> club party, psy; <0.40 -> nargila vibe, mantra, iceland.
 - BPM & Key: >135 BPM -> psy, drum 'n' bass. Minor keys (e.g., 08A) -> dark/reflective. Major (e.g., 08B) -> bright/uplifting.
 
 Priority Heuristics:
@@ -189,7 +202,8 @@ export async function classifyTrack(
   networkContext = '',
   physicalContext = '',
   spotifyContext = '',
-  vectorNeighbors: VectorNeighbor[] = []
+  vectorNeighbors: VectorNeighbor[] = [],
+  vibesContext = ''
 ): Promise<LLMResponse> {
   const vectorContext = formatVectorNeighborsContext(vectorNeighbors);
 
@@ -201,7 +215,7 @@ export async function classifyTrack(
     networkContext,
     physicalContext,
     spotifyContext,
-    vectorContext
+    vectorContext + '\n' + vibesContext
   );
 
   // 1. Check cache first
@@ -270,7 +284,7 @@ export async function classifyTrack(
       const promptText = `Artist: ${artist}
 Title: ${title}
 
-${physicalContext ? physicalContext + '\n' : ''}${spotifyContext ? spotifyContext + '\n' : ''}${vectorContext ? '\n' + vectorContext + '\n' : ''}
+${physicalContext ? physicalContext + '\n' : ''}${vibesContext ? vibesContext + '\n' : ''}${spotifyContext ? spotifyContext + '\n' : ''}${vectorContext ? '\n' + vectorContext + '\n' : ''}
 ${ragContext}
 ${networkContext ? '\n' + networkContext : ''}`;
 
@@ -356,6 +370,9 @@ export async function classifyTracksBatch(tracks: BatchTrackInput[]): Promise<Ba
     promptText += `spotify_acousticness: ${t.acousticness ?? 'null'}\n`;
     promptText += `RAG_neighbors:\n${vectorContext}\n`;
     promptText += `youtube_context: "${t.youtubeContext ?? ''}"\n`;
+    if (t.vibesContext) {
+      promptText += `vibes_intelligence: ${t.vibesContext}\n`;
+    }
   }
 
   let lastError: unknown;
@@ -368,6 +385,26 @@ export async function classifyTracksBatch(tracks: BatchTrackInput[]): Promise<Ba
         config: {
           systemInstruction: BATCH_SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                trackId: { type: Type.STRING },
+                folders: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.STRING,
+                    enum: FOLDERS as unknown as string[]
+                  }
+                },
+                reasoning: { type: Type.STRING },
+                confidence: { type: Type.NUMBER },
+                flagged_for_review: { type: Type.BOOLEAN }
+              },
+              required: ['trackId', 'folders', 'reasoning', 'confidence', 'flagged_for_review']
+            }
+          },
           temperature: 0.1,
           maxOutputTokens: 4096
         }

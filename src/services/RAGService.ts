@@ -1,6 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { RagExample, RagMemory, BootstrapResult, VectorNeighbor, TrackMeta } from '../types.js';
+import {
+  RagExample,
+  RagMemory,
+  BootstrapResult,
+  VectorNeighbor,
+  TrackMeta,
+  VibesIntelligence
+} from '../types.js';
+
 import { RAG_EXAMPLES_PER_FOLDER, FOLDERS, AUDIO_EXTENSIONS, MOCK_MODE } from '../config.js';
 import { extractMetadata } from './ID3Service.js';
 import { MOCK_RAG_EXAMPLES } from '../mocks/mockData.js';
@@ -571,9 +579,10 @@ export async function getVectorContext(
   spotify?: SpotifyAudioFeatures | null,
   ytPlaylists?: YouTubePlaylist[],
   releaseYear?: number,
-  topK = 5
+  topK = 5,
+  vibesData?: VibesIntelligence | null
 ): Promise<{ neighbors: VectorNeighbor[]; passport: string }> {
-  const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear });
+  const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear, vibesData });
 
   const excludeKey = `${artist.toLowerCase()}|${title.toLowerCase()}`;
   const neighbors = await EmbeddingService.findNeighbors(passport.text, topK, excludeKey);

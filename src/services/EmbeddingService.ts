@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { VectorNeighbor, TrackMeta } from '../types.js';
+import { VectorNeighbor, TrackMeta, VibesIntelligence } from '../types.js';
 import { getDB } from './LocalDBService.js';
 import { logToFile } from './LoggerService.js';
 import { buildPassport, PASSPORT_VERSION } from './TrackPassportService.js';
@@ -151,9 +151,10 @@ export async function storeTrackVector(
   meta: TrackMeta,
   spotify?: SpotifyAudioFeatures | null,
   ytPlaylists?: YouTubePlaylist[],
-  releaseYear?: number
+  releaseYear?: number,
+  vibesData?: VibesIntelligence | null
 ): Promise<boolean> {
-  const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear });
+  const passport = buildPassport({ meta, spotify, ytPlaylists, releaseYear, vibesData });
 
   // Check if we already have a current-version vector for this track
   const db = getDB();

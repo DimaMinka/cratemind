@@ -1,4 +1,4 @@
-import { TrackPassport, TrackMeta } from '../types.js';
+import { TrackPassport, TrackMeta, VibesIntelligence } from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
 import { YouTubePlaylist } from '../types.js';
 
@@ -126,12 +126,40 @@ function cleanPlaylistTitle(title: string): string {
     .trim();
 }
 
+// ── Structural Shape Analysis ─────────────────────────────────────────────
+
+/**
+ * Summarizes the 16-bin energy shape curve into a narrative structural arc.
+ */
+function summarizeEnergyShape(shape: number[]): string {
+  if (!shape || shape.length < 4) return 'Standard progressive groove';
+  const mid = Math.floor(shape.length / 2);
+  const firstHalf = shape.slice(0, mid);
+  const secondHalf = shape.slice(mid);
+  const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+  const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+  const minVal = Math.min(...shape);
+  const maxVal = Math.max(...shape);
+
+  if (avgSecond - avgFirst > 0.15) {
+    return 'Progressive energy build towards climax';
+  } else if (avgFirst - avgSecond > 0.15) {
+    return 'Deconstructive descending energy arc';
+  } else if (maxVal - minVal < 0.2) {
+    return 'Sustained driving energy plateau';
+  } else {
+    return 'Extended breakdown & secondary drop';
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────
 
 export interface PassportParams {
   meta: TrackMeta;
   spotify?: SpotifyAudioFeatures | null;
   ytPlaylists?: YouTubePlaylist[];
+  /** Vibes.app acoustic and semantic intelligence */
+  vibesData?: VibesIntelligence | null;
   /** Optional additional tags from Last.fm or other sources */
   extraTags?: string[];
   /** Override year if known from an external source */
@@ -148,24 +176,26 @@ export interface PassportParams {
  * @returns TrackPassport with the full formatted text and parsed fields
  */
 export function buildPassport(params: PassportParams): TrackPassport {
-  const { meta, spotify, ytPlaylists = [], extraTags = [], releaseYear } = params;
+  const { meta, spotify, ytPlaylists = [], vibesData, extraTags = [], releaseYear } = params;
 
   const artist = meta.artist || 'Unknown Artist';
   const title = meta.title || meta.filename || 'Unknown Title';
-  const bpm = meta.bpm;
-  const key = meta.key;
-  const durationFormatted = formatDuration(meta.duration);
+  const bpm = meta.bpm || vibesData?.track.bpm || undefined;
+  const key = meta.key || vibesData?.track.key || undefined;
+  const durationFormatted = formatDuration(meta.duration || vibesData?.track.duration || undefined);
   const label = meta.label?.trim() || undefined;
 
   // ── Genre Tags ──────────────────────────────────────────────────────────
-  // Merge Spotify artist genres + Engine DJ genre field + extra tags
+  // Merge Vibes tags + Spotify artist genres + Engine DJ genre field + extra tags
+  const vibeTagNames = (vibesData?.assignedVibes || []).map((v) => `${v.name} (${v.category})`);
   const rawTags: string[] = [
+    ...vibeTagNames,
     ...(spotify?.genres ?? []),
     ...(meta.genre ? [meta.genre] : []),
     ...(meta.comment ? meta.comment.split(/[,;]+/).map((t) => t.trim()) : []),
     ...extraTags
   ];
-  const genreTags = cleanTags(rawTags, 7);
+  const genreTags = cleanTags(rawTags, 10);
 
   // ── Cultural Vibe Context ────────────────────────────────────────────────
   // Use top 3 YouTube playlist titles as cultural vibe anchors
@@ -194,6 +224,36 @@ export function buildPassport(params: PassportParams): TrackPassport {
   if (label) releaseParts.push(`Label: ${label}`);
   if (releaseParts.length > 0) {
     lines.push(`Release Context: ${releaseParts.join(' | ')}`);
+  }
+
+  // Vibes.app Acoustic & Semantic Blueprint
+  if (vibesData) {
+    const vibesParts: string[] = [];
+    if (vibesData.assignedVibes.length > 0) {
+      vibesParts.push(`Vibes: ${vibesData.assignedVibes.map((v) => v.name).join(', ')}`);
+    }
+
+    const vf = vibesData.track.vibeFeatures;
+    if (vf?.band_sub_bass_mean !== undefined) {
+      vibesParts.push(`Sub-Bass: ${vf.band_sub_bass_mean.toFixed(1)} dB`);
+    }
+    if (vf?.spec_centroid_mean !== undefined) {
+      const timbre =
+        vf.spec_centroid_mean > 3500
+          ? 'Bright/Crisp'
+          : vf.spec_centroid_mean < 2000
+            ? 'Warm/Dark'
+            : 'Balanced';
+      vibesParts.push(`Timbre: ${timbre}`);
+    }
+    if (vibesData.soundProfile) {
+      const shapeDesc = summarizeEnergyShape(vibesData.soundProfile.energyShape);
+      vibesParts.push(`Arc: ${shapeDesc} (Peak: ${vibesData.soundProfile.peakEnergy.toFixed(2)})`);
+    }
+
+    if (vibesParts.length > 0) {
+      lines.push(`Vibes Intelligence: ${vibesParts.join(' | ')}`);
+    }
   }
 
   // Acoustic Genre Tags line

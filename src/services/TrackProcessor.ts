@@ -10,6 +10,8 @@ import * as UserInteractionService from './UserInteractionService.js';
 import * as NetworkScoutService from './NetworkScoutService.js';
 import * as EngineDBService from './EngineDBService.js';
 import * as EmbeddingService from './EmbeddingService.js';
+import * as VibesDBService from './VibesDBService.js';
+import { logToFile } from './LoggerService.js';
 import {
   YT_SCOUT_ENABLED,
   CONFIDENCE_THRESHOLD,
@@ -19,9 +21,15 @@ import {
   FORCE_MANUAL_MODE,
   BATCH_SIZE
 } from '../config.js';
-import { LLMResponse, VectorNeighbor, TrackMeta, NetworkScoutResult } from '../types.js';
+import {
+  LLMResponse,
+  VectorNeighbor,
+  TrackMeta,
+  NetworkScoutResult,
+  VibesIntelligence
+} from '../types.js';
 import { SpotifyAudioFeatures } from './SpotifyService.js';
-import { getGlobalStats } from './LocalDBService.js';
+import { getGlobalStats, saveTrackIntelligence } from './LocalDBService.js';
 
 /**
  * TrackProcessor.ts
@@ -52,6 +60,8 @@ interface TrackBatchState {
   meta: TrackMeta;
   spotifyFeatures: SpotifyAudioFeatures | null;
   spotifyProfile: string;
+  vibesData: VibesIntelligence | null;
+  vibesProfile: string;
   physicalProfile: string;
   ragContext: string;
   personalHints: string;
@@ -105,6 +115,9 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
   const addLog = useStore.getState().addLog;
   const incrementStat = useStore.getState().incrementStat;
   const states: TrackBatchState[] = [];
+
+  // Preload Vibes.app acoustic and semantic intelligence in batch for zero latency
+  const vibesMap = VibesDBService.getAllAnalyzedIncomingTracks(INCOMING_DIR);
 
   // Step 1: Metadata Extraction & Local RAG/Cache Checking
   for (const filepath of filepaths) {
@@ -255,6 +268,28 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
         continue;
       }
 
+      // Extract Vibes.app acoustic intelligence
+      const fullPath = path.resolve(filepath);
+      const vibesData = vibesMap.get(fullPath) ?? vibesMap.get(filename) ?? null;
+      let vibesProfile = '';
+      if (vibesData) {
+        const vNames = vibesData.assignedVibes.map((v) => `${v.name} (${v.category})`).join(', ');
+        const vf = vibesData.track.vibeFeatures;
+        const sp = vibesData.soundProfile;
+        vibesProfile = `=== Vibes.app Acoustic & Semantic Blueprint ===
+- Assigned Vibes: ${vNames || 'None'}
+- Sub-Bass: ${vf?.band_sub_bass_mean !== undefined ? `${vf.band_sub_bass_mean.toFixed(1)} dB` : 'N/A'} | Mid: ${vf?.band_mid_mean !== undefined ? `${vf.band_mid_mean.toFixed(1)} dB` : 'N/A'} | High: ${vf?.band_high_mean !== undefined ? `${vf.band_high_mean.toFixed(1)} dB` : 'N/A'}
+- Onset Density: ${vf?.onset_density !== undefined ? `${vf.onset_density.toFixed(1)} onsets/sec` : 'N/A'}
+- Spectral Centroid: ${vf?.spec_centroid_mean !== undefined ? `${vf.spec_centroid_mean.toFixed(0)} Hz` : 'N/A'} | Flatness: ${vf?.spec_flatness_mean !== undefined ? vf.spec_flatness_mean.toFixed(3) : 'N/A'}
+- Energy Dynamics: Peak=${sp?.peakEnergy !== undefined ? sp.peakEnergy.toFixed(2) : 'N/A'}, Avg=${sp?.avgEnergy !== undefined ? sp.avgEnergy.toFixed(2) : 'N/A'}, Variance=${sp?.energyVariance !== undefined ? sp.energyVariance.toFixed(2) : 'N/A'}
+- Structural Shape (16-bin Energy): [${sp?.energyShape && sp.energyShape.length > 0 ? sp.energyShape.map((n) => n.toFixed(2)).join(', ') : 'N/A'}]
+=================================================`;
+        addLog(
+          'SYSTEM',
+          `Vibes Intelligence: ${vibesData.assignedVibes.length} vibes, Peak Energy=${sp?.peakEnergy !== undefined ? sp.peakEnergy.toFixed(2) : 'N/A'}`
+        );
+      }
+
       // Step 2.5: Check LLM cache by artist & title to avoid Spotify/YouTube/Vector calls
       const fastCached = CacheService.getCacheByArtistTitle(meta.artist, meta.title);
       if (fastCached) {
@@ -268,6 +303,8 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
           meta,
           spotifyFeatures: null,
           spotifyProfile: '',
+          vibesData,
+          vibesProfile,
           physicalProfile: '',
           ragContext: '',
           personalHints: '',
@@ -398,7 +435,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
             spotifyFeatures,
             ytPlaylistsForPassport,
             undefined,
-            15 // Fetch 15 neighbors for consensus
+            15, // Fetch 15 neighbors for consensus
+            vibesData
           );
           vectorNeighbors = vectorResult.neighbors;
 
@@ -427,7 +465,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         networkContext,
         physicalProfile,
         spotifyProfile,
-        vectorContextFormatted
+        vectorContextFormatted + '\n' + vibesProfile
       );
 
       // Check offline cache
@@ -439,6 +477,8 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         meta,
         spotifyFeatures,
         spotifyProfile,
+        vibesData,
+        vibesProfile,
         physicalProfile,
         ragContext,
         personalHints,
@@ -467,14 +507,15 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
       trackId: s.filename,
       artist: s.meta.artist,
       title: s.meta.title,
-      bpm: s.meta.bpm || null,
-      key: s.meta.key || null,
+      bpm: s.meta.bpm || s.vibesData?.track.bpm || null,
+      key: s.meta.key || s.vibesData?.track.key || null,
       genre: s.meta.genre || null,
-      energy: s.spotifyFeatures?.energy || null,
+      energy: s.spotifyFeatures?.energy || s.vibesData?.soundProfile?.avgEnergy || null,
       valence: s.spotifyFeatures?.valence || null,
       acousticness: s.spotifyFeatures?.acousticness || null,
       vectorNeighbors: s.vectorNeighbors,
-      youtubeContext: s.networkContext
+      youtubeContext: s.networkContext,
+      vibesContext: s.vibesProfile
     }));
 
     try {
@@ -711,8 +752,48 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
           selectedFolders[0],
           s.meta,
           s.spotifyFeatures,
-          s.scoutResult?.playlists ?? []
+          s.scoutResult?.playlists ?? [],
+          undefined,
+          s.vibesData
         ).catch(() => {});
+      }
+
+      // Persist Vibes intelligence to cratemind.db
+      if (s.vibesData && selectedFolders[0]) {
+        try {
+          const vf = s.vibesData.track.vibeFeatures;
+          const sp = s.vibesData.soundProfile;
+          saveTrackIntelligence({
+            artist: s.meta.artist,
+            title: s.meta.title,
+            filepath: s.vibesData.track.filepath,
+            folder: selectedFolders[0],
+            bpm: s.vibesData.track.bpm ?? (s.meta.bpm ? Number(s.meta.bpm) : null),
+            key: s.vibesData.track.key ?? s.meta.key ?? null,
+            assignedVibes: s.vibesData.assignedVibes,
+            subBassDb: vf?.band_sub_bass_mean ?? null,
+            bassDb: vf?.band_bass_mean ?? null,
+            midDb: vf?.band_mid_mean ?? null,
+            highDb: vf?.band_high_mean ?? null,
+            onsetDensity: vf?.onset_density ?? null,
+            peakEnergy: sp?.peakEnergy ?? null,
+            avgEnergy: sp?.avgEnergy ?? null,
+            energyVariance: sp?.energyVariance ?? null,
+            specCentroid: vf?.spec_centroid_mean ?? null,
+            specFlatness: vf?.spec_flatness_mean ?? null,
+            energyShape: sp?.energyShape ?? null,
+            drumShape: sp?.drumShape ?? null,
+            dropRatio: sp?.dropRatio ?? null,
+            buildupRatio: sp?.buildupRatio ?? null,
+            breakdownRatio: sp?.breakdownRatio ?? null,
+            clapEmbedding: s.vibesData.track.clapEmbedding ?? null
+          });
+        } catch (dbErr) {
+          logToFile(
+            'TRACK_PROCESSOR',
+            `Failed to save intelligence for ${s.filename}: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`
+          );
+        }
       }
     }
 
