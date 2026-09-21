@@ -309,6 +309,7 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
         const cachedPassportSummaryForPlayer = buildPassportSummary(
           cachedPassport,
           vibesData,
+          false,
           false
         );
         addLog('PASSPORT', cachedPassportSummary);
@@ -480,7 +481,7 @@ ${meta.bpm ? `- BPM: ${meta.bpm}\n` : ''}${meta.key ? `- Key: ${meta.key}\n` : '
         vibesData
       });
       const passportSummary = buildPassportSummary(passport, vibesData, true);
-      const passportSummaryForPlayer = buildPassportSummary(passport, vibesData, false);
+      const passportSummaryForPlayer = buildPassportSummary(passport, vibesData, false, false);
       addLog('PASSPORT', passportSummary);
       logToFile(
         'PASSPORT_FULL',

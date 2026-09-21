@@ -83,15 +83,20 @@ export function MiniPlayer(): React.JSX.Element | null {
 
       {/* Passport Summary Row */}
       {playback.passportSummary ? (
-        <Box marginBottom={1}>
+        <Box marginBottom={1} flexWrap="wrap">
           <Text backgroundColor="#38bdf8" color="black" bold>
             {' '}
             PASSPORT{' '}
           </Text>
-          <Text color="#7dd3fc" bold>
-            {' '}
-            {playback.passportSummary}
-          </Text>
+          <Text> </Text>
+          {playback.passportSummary.split(' | ').map((part, idx, arr) => (
+            <React.Fragment key={idx}>
+              <Text color="#7dd3fc" bold>
+                {part}
+              </Text>
+              {idx < arr.length - 1 ? <Text color="gray"> • </Text> : null}
+            </React.Fragment>
+          ))}
         </Box>
       ) : playback.bpm || playback.key ? (
         <Box marginBottom={1}>

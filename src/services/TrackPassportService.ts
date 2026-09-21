@@ -292,7 +292,8 @@ export function buildPassport(params: PassportParams): TrackPassport {
 export function buildPassportSummary(
   passport: TrackPassport,
   vibesData?: VibesIntelligence | null,
-  includeTitle = true
+  includeTitle = true,
+  includeDuration = true
 ): string {
   const f = passport.fields;
   const parts: string[] = [];
@@ -302,7 +303,7 @@ export function buildPassportSummary(
 
   if (f.bpm) parts.push(`${f.bpm} BPM`);
   if (f.key) parts.push(`Key: ${f.key}`);
-  if (f.durationFormatted) parts.push(f.durationFormatted);
+  if (includeDuration && f.durationFormatted) parts.push(f.durationFormatted);
 
   if (vibesData && vibesData.assignedVibes.length > 0) {
     const topVibes = vibesData.assignedVibes
