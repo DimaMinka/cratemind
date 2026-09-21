@@ -875,6 +875,13 @@
             process-lifetime caching for high-performance library lookups.
           </li>
           <li>
+            <b>VibesDBService:</b> Strictly read-only connection to Vibes.app's SQLite database
+            (<code>vibes.sqlite</code>). Preloads 57 curated vibes across 6 categories, measured acoustic band levels (sub-bass, mid, high, onset density), 16-bin structural energy shapes, and phase cues for zero-latency batch classification.
+          </li>
+          <li>
+            <b>SpotifyService (Hard-Disabled):</b> Spotify Web API integration is permanently hard-disabled due to closed Web API developer quotas and 403 restrictions. Superseded by Vibes.app acoustic physics and YouTube Network Scout.
+          </li>
+          <li>
             <b>RAGService:</b> Few-shot memory layer — persists routing history to the
             <code>rag_examples</code> table in <code>cratemind.db</code> and builds context strings
             for LLM prompts.

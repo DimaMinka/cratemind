@@ -78,6 +78,8 @@ CrateMind is built on a clean service-oriented modular architecture:
 - **NetworkScoutService**: Gathers playlist context from YouTube to discover neighboring tracks in live mixes to warm the cache.
 - **RAGService**: Memory layer persisting classification history to local SQLite and building prompt contexts.
 - **EngineDBService**: Strictly read-only connection to Engine DJ SQLite database (`m.db`) using process-lifetime caching.
+- **VibesDBService**: Strictly read-only connection to Vibes.app SQLite database (`vibes.sqlite`). Preloads 57 curated vibes across 6 categories, measured acoustic band levels (sub-bass, mid, high, onset density), 16-bin structural energy shapes, and phase cues in zero-latency batch queries.
+- **SpotifyService (Hard-Disabled)**: Spotify Web API integration is permanently hard-disabled due to closed Web API developer quotas and 403 restrictions. Superseded by Vibes.app acoustic physics and YouTube Network Scout.
 - **AubioService**: Establishes tempo and key estimates on macOS.
 - **ID3Service**: Fast metadata reader (via `music-metadata`) and safe tag writer. Uses a local database metadata cache to speed up bootstrap scans.
 - **EmbeddingService**: Generates vector embeddings (`gemini-embedding-2`) and runs cosine similarity searches to match tracks.
@@ -124,6 +126,10 @@ GEMINI_API_KEY=your_gemini_api_key
 
 # Engine DJ SQLite Database Path (Optional)
 ENGINE_DB_PATH=/path/to/Engine Library/Database2/m.db
+
+# Vibes.app SQLite Database Path (Optional, defaults to ~/Library/Application Support/com.benmdg.vibes/vibes.sqlite)
+VIBES_DB_PATH=/path/to/Library/Application Support/com.benmdg.vibes/vibes.sqlite
+
 
 # YouTube Context Scout (Optional)
 YOUTUBE_API_KEY=your_youtube_api_key
