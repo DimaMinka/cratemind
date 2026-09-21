@@ -300,6 +300,19 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
           'RAG',
           `Reusing cached Gemini response -> /${fastCached.folders.join(' & /')}/${filename}`
         );
+
+        const cachedPassport = buildPassport({
+          meta,
+          vibesData
+        });
+        const cachedPassportSummary = buildPassportSummary(cachedPassport, vibesData, true);
+        const cachedPassportSummaryForPlayer = buildPassportSummary(
+          cachedPassport,
+          vibesData,
+          false
+        );
+        addLog('PASSPORT', cachedPassportSummary);
+
         states.push({
           filepath,
           filename,
@@ -317,7 +330,9 @@ async function processSingleFilepathChunk(filepaths: string[]): Promise<void> {
           scoutResult: null,
           ragHit: false,
           cacheHit: true,
-          llmResponse: fastCached
+          llmResponse: fastCached,
+          passportSummary: cachedPassportSummary,
+          passportSummaryForPlayer: cachedPassportSummaryForPlayer
         });
         continue;
       }
