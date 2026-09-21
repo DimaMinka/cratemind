@@ -37,6 +37,9 @@
   - Injects relevant sorted examples into the Gemini prompt for highly accurate, library-aligned classifications.
   - **Unlimited Storage**: The memory capacity limits have been removed, allowing CrateMind to retain all historical user classifications and confirmations indefinitely without any automatic eviction or shifting.
   - **Auto-classification tracking**: Every track automatically routed by Gemini (confidence ≥ threshold) is now saved to `rag_examples` with `source: 'auto'`, enabling accurate lifetime AI hit rate tracking.
+- **Vibes.app Acoustic & Semantic Intelligence Storage**:
+  - Connects strictly read-only to Vibes.app SQLite database (`vibes.sqlite`) to preload 57 curated vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves in 3 batch queries.
+  - Stores permanent acoustic and structural profiles in CrateMind's local `track_intelligence` SQLite table, ensuring vibe and sound characteristics persist even if tracks are moved or removed from external apps.
 - **Self-Reflective RAG (Prompt Adaptation)**:
   - Automatically learns from your manual overrides, generating inline prompt adjustments to align the LLM's classification criteria with your precise taste.
 - **Engine DJ Integration (Strictly Read-Only)**:
