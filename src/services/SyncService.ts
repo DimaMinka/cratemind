@@ -110,6 +110,7 @@ export async function sync(): Promise<void> {
     await runRsync([
       '-av',
       '--progress',
+      '--8-bit-output',
       '--ignore-existing',
       '--exclude=skipped',
       '--exclude=.DS_Store',
@@ -401,6 +402,7 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
             [
               '-av',
               '--progress',
+              '--8-bit-output',
               `--files-from=${tempTransferList}`,
               '--exclude=.DS_Store',
               '--exclude=.Spotlight*',
@@ -462,6 +464,7 @@ export async function syncDrives(customSource?: string, customDest?: string): Pr
       await runRsync([
         '-av',
         '--delete',
+        '--8-bit-output',
         '--exclude=*-journal',
         '--exclude=*.lock',
         '--exclude=.DS_Store',

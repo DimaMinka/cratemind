@@ -49,6 +49,7 @@ export async function discoverFilesToTransfer(
   return new Promise<string[]>((resolve, reject) => {
     const args = [
       '-avn',
+      '--8-bit-output',
       '--ignore-existing',
       '--exclude=skipped',
       '--exclude=.DS_Store',
