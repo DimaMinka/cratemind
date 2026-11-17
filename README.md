@@ -21,7 +21,7 @@
   - **Automatic Mix Protection**: Automatically checks audio duration and skips tracks exceeding a configurable limit (default: 20 minutes) to avoid downloading long DJ mixes or podcasts.
   - **Snippet & Preview Filter**: Skips files that fall below a minimum file size threshold (default: 10 MB for lossless formats like `.flac`, `.wav` and 3 MB for lossy formats like `.mp3`) to prevent downloading low-quality snippets or previews.
 - **Drive-to-Drive Mirror Synchronization (EngineDJ SD [Master] -> EngineDJ)**:
-  - Smart dual-drive detection when pressing `[S]` (*Sync to Collection*). When both the master SD card and the target backup drive are mounted, CrateMind offers a dedicated option `[D] Mirror SD -> EngineDJ Drive`.
+  - Smart dual-drive detection when pressing `[S]` (_Sync to Collection_). When both the master SD card and the target backup drive are mounted, CrateMind offers a dedicated option `[D] Mirror SD -> EngineDJ Drive`.
   - **4-Stage Pipeline & Telemetry**:
     - `[1/4] Checking obsolete & relocated tracks`: Performs smart relocation for tracks moved between crates (e.g., into `Atmosphere/` subcrates) directly on the target drive via instant local filesystem moves (`renameSync`), eliminating gigabytes of redundant USB transfers. Automatically scans `Removed from SD/` and recovers any active tracks back into `Music Collection/`. Only genuinely deleted tracks are archived into `Removed from SD/` with original folder structure preserved (never deleted).
     - `[2/4] Analyzing files (Dry-Run)`: Performs a quick dry-run scan to discover and count the exact number of new/modified audio tracks needing USB transfer.
@@ -62,7 +62,13 @@
   - AI accuracy is calculated over tracks actually processed by CrateMind (`auto + manual`) — bootstrap scan entries are excluded from the denominator.
 - **Automatic Log Rotation**:
   - Capped local logging size to prevent infinite disk usage. The file `cratemind.log` is automatically rotated and backed up as `cratemind.old.log` when it reaches 5MB.
-- **Native Audio Preview**:
+- **CrateMind Pocket (iOS Offline PWA & Local Mac Bridge)**:
+  - Mobile-first offline vibe sorter PWA (`pocket-web/`) paired with a lightweight local macOS `node:http` bridge daemon (`src/services/pocket/`).
+  - **Zero Cloud AI**: Strictly offline local intelligence using SQLite queries across `rag_examples`, 512-dim CLAP embeddings in `track_intelligence`, `yt_playlist_items`, and acoustic proximity (BPM/Camelot) — zero Gemini/LLM API calls.
+  - **iOS Audio & Lockscreen Engine**: Reuses a single persistent `HTMLAudioElement` across track transitions with `URL.revokeObjectURL()` cleanup and `navigator.mediaSession` lockscreen controls (-10s, +30s, play/pause, next/prev).
+  - **Offline IndexedDB Store**: Caches up to 30 tracks, manifests, audio blobs, and sorting decisions via `idb` with `navigator.storage.persist()`, plus autonomous iPhone Files import and JSON export.
+  - **Tactile DJ Pad Grid & Gestures**: 3x7 crate matrix fitting 390x844 with zero vertical scroll, multi-select tagging, 450ms long-press 1-tap routing, and swipe-left to skip.
+  - **HTTP 206 Preview Streaming & Mutual Exclusion**: Compresses preview audio via FFmpeg (128kbps AAC) with `Accept-Ranges: bytes` partial content support, and enforces HTTP 409 Conflict locks when desktop tasks (Telegram download, Vibes indexing, Drive sync, or LLM analysis) are active.
 - **Single Active Process & Universal Hotkey Interlocking**:
   - Guarantees strict mutual exclusion across all 4 major operations: Drive Mirroring / Sync (`SyncService`), Track Analysis / Gemini LLM routing (`TrackWatcher` / `TrackProcessor`), Telegram Bulk Downloader (`TelegramService`), and Vibe DB Indexing (`VibeIndexerService`).
   - When any heavy process is active (Drive Mirror, Vibe Indexing, or Telegram Download), conflicting hotkeys (`[Space]`, `[T]`, `[V]`, `[S]`, `[L]`, `[C]`) are locked, and the `BottomBar` dynamically renders a contextual status banner:
@@ -73,7 +79,6 @@
   - Automatically defers pending watcher batches and resets listener status to `paused` if analysis is toggled during an active mirror, vibe indexing, or telegram download.
 
 ---
-
 
 ## 🛠️ Technical Architecture
 
@@ -96,7 +101,86 @@ CrateMind is built on a clean service-oriented modular architecture:
   - `archiveManager`: In-memory audio file indexing, smart zero-transfer crate relocation, and automatic recovery of active tracks from `Removed from SD/`.
   - `dbRewriter`: Fast Engine DJ SQLite database path rewriting (`m.db`, `hm.db`) via `better-sqlite3`.
 - **UIService**: Manages TUI states via a Zustand state store and mounts the Ink rendering loop.
+- **Pocket Bridge Subsystem (`src/services/pocket/` & `pocket-web/`)**:
+  - `PocketBridgeService`: Lightweight `node:http` server (default port `8080` / `POCKET_PORT`) serving compiled PWA assets from `dist/pocket-web/` and REST endpoints.
+  - `pocketDbQueries` & `pocketDbUtils`: Pure SQLite + in-memory cosine similarity & Camelot harmonic matching (zero external AI).
+  - `pocketAudioPreview`: FFmpeg AAC preview cache and RFC 7233 `HTTP 206 Partial Content` byte-range streamer for iOS Safari.
+  - `pocketManifestBuilder` & `pocketCommitProcessor`: Scans up to 30 incoming tracks, validates paths/crates, enforces `useStore` mutual exclusion (409 Conflict), leaves pending/unselected tracks untouched in `Incoming/`, routes decisions via `RoutingService`, and updates `RAGService`.
 - **Process Mutual Exclusion & Concurrency Lock**: Enforces a strict single-active-process policy. Prevents resource conflicts between Drive Mirroring / Sync (`SyncService`), Track Analysis / Gemini LLM routing (`TrackWatcher` / `TrackProcessor`), Telegram downloads (`TelegramService`), and Vibe DB indexing. Dynamic hotkey interlocking (`useGlobalHotkeys`) and watcher-level concurrency locks guarantee safe single-task execution.
+
+---
+
+## 📱 CrateMind Pocket (iOS PWA & Wi-Fi Bridge)
+
+CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a flight or commute) and sync routing decisions back to your Mac over local Wi-Fi.
+
+### Bridge REST API Endpoints
+
+| Method | Endpoint         | Query / Headers                                                                                                                  | Status Codes & Behavior                                                                                                                                                                                                                                                                                                                                                                                |
+| ------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/health`    | —                                                                                                                                | `200 OK`: Returns `{ status: 'ok', uptime, incomingCount, ragCount, isBusy, activeTask }`.                                                                                                                                                                                                                                                                                                             |
+| `GET`  | `/api/batch`     | `?limit=30` (`1–30`, default `30`)<br>`&exclude=file1.mp3,file2.flac`                                                            | `200 OK`: Scans up to `limit` incoming tracks excluding any already loaded in client queue, enriched with ID3, Vibes.app 4-band/energy profiles, local SQLite RAG hints, and YT Scout neighbors (`PocketBatchManifest`). Supports cumulative batches (+30).                                                                                                                                            |
+| `GET`  | `/api/audio/:id` | `:id` = `base64url(filename)`<br>Req: `Range: bytes=start-end`<br>Res: `Accept-Ranges: bytes`, `Content-Range`, `Content-Length` | `206 Partial Content` (with `Range`) or `200 OK` (full stream) serving FFmpeg 128kbps AAC `.m4a` (`audio/mp4`) previews with original-format fallback; `400` invalid filename/traversal, `404` missing file, `416` invalid range.                                                                                                                                                                      |
+| `POST` | `/api/commit`    | Body: `{ batchId, decisions[] }` (`tagged` \| `skipped` \| `pending`)                                                            | `200 OK`: Validates tracks & crates (`21 FOLDERS` + `skipped`), routes tagged tracks, moves explicit skips to `Sorted/skipped/`, leaves `pending`/empty selections untouched in `Incoming/`, invalidates RAG cache, and adds `manual` examples. Returns `400` invalid crate/traversal/JSON, `409 Conflict` if desktop tasks (`Telegram`, `Vibes`, `Drive Sync`, `LLM`) are busy, `413` if body > 2 MB. |
+
+### PWA Views & Touch Gestures (`pocket-web/`)
+
+- **Sorter (`VibeSorterView`)**: 3x7 OLED dark DJ pad grid (54pt touch targets, iOS safe-area insets padding, natural vertical scroll), 16-segment `INTR/DRP/BRK/OUT` energy LED bar, `RAG XX%` and `YT MATCH` badges, tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
+- **Queue (`BatchQueueView`)**: Filterable queue (`All`, `Pending`, `Tagged`, `Skipped`), real-time search by title/artist/BPM/key/crate, and batch commit trigger.
+- **Inspector (`InspectorBottomSheet`)**: Displays YouTube Network Scout playlist context, 512-dim CLAP local RAG match details, 4-band spectral FFT levels, and 1-tap apply.
+- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, autonomous iPhone Files app audio import, IndexedDB storage meter, and JSON decision export.
+
+### iPhone PWA Setup & Usage
+
+1. Build the Node backend (`dist/`) and the Vite PWA bundle (`dist/pocket-web/`):
+   ```bash
+   npm run build
+   ```
+2. Start the local Wi-Fi bridge on your Mac (or boot the isolated sandbox for testing):
+   ```bash
+   npm run pocket
+   # or for isolated sandbox testing without touching ./Incoming, ./Sorted, or ./cratemind.db:
+   npm run pocket:sandbox
+   ```
+3. Connect your iPhone to the same Wi-Fi network, open the printed **Network URL** (`http://<MAC_LAN_IP>:8080`) in Safari, and tap **Share → Add to Home Screen** to install CrateMind Pocket as a full-screen standalone PWA.
+4. In the **Sync** tab, tap **Pull 30 Tracks from Mac (Wi-Fi)** to cache audio previews and metadata in IndexedDB, curate offline anywhere, then tap **Sync Sorted Tracks to Mac** when back on Wi-Fi.
+
+### Pocket CLI & Test Commands
+
+```bash
+# Build both backend TypeScript (dist/) and Vite PWA bundle (dist/pocket-web/)
+npm run build
+
+# Build only the Node.js TypeScript backend
+npm run build:node
+
+# Build only the PWA client bundle
+npm run build:pocket
+
+# Start the Mac Wi-Fi HTTP bridge daemon (port 8080 or POCKET_PORT)
+npm run pocket
+
+# Boot an isolated interactive sandbox with tagged mock WAV tracks, 21 crates, temp DB, and LAN IP banner
+npm run pocket:sandbox
+
+# Run PWA development server with /api proxy to localhost:8080
+npm run dev:pocket
+
+# Type-check the PWA client
+npm run check:pocket
+
+# Run the full 4-tier Vitest suite (backend, client, and 390x844 mobile E2E)
+npm test
+
+# Run Pocket backend unit & HTTP 206/409 integration tests
+npm run test:pocket
+
+# Run Pocket PWA client store, audio engine, and UI gesture tests
+npm run test:client
+
+# Run headless Chrome 390x844 mobile layout E2E tests
+npm run test:e2e
+```
 
 ---
 
@@ -156,6 +240,10 @@ MAX_TRACK_DURATION_MINUTES=20
 
 # Sync Destination
 SD_CARD_SYNC_PATH=/Volumes/EngineDJ SD/Music Collection/Atmosphere
+
+# CrateMind Pocket HTTP Bridge & Test Isolation (Optional)
+POCKET_PORT=8080
+# CRATEMIND_DB_PATH=/path/to/isolated-cratemind.db
 ```
 
 ### Telegram Userbot Authentication
@@ -213,7 +301,7 @@ npm start
 - **Antigravity SDK (AGY CLI) Integration**: Orchestrate autonomous multi-agent music curations. For example, let one subagent scour charts and new releases, while CrateMind acts as the local routing agent.
 - **Streaming Playlists Import (Apple Music / Spotify)**: Automatically monitor or import tracklists from Apple Music and Spotify playlist URLs. The system can scrape track names and artists from the web pages, search and download high-quality audio files using `yt-dlp` directly into the `Incoming` folder, and run the RAG-vibe classification pipeline.
 - **Local Audio ML & Vibes.app Engine Integration (Hybrid Local-First RAG)**:
-  - **Inspiration & Ecosystem Partner**: Inspired by **[Vibes](https://vibesdj.io)** (developed by DJ/producer **Ben Modigell**, aka *"so I so"*), an offline-first DJ library management suite that champions Energy-Based Mixing and local audio intelligence.
+  - **Inspiration & Ecosystem Partner**: Inspired by **[Vibes](https://vibesdj.io)** (developed by DJ/producer **Ben Modigell**, aka _"so I so"_), an offline-first DJ library management suite that champions Energy-Based Mixing and local audio intelligence.
   - **Zero-Shot Audio Embeddings (LAION-CLAP)**: Extract 512-dimensional audio embeddings directly on macOS to compare raw sound signatures against existing crate folders via cosine similarity, resolving "Unknown Artist / Track 01" files without text metadata.
   - **Structural Track Segmentation & Hot Cues**: Detect song phases (`intro`, `drop`, `verse`, `breakdown`, `outro`) using phrase boundaries (8/16 bars) and energy shifts, automatically tagging cues into Engine DJ (`PerformanceData.quickCues`).
   - **Apple Neural Engine Key & BPM**: Run hardware-accelerated musical key analysis (SKey via Apple CoreML) and downbeat tracking (Beat This!) completely offline.

@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-green: #00ff00;
+  --neon-cyan: #00ffff;
+  --neon-magenta: #ff00ff;
+  --neon-yellow: #ffff00;
+  --neon-red: #ff4444;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000000;
+  color: #e5e5e5;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100%;
+  width: 100%;
+}
+
+.safe-top-padding {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom-padding {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+#app {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-height: 750px) {
+  body {
+    overflow-y: auto;
+  }
+
+  #app {
+    height: auto !important;
+    min-height: 100dvh;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+
+  #view-sorter {
+    overflow-y: auto !important;
+  }
+}
+
+/* CRT Scanlines Overlay */
+.scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.35) 50%,
+    rgba(0, 0, 0, 0.35)
+  );
+  background-size: 100% 3px;
+  pointer-events: none;
+}
+
+/* Tactile DJ Pad & Glow Styling */
+.dj-pad {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition:
+    transform 0.05s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.dj-pad:active {
+  transform: scale(0.97);
+}
+
+.glow-yellow-active {
+  border-color: #ffff00 !important;
+  color: #ffff00 !important;
+  box-shadow:
+    0 0 12px rgba(255, 255, 0, 0.65),
+    inset 0 0 6px rgba(255, 255, 0, 0.25) !important;
+}
+
+.glow-cyan {
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.glow-green {
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+}
+
+/* Custom Scrollbar for Queue */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #404040;
+}

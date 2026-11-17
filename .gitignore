@@ -12,3 +12,5 @@ cratemind-memory.json
 m.db
 cratemind.db*
 scratch
+backups/
+.pocket-cache/

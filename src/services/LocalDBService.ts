@@ -4,41 +4,46 @@ import * as fs from 'fs';
 import { TrackIntelligenceRecord, AssignedVibe } from '../types.js';
 
 /**
- * LocalDBService.ts
- *
- * READ-WRITE connection to CrateMind's local SQLite database (cratemind.db).
- * Stores RAG few-shot examples, LLM offline cache, daily request stats,
- * and persistent YouTube playlist scout cache.
- *
- * Engine DJ database remains STRICTLY READ-ONLY in EngineDBService.ts.
+ * LocalDBService.ts - READ-WRITE connection to local SQLite database (cratemind.db).
+ * Stores RAG examples, LLM offline cache, daily request stats, and scout cache.
  */
 
 let _db: Database.Database | null = null;
-const LOCAL_DB_PATH = path.resolve('cratemind.db');
+let _exitHandlerRegistered = false;
 
-/**
- * Returns the write-enabled local SQLite database connection.
- * Automatically initializes tables on first request.
- */
+/** Resets active database connection for test isolation. */
+export function resetDBForTests(): void {
+  if (_db) {
+    try {
+      _db.close();
+    } catch {
+      /* ignore */
+    }
+    _db = null;
+  }
+}
+
+function getLocalDbPath(): string {
+  return process.env.CRATEMIND_DB_PATH
+    ? path.resolve(process.env.CRATEMIND_DB_PATH)
+    : path.resolve('cratemind.db');
+}
+
+/** Returns write-enabled local SQLite connection, initializing tables on first call. */
 export function getDB(): Database.Database {
   if (_db) return _db;
 
-  _db = new Database(LOCAL_DB_PATH, { timeout: 5000 });
+  const dbPath = getLocalDbPath();
+  _db = new Database(dbPath, { timeout: 5000 });
 
   // Enable WAL mode for high concurrency TUI updates
   _db.pragma('journal_mode = WAL');
 
   // Cleanup obsolete JSON files on startup if they exist
-  const obsoleteFiles = [
-    path.resolve('cratemind-memory.json'),
-    path.resolve('.cratemind-cache.json'),
-    path.resolve('.cratemind-stats.json')
-  ];
-  for (const file of obsoleteFiles) {
+  for (const f of ['cratemind-memory.json', '.cratemind-cache.json', '.cratemind-stats.json']) {
     try {
-      if (fs.existsSync(file)) {
-        fs.unlinkSync(file);
-      }
+      const p = path.resolve(f);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
     } catch {
       /* ignore */
     }
@@ -171,13 +176,16 @@ export function getDB(): Database.Database {
   `);
 
   // Clean exit handling
-  process.once('exit', () => {
-    try {
-      _db?.close();
-    } catch {
-      /* ignore close errors on exit */
-    }
-  });
+  if (!_exitHandlerRegistered) {
+    _exitHandlerRegistered = true;
+    process.once('exit', () => {
+      try {
+        _db?.close();
+      } catch {
+        /* ignore close errors on exit */
+      }
+    });
+  }
 
   return _db;
 }

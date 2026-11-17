@@ -611,6 +611,349 @@
       .blink {
         animation: blink 1.2s step-end infinite;
       }
+
+      /* ── CrateMind Pocket 390px OLED PWA Simulator ──────────────── */
+      .pocket-section {
+        border: 1px solid #333333;
+        border-left: 3px solid #00ff00;
+        background: #141414;
+        padding: 20px 24px;
+        border-radius: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+      }
+
+      .pocket-intro {
+        flex: 1 1 340px;
+        min-width: 280px;
+      }
+
+      .pocket-intro h2 {
+        font-size: 1.05em;
+        color: #00ff00;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 10px;
+      }
+
+      .pocket-intro p {
+        color: #aaaaaa;
+        font-size: 0.9em;
+        margin-bottom: 10px;
+        line-height: 1.5;
+      }
+
+      .pocket-intro ul {
+        padding-left: 18px;
+        color: #aaaaaa;
+        font-size: 0.88em;
+      }
+
+      .pocket-intro li {
+        margin-bottom: 6px;
+      }
+
+      .pocket-intro code {
+        background: #0d0d0d;
+        padding: 1px 5px;
+        border: 1px solid #333333;
+        color: #00ffff;
+        border-radius: 3px;
+      }
+
+      .pocket-phone {
+        width: 390px;
+        max-width: 100%;
+        height: 760px;
+        background: #000000;
+        border: 2px solid #2a2a2a;
+        border-radius: 22px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+        position: relative;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #e5e5e5;
+        flex-shrink: 0;
+      }
+
+      .pocket-telemetry {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px 6px;
+        border-bottom: 1px solid #181818;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 9px;
+      }
+
+      .pocket-badge-green {
+        background: rgba(0, 255, 0, 0.12);
+        color: #00ff00;
+        border: 1px solid rgba(0, 255, 0, 0.4);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: bold;
+      }
+
+      .pocket-badge-cyan {
+        background: rgba(0, 255, 255, 0.12);
+        color: #00ffff;
+        border: 1px solid rgba(0, 255, 255, 0.35);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: bold;
+      }
+
+      .pocket-nav {
+        position: relative;
+        z-index: 30;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        background: #141414;
+        padding: 4px;
+        margin: 4px 10px;
+        border: 1px solid #262626;
+        border-radius: 8px;
+      }
+
+      .pocket-nav-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: #a3a3a3;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 11px;
+        padding: 5px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .pocket-nav-btn.active {
+        background: #1f1f1f;
+        color: #00ff00;
+        font-weight: bold;
+        border-color: rgba(0, 255, 0, 0.5);
+      }
+
+      .pocket-view {
+        flex: 1;
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 6px 10px 10px;
+        overflow: hidden;
+      }
+
+      .pocket-view.active {
+        display: flex;
+      }
+
+      .pocket-player-card {
+        background: #121212;
+        border: 1px solid #262626;
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+
+      .pocket-led-row {
+        display: flex;
+        gap: 2px;
+        height: 22px;
+        align-items: flex-end;
+        margin: 6px 0 3px;
+      }
+
+      .pocket-led-seg {
+        flex: 1;
+        border-radius: 2px;
+      }
+
+      .pocket-led-labels {
+        display: flex;
+        justify-content: space-between;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 8px;
+        color: #737373;
+        margin-bottom: 4px;
+      }
+
+      .pocket-pad-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        margin: 6px 0;
+      }
+
+      .pocket-pad {
+        background: #141414;
+        border: 1px solid #262626;
+        border-left: 3px solid #38bdf8;
+        border-radius: 6px;
+        min-height: 44px;
+        padding: 4px 6px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-align: left;
+        color: #e5e5e5;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .pocket-pad.selected {
+        border-color: #ffff00;
+        border-left-color: #ffff00;
+        color: #ffff00;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(255, 255, 0, 0.45);
+      }
+
+      .pocket-pad-tag {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 8px;
+        font-weight: bold;
+        padding: 0 3px;
+        border-radius: 2px;
+        display: inline-block;
+        width: fit-content;
+      }
+
+      .pocket-action-bar {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 6px;
+      }
+
+      .pocket-btn-skip {
+        background: #171717;
+        border: 1px solid #333;
+        color: #ff6666;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .pocket-btn-route {
+        background: #00ff00;
+        border: none;
+        color: #000000;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .pocket-queue-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 6px 0;
+      }
+
+      .pocket-queue-item {
+        background: #121212;
+        border: 1px solid #262626;
+        border-radius: 8px;
+        padding: 7px 9px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pocket-card-box {
+        background: #121212;
+        border: 1px solid #262626;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+
+      .pocket-fft-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        text-align: center;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 10px;
+      }
+
+      .pocket-fft-col {
+        height: 54px;
+        background: #090909;
+        border-radius: 4px;
+        display: flex;
+        align-items: flex-end;
+        padding: 2px;
+      }
+
+      .pocket-inspector-sheet {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.82);
+        display: none;
+        align-items: flex-end;
+        z-index: 20;
+      }
+
+      .pocket-inspector-sheet.open {
+        display: flex;
+      }
+
+      .pocket-inspector-panel {
+        width: 100%;
+        max-height: 90%;
+        background: #0b0b0b;
+        border-top: 1px solid #333;
+        border-radius: 16px 16px 0 0;
+        padding: 12px;
+        overflow-y: auto;
+      }
+
+      .pocket-api-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0 14px;
+        font-size: 0.85em;
+      }
+
+      .pocket-api-table th,
+      .pocket-api-table td {
+        border: 1px solid #333333;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .pocket-api-table th {
+        background: #111111;
+        color: #00ffff;
+      }
+
+      .pocket-cmd-pre {
+        background: #0d0d0d;
+        border: 1px solid #333333;
+        padding: 10px 12px;
+        border-radius: 4px;
+        color: #00ff00;
+        font-size: 0.84em;
+        overflow-x: auto;
+        margin: 8px 0 14px;
+        line-height: 1.5;
+      }
     </style>
   </head>
 
@@ -637,6 +980,12 @@
           CrateMind operates on a <b>user-first, semi-automatic</b> principle: the system suggests,
           the user decides. Every action touching your collection requires explicit confirmation.
         </p>
+        <p>
+          Need to curate away from your desk? <b>CrateMind Pocket</b> extends the workspace to your
+          iPhone via a zero-Cloud-AI offline PWA (<code>pocket-web/</code>) and local macOS Wi-Fi
+          HTTP bridge (<code>src/services/pocket/</code>), caching up to 30 compressed AAC track
+          previews in IndexedDB and syncing verified crate decisions back over local Wi-Fi.
+        </p>
       </section>
 
       <!-- ── Optimization & Spend ───────────────────────────────────── -->
@@ -656,10 +1005,15 @@
         </p>
         <ul>
           <li>
-            <b>Vibes.app Acoustic & Semantic Blueprint:</b> Preloads 57 vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves from <code>vibes.sqlite</code>, persisting permanent profiles to local <code>track_intelligence</code>.
+            <b>Vibes.app Acoustic & Semantic Blueprint:</b> Preloads 57 vibes across 6 categories,
+            spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy
+            curves from <code>vibes.sqlite</code>, persisting permanent profiles to local
+            <code>track_intelligence</code>.
           </li>
           <li>
-            <b>2-Tier Local YouTube Network Scout:</b> Eliminates YouTube API quota burn via indexed exact matching on <code>yt_playlist_items(artist, title)</code> and token overlap fuzzy matching (≥ 0.85 Jaccard similarity) before triggering network requests.
+            <b>2-Tier Local YouTube Network Scout:</b> Eliminates YouTube API quota burn via indexed
+            exact matching on <code>yt_playlist_items(artist, title)</code> and token overlap fuzzy
+            matching (≥ 0.85 Jaccard similarity) before triggering network requests.
           </li>
           <li>
             <b>SHA-256 Context-Aware Cache:</b> Offlines LLM responses using deterministic hashing
@@ -703,17 +1057,14 @@
 
         <!-- Stats row -->
         <div class="tui-stats-row">
-          Errors: <span class="err">0</span> &nbsp;
-          <span class="sep">|</span> &nbsp;
-          Incoming: <span class="val" style="color: #ffff00">66</span> &nbsp;
-          <span class="sep">|</span> &nbsp;
-          Sorted: <span class="val">1302</span> &nbsp;
-          AI: <span class="val" style="color: #00ff00">28</span>
-          <span style="color: #ffff00">(20%)</span> &nbsp;
-          Manual: <span class="val" style="color: #ffff00">111</span> &nbsp;
-          <span class="sep">|</span> &nbsp;
-          API Today: <span class="val">0/50</span> &nbsp;
-          Cache: <span class="val" style="color: #00ff00">162</span>
+          Errors: <span class="err">0</span> &nbsp; <span class="sep">|</span> &nbsp; Incoming:
+          <span class="val" style="color: #ffff00">66</span> &nbsp;
+          <span class="sep">|</span> &nbsp; Sorted: <span class="val">1302</span> &nbsp; AI:
+          <span class="val" style="color: #00ff00">28</span>
+          <span style="color: #ffff00">(20%)</span> &nbsp; Manual:
+          <span class="val" style="color: #ffff00">111</span> &nbsp;
+          <span class="sep">|</span> &nbsp; API Today: <span class="val">0/50</span> &nbsp; Cache:
+          <span class="val" style="color: #00ff00">162</span>
         </div>
 
         <!-- Two-panel area -->
@@ -841,6 +1192,611 @@
         </div>
       </main>
 
+      <!-- ── CrateMind Pocket 390px OLED PWA Simulator ────────────────── -->
+      <section class="pocket-section" aria-label="CrateMind Pocket iOS PWA Simulator">
+        <div class="pocket-phone" id="pocket-simulator">
+          <div>
+            <div class="pocket-telemetry">
+              <div>
+                <span style="color: #00ff00; font-weight: bold">★ CRATEMIND POCKET</span>
+                <span class="pocket-badge-green">12 / 30 SORTED</span>
+              </div>
+              <div>
+                <span style="color: #a3a3a3">OFFLINE • 48 MB</span>
+                <span class="pocket-badge-cyan">RAG: 574</span>
+              </div>
+            </div>
+
+            <nav class="pocket-nav" aria-label="Pocket Simulator Tabs">
+              <button type="button" class="pocket-nav-btn active" data-pocket-tab="sorter">
+                Sorter
+              </button>
+              <button type="button" class="pocket-nav-btn" data-pocket-tab="queue">
+                Queue (30)
+              </button>
+              <button type="button" class="pocket-nav-btn" data-pocket-tab="inspector">
+                Inspector
+              </button>
+              <button type="button" class="pocket-nav-btn" data-pocket-tab="sync">Sync</button>
+            </nav>
+          </div>
+
+          <!-- Screen 1: Sorter (VibeSorterView) -->
+          <div class="pocket-view active" id="pocket-view-sorter">
+            <div class="pocket-player-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start">
+                <div>
+                  <div style="font-size: 13px; font-weight: bold; color: #ffffff">Strand</div>
+                  <div style="font-size: 11px; color: #a3a3a3">Stephan Bodzin</div>
+                </div>
+                <button
+                  type="button"
+                  id="pocket-open-inspector-btn"
+                  style="
+                    background: #1f1f1f;
+                    border: 1px solid rgba(0, 255, 255, 0.45);
+                    color: #00ffff;
+                    font-family: 'Courier New', monospace;
+                    font-size: 10px;
+                    font-weight: bold;
+                    padding: 3px 7px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                  "
+                >
+                  INFO
+                </button>
+              </div>
+              <div
+                style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; font-size: 9px"
+              >
+                <span style="background: #262626; padding: 1px 5px; border-radius: 3px"
+                  >124 BPM</span
+                >
+                <span
+                  style="
+                    background: #262626;
+                    color: #ffff00;
+                    border: 1px solid rgba(255, 255, 0, 0.35);
+                    padding: 1px 5px;
+                    border-radius: 3px;
+                  "
+                  >4A</span
+                >
+                <span
+                  style="
+                    background: rgba(0, 255, 255, 0.1);
+                    color: #00ffff;
+                    border: 1px solid rgba(0, 255, 255, 0.3);
+                    padding: 1px 5px;
+                    border-radius: 3px;
+                  "
+                  >YT SCOUT: Cercle Desert Mix</span
+                >
+              </div>
+
+              <div class="pocket-led-row" aria-label="16-segment energy waveform">
+                <div class="pocket-led-seg" style="height: 30%; background: #00ff00"></div>
+                <div class="pocket-led-seg" style="height: 45%; background: #00ff00"></div>
+                <div class="pocket-led-seg" style="height: 50%; background: #00ff00"></div>
+                <div class="pocket-led-seg" style="height: 55%; background: #00ff00"></div>
+                <div class="pocket-led-seg" style="height: 80%; background: #00ffff"></div>
+                <div class="pocket-led-seg" style="height: 95%; background: #00ffff"></div>
+                <div class="pocket-led-seg" style="height: 100%; background: #00ffff"></div>
+                <div class="pocket-led-seg" style="height: 85%; background: #00ffff"></div>
+                <div class="pocket-led-seg" style="height: 40%; background: #ffff00"></div>
+                <div class="pocket-led-seg" style="height: 35%; background: #ffff00"></div>
+                <div class="pocket-led-seg" style="height: 60%; background: #ffff00"></div>
+                <div class="pocket-led-seg" style="height: 90%; background: #ffff00"></div>
+                <div class="pocket-led-seg" style="height: 75%; background: #525252"></div>
+                <div class="pocket-led-seg" style="height: 55%; background: #525252"></div>
+                <div class="pocket-led-seg" style="height: 40%; background: #525252"></div>
+                <div class="pocket-led-seg" style="height: 25%; background: #525252"></div>
+              </div>
+              <div class="pocket-led-labels">
+                <span>INTR</span><span>DRP</span><span>BRK</span><span>OUT</span>
+              </div>
+
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  font-family: 'Courier New', monospace;
+                  font-size: 10px;
+                "
+              >
+                <div style="display: flex; gap: 5px">
+                  <span
+                    style="
+                      background: #1f1f1f;
+                      border: 1px solid #333;
+                      padding: 2px 6px;
+                      border-radius: 3px;
+                    "
+                    >-10s</span
+                  >
+                  <span
+                    style="
+                      background: #00ff00;
+                      color: #000;
+                      font-weight: bold;
+                      padding: 2px 8px;
+                      border-radius: 3px;
+                    "
+                    >PLAYING</span
+                  >
+                  <span
+                    style="
+                      background: #1f1f1f;
+                      border: 1px solid #333;
+                      padding: 2px 6px;
+                      border-radius: 3px;
+                    "
+                    >+30s</span
+                  >
+                </div>
+                <span style="color: #a3a3a3">01:14 / 03:40</span>
+              </div>
+            </div>
+
+            <!-- 3x7 Pad Grid (21 Crates) -->
+            <div class="pocket-pad-grid" id="pocket-pad-grid">
+              <button type="button" class="pocket-pad" style="border-left-color: #f59e0b">
+                <span>mountain sunset</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #10b981">
+                <span>magic forest</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #f97316">
+                <span>nargila vibe</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #ec4899">
+                <span>club party</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #eab308">
+                <span>new day vibe</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #14b8a6">
+                <span>tropical vibe</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #06b6d4">
+                <span>beach party</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #84cc16">
+                <span>earth</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #38bdf8">
+                <span>iceland</span>
+                <span class="pocket-pad-tag" style="background: #ff00ff; color: #fff"
+                  >YT MATCH</span
+                >
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #f59e0b">
+                <span>desert vibe</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #ef4444">
+                <span>spain vibe</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #22c55e">
+                <span>india jungle</span>
+              </button>
+              <button type="button" class="pocket-pad selected" style="border-left-color: #a855f7">
+                <span>galaxy trip</span>
+                <span class="pocket-pad-tag" style="background: #00ffff; color: #000">RAG 94%</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #d946ef">
+                <span>psy</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #6366f1">
+                <span>epic</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #8b5cf6">
+                <span>mantra</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #f43f5e">
+                <span>drum 'n' bass</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #fb923c">
+                <span>retro</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #64748b">
+                <span>robotic</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #dc2626">
+                <span>rock</span>
+              </button>
+              <button type="button" class="pocket-pad" style="border-left-color: #94a3b8">
+                <span>intro outro</span>
+              </button>
+            </div>
+
+            <div class="pocket-action-bar">
+              <button type="button" class="pocket-btn-skip">← Skip</button>
+              <button type="button" class="pocket-btn-route" id="pocket-route-btn">
+                Route (1 selected) →
+              </button>
+            </div>
+          </div>
+
+          <!-- Screen 2: Queue (BatchQueueView) -->
+          <div class="pocket-view" id="pocket-view-queue">
+            <div>
+              <input
+                type="text"
+                readonly
+                value="124 BPM"
+                aria-label="Queue search filter preview"
+                style="
+                  width: 100%;
+                  background: #171717;
+                  border: 1px solid #262626;
+                  border-radius: 6px;
+                  padding: 6px 9px;
+                  color: #d4d4d4;
+                  font-size: 11px;
+                  margin-bottom: 6px;
+                "
+              />
+              <div style="display: flex; gap: 4px; font-size: 10px; font-family: monospace">
+                <span
+                  style="
+                    background: #262626;
+                    color: #00ffff;
+                    border: 1px solid rgba(0, 255, 255, 0.4);
+                    padding: 2px 7px;
+                    border-radius: 99px;
+                  "
+                  >All (30)</span
+                >
+                <span
+                  style="background: #171717; color: #a3a3a3; padding: 2px 7px; border-radius: 99px"
+                  >Pending (18)</span
+                >
+                <span
+                  style="background: #171717; color: #a3a3a3; padding: 2px 7px; border-radius: 99px"
+                  >Tagged (10)</span
+                >
+                <span
+                  style="background: #171717; color: #a3a3a3; padding: 2px 7px; border-radius: 99px"
+                  >Skipped (2)</span
+                >
+              </div>
+            </div>
+
+            <div class="pocket-queue-list">
+              <div class="pocket-queue-item" style="border-color: rgba(0, 255, 255, 0.45)">
+                <div>
+                  <div style="font-size: 11px; font-weight: bold">
+                    <span class="pocket-badge-cyan">PENDING</span> Strand
+                  </div>
+                  <div style="font-size: 10px; color: #a3a3a3; margin-top: 2px">
+                    Stephan Bodzin • 124 BPM <span style="color: #ffff00">[4A]</span>
+                  </div>
+                  <div style="font-size: 9px; color: #00ffff; margin-top: 2px">
+                    galaxy trip (RAG 94%) • iceland (YT)
+                  </div>
+                </div>
+                <span style="color: #00ffff; font-size: 10px; font-family: monospace">INFO</span>
+              </div>
+
+              <div class="pocket-queue-item">
+                <div>
+                  <div style="font-size: 11px; font-weight: bold">
+                    <span class="pocket-badge-green">TAGGED</span> Desert Nomad
+                  </div>
+                  <div style="font-size: 10px; color: #a3a3a3; margin-top: 2px">
+                    Bedouin • 121 BPM <span style="color: #ffff00">[8A]</span>
+                  </div>
+                  <div style="font-size: 9px; color: #ffff00; margin-top: 2px">
+                    desert vibe, nargila vibe
+                  </div>
+                </div>
+                <span style="color: #00ff00; font-size: 10px; font-family: monospace">✓</span>
+              </div>
+
+              <div class="pocket-queue-item">
+                <div>
+                  <div style="font-size: 11px; font-weight: bold">
+                    <span class="pocket-badge-cyan">PENDING</span> Shun
+                  </div>
+                  <div style="font-size: 10px; color: #a3a3a3; margin-top: 2px">
+                    Recondite • 125 BPM <span style="color: #ffff00">[9A]</span>
+                  </div>
+                  <div style="font-size: 9px; color: #a3a3a3; margin-top: 2px">
+                    iceland (Acoustic 68%)
+                  </div>
+                </div>
+                <span style="color: #00ffff; font-size: 10px; font-family: monospace">INFO</span>
+              </div>
+
+              <div class="pocket-queue-item">
+                <div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      font-weight: bold;
+                      text-decoration: line-through;
+                      color: #737373;
+                    "
+                  >
+                    <span style="color: #ff4444">SKIPPED</span> Untitled Loop 04
+                  </div>
+                  <div style="font-size: 10px; color: #737373; margin-top: 2px">
+                    Unknown • RAW AUDIO • MANUAL
+                  </div>
+                </div>
+                <span style="color: #ff4444; font-size: 10px; font-family: monospace">✕</span>
+              </div>
+            </div>
+
+            <button type="button" class="pocket-btn-route" style="width: 100%">
+              Commit 12 to Mac
+            </button>
+          </div>
+
+          <!-- Screen 3: Sync (SyncBridgeView) -->
+          <div
+            class="pocket-view"
+            id="pocket-view-sync"
+            style="justify-content: flex-start; overflow-y: auto"
+          >
+            <div style="border-bottom: 1px solid #262626; padding-bottom: 6px; margin-bottom: 8px">
+              <div style="font-size: 12px; font-weight: bold">SYNC &amp; LOCAL STORAGE</div>
+              <div style="font-size: 10px; color: #a3a3a3">
+                Wi-Fi Daemon Bridge &amp; Offline Persistence
+              </div>
+            </div>
+
+            <div class="pocket-card-box">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
+                <b style="font-size: 11px">Local Wi-Fi Bridge</b>
+                <span class="pocket-badge-green">ONLINE</span>
+              </div>
+              <p style="font-size: 10px; color: #a3a3a3; margin-bottom: 6px">
+                Fetch incoming unorganized tracks over local Wi-Fi (no Cloud AI).
+              </p>
+              <div
+                style="
+                  background: #1f1f1f;
+                  border: 1px solid rgba(0, 255, 255, 0.4);
+                  color: #00ffff;
+                  text-align: center;
+                  padding: 6px;
+                  border-radius: 5px;
+                  font-size: 11px;
+                  font-weight: bold;
+                "
+              >
+                Pull 30 Tracks from Mac (Wi-Fi)
+              </div>
+            </div>
+
+            <div class="pocket-card-box">
+              <b style="font-size: 11px; display: block; margin-bottom: 3px"
+                >Autonomous Files Import</b
+              >
+              <p style="font-size: 10px; color: #a3a3a3; margin-bottom: 6px">
+                Curate completely offline from iPhone Files app without Mac.
+              </p>
+              <div
+                style="
+                  background: #1f1f1f;
+                  border: 1px solid #333;
+                  text-align: center;
+                  padding: 6px;
+                  border-radius: 5px;
+                  font-size: 11px;
+                "
+              >
+                Import Audio from iPhone Files
+              </div>
+            </div>
+
+            <div class="pocket-card-box">
+              <div style="display: flex; justify-content: space-between; font-size: 10px">
+                <b>iPhone Offline Storage</b>
+                <span style="color: #a3a3a3">48.2 MB / 5.00 GB</span>
+              </div>
+              <div
+                style="
+                  height: 6px;
+                  background: #050505;
+                  border: 1px solid #262626;
+                  border-radius: 99px;
+                  margin: 6px 0;
+                  overflow: hidden;
+                "
+              >
+                <div style="width: 14%; height: 100%; background: #00ff00"></div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-size: 9px;
+                  color: #a3a3a3;
+                "
+              >
+                <span>Active Tracks: 30</span>
+                <span>Storage: PERSISTED</span>
+              </div>
+            </div>
+
+            <div class="pocket-card-box" style="margin-bottom: 0">
+              <div class="pocket-btn-route" style="text-align: center; margin-bottom: 6px">
+                Sync 12 Sorted Tracks to Mac
+              </div>
+              <div
+                style="
+                  background: #171717;
+                  border: 1px solid #333;
+                  text-align: center;
+                  padding: 6px;
+                  border-radius: 5px;
+                  font-size: 10px;
+                  color: #d4d4d4;
+                "
+              >
+                Export Decisions as JSON
+              </div>
+            </div>
+          </div>
+
+          <!-- Screen 4: Inspector (InspectorBottomSheet) -->
+          <div class="pocket-inspector-sheet" id="pocket-inspector-sheet">
+            <div class="pocket-inspector-panel">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-start;
+                  border-bottom: 1px solid #262626;
+                  padding-bottom: 6px;
+                  margin-bottom: 8px;
+                "
+              >
+                <div>
+                  <div style="font-size: 9px; color: #00ffff; font-family: monospace">
+                    ACOUSTIC &amp; VECTOR INSPECTOR
+                  </div>
+                  <div style="font-size: 13px; font-weight: bold">Stephan Bodzin - Strand</div>
+                </div>
+                <button
+                  type="button"
+                  id="pocket-close-inspector-btn"
+                  aria-label="Close inspector"
+                  style="
+                    background: #171717;
+                    border: 1px solid #333;
+                    color: #e5e5e5;
+                    padding: 2px 7px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                  "
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div class="pocket-card-box">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
+                  <span style="font-size: 9px; color: #00ffff; font-weight: bold"
+                    >YOUTUBE NETWORK SCOUT</span
+                  >
+                  <span style="font-size: 9px; color: #ff00ff; font-weight: bold">iceland</span>
+                </div>
+                <div style="font-size: 10px; color: #d4d4d4">
+                  Matched Set: Cercle Desert Sunset Mix 2026
+                </div>
+                <div style="font-size: 9px; color: #a3a3a3; margin-top: 3px">
+                  #1 Innellea - Vigilance • #2 Colyn - Resolve -&gt; magic forest
+                </div>
+              </div>
+
+              <div class="pocket-card-box">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
+                  <span style="font-size: 9px; color: #00ff00; font-weight: bold"
+                    >FEW-SHOT RAG (VECTOR DB)</span
+                  >
+                  <span class="pocket-badge-green">galaxy trip (94%)</span>
+                </div>
+                <div style="font-size: 10px; color: #e5e5e5">Stephan Bodzin - Powers of Ten</div>
+                <div style="font-size: 9px; color: #a3a3a3">Cosine 0.94 -&gt; galaxy trip</div>
+              </div>
+
+              <div class="pocket-card-box">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px">
+                  <span style="font-size: 9px; color: #ffff00; font-weight: bold"
+                    >SPECTRAL FFT PROFILE</span
+                  >
+                  <span style="font-size: 9px; color: #737373">4-Band Live Analysis</span>
+                </div>
+                <div class="pocket-fft-grid">
+                  <div>
+                    <div class="pocket-fft-col">
+                      <div style="width: 100%; height: 78%; background: #00ff00"></div>
+                    </div>
+                    <div>Sub</div>
+                  </div>
+                  <div>
+                    <div class="pocket-fft-col">
+                      <div style="width: 100%; height: 64%; background: #00ffff"></div>
+                    </div>
+                    <div>Mid</div>
+                  </div>
+                  <div>
+                    <div class="pocket-fft-col">
+                      <div style="width: 100%; height: 52%; background: #ffff00"></div>
+                    </div>
+                    <div>High</div>
+                  </div>
+                  <div>
+                    <div class="pocket-fft-col">
+                      <div style="width: 100%; height: 70%; background: #ff4444"></div>
+                    </div>
+                    <div>Onset</div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                id="pocket-apply-inspector-btn"
+                style="
+                  width: 100%;
+                  background: #00ffff;
+                  color: #000;
+                  border: none;
+                  border-radius: 6px;
+                  padding: 8px;
+                  font-family: monospace;
+                  font-size: 11px;
+                  font-weight: bold;
+                  cursor: pointer;
+                "
+              >
+                Apply RAG + YT Matches (galaxy trip, iceland)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pocket-intro">
+          <h2>CrateMind Pocket — 390px OLED iOS PWA Simulator</h2>
+          <p>
+            Click the <b>Sorter</b>, <b>Queue (30)</b>, <b>Inspector</b>, and <b>Sync</b> tabs in
+            the phone frame to preview all four Stitch mobile views, or tap crate pads in the
+            3&times;7 matrix to toggle multi-select glow.
+          </p>
+          <ul>
+            <li>
+              <b>VibeSorterView:</b> 21 tactile DJ pads (54pt height) fitting 390&times;844 without
+              vertical scroll, 16-segment <code>INTR/DRP/BRK/OUT</code> LED bar, 450ms long-press
+              1-tap route, and swipe-left skip.
+            </li>
+            <li>
+              <b>BatchQueueView:</b> Filterable 30-track queue (<code>All</code>,
+              <code>Pending</code>, <code>Tagged</code>, <code>Skipped</code>), instant search by
+              artist/BPM/Key/crate, and sticky Mac commit action.
+            </li>
+            <li>
+              <b>InspectorBottomSheet:</b> Local SQLite YouTube Scout neighbors, 512-dim CLAP cosine
+              matches, Vibes.app 4-band spectral FFT profile, and 1-tap apply.
+            </li>
+            <li>
+              <b>SyncBridgeView:</b> Local Wi-Fi pull/commit, autonomous iPhone Files import,
+              IndexedDB storage meter (<code>navigator.storage.persist()</code>), and JSON export.
+            </li>
+            <li>
+              <b>Zero Cloud AI &amp; Persistent Audio:</b> Never calls Gemini or external embedding
+              APIs; reuses one persistent <code>HTMLAudioElement</code> with
+              <code>navigator.mediaSession</code> lockscreen controls.
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <!-- ── Details ───────────────────────────────────────────────── -->
       <section class="about-box" aria-label="Technical Details">
         <h2>Technical Architecture:</h2>
@@ -878,10 +1834,14 @@
           </li>
           <li>
             <b>VibesDBService:</b> Strictly read-only connection to Vibes.app's SQLite database
-            (<code>vibes.sqlite</code>). Preloads 57 curated vibes across 6 categories, measured acoustic band levels (sub-bass, mid, high, onset density), 16-bin structural energy shapes, and phase cues for zero-latency batch classification.
+            (<code>vibes.sqlite</code>). Preloads 57 curated vibes across 6 categories, measured
+            acoustic band levels (sub-bass, mid, high, onset density), 16-bin structural energy
+            shapes, and phase cues for zero-latency batch classification.
           </li>
           <li>
-            <b>SpotifyService (Hard-Disabled):</b> Spotify Web API integration is permanently hard-disabled due to closed Web API developer quotas and 403 restrictions. Superseded by Vibes.app acoustic physics and YouTube Network Scout.
+            <b>SpotifyService (Hard-Disabled):</b> Spotify Web API integration is permanently
+            hard-disabled due to closed Web API developer quotas and 403 restrictions. Superseded by
+            Vibes.app acoustic physics and YouTube Network Scout.
           </li>
           <li>
             <b>RAGService:</b> Few-shot memory layer — persists routing history to the
@@ -909,15 +1869,147 @@
           </li>
           <li><b>UIService:</b> Custom Ink 4 components bound to a Zustand state store.</li>
           <li>
-            <b>SyncService &amp; Modular Sync Subsystem:</b> Orchestrates collection sync and full Drive-to-Drive Mirror operations with a clean modular design in <code>src/services/sync/</code>:
-            <code>rsyncRunner</code> (line-buffered stdout telemetry, dry-run discovery, audio counting),
-            <code>archiveManager</code> (in-memory audio file indexing, smart track relocation across reorganized crates, and active track recovery from <code>Removed from SD/</code>), and
-            <code>dbRewriter</code> (Engine DJ SQLite database absolute path updates via <code>better-sqlite3</code>).
+            <b>SyncService &amp; Modular Sync Subsystem:</b> Orchestrates collection sync and full
+            Drive-to-Drive Mirror operations with a clean modular design in
+            <code>src/services/sync/</code>: <code>rsyncRunner</code> (line-buffered stdout
+            telemetry, dry-run discovery, audio counting), <code>archiveManager</code> (in-memory
+            audio file indexing, smart track relocation across reorganized crates, and active track
+            recovery from <code>Removed from SD/</code>), and <code>dbRewriter</code> (Engine DJ
+            SQLite database absolute path updates via <code>better-sqlite3</code>).
           </li>
           <li>
-            <b>Universal Process Mutual Exclusion:</b> Enforces strict single-process isolation across all 4 major operations: Drive Mirroring / Sync, Track Analysis (Gemini LLM routing), Telegram Bulk Downloader, and Vibe DB Indexing. Dynamic hotkey interlocking (<code>useGlobalHotkeys</code>) blocks conflicting keystrokes whenever any heavy background task is running, while service-level pre-flight guards and watcher locks (<code>TrackWatcher</code>) automatically defer pending batches and ensure zero resource contention.
+            <b>Universal Process Mutual Exclusion:</b> Enforces strict single-process isolation
+            across all 4 major operations: Drive Mirroring / Sync, Track Analysis (Gemini LLM
+            routing), Telegram Bulk Downloader, and Vibe DB Indexing. Dynamic hotkey interlocking
+            (<code>useGlobalHotkeys</code>) blocks conflicting keystrokes whenever any heavy
+            background task is running, while service-level pre-flight guards and watcher locks
+            (<code>TrackWatcher</code>) automatically defer pending batches and ensure zero resource
+            contention.
+          </li>
+          <li>
+            <b
+              >CrateMind Pocket Bridge &amp; iOS PWA (<code>src/services/pocket/</code> &amp;
+              <code>pocket-web/</code>):</b
+            >
+            Lightweight <code>node:http</code> Wi-Fi bridge (port <code>8080</code>) serving a
+            compiled Vite/React/Tailwind offline PWA from <code>dist/pocket-web/</code>. Provides
+            <code>GET /api/health</code>, <code>GET /api/batch</code> (up to 30 tracks),
+            <code>GET /api/audio/:id</code> (FFmpeg AAC preview cache with
+            <code>HTTP 206 Partial Content</code> byte-range streaming), and
+            <code>POST /api/commit</code> (409 mutual exclusion lock, path traversal protection,
+            safe manual override, and RAG cache invalidation). Computes hints strictly via local
+            SQLite (<code>rag_examples</code>, 512-dim CLAP embeddings,
+            <code>yt_playlist_items</code>) with zero Cloud AI calls.
           </li>
         </ul>
+
+        <h2>CrateMind Pocket (Mobile Offline Curation):</h2>
+        <ul>
+          <li>
+            <b>3x7 Tactile DJ Pad Console:</b> OLED dark mobile layout engineered for 390&times;844
+            viewports with zero vertical scrolling, 54pt crate pads, 16-segment
+            <code>INTR/DRP/BRK/OUT</code> energy waveform bar, and neon <code>RAG XX%</code> /
+            <code>YT MATCH</code> badges.
+          </li>
+          <li>
+            <b>One-Handed DJ Gestures:</b> Tap pads for multi-select routing, hold any pad for
+            <b>450ms</b> (long-press with haptic feedback) for 1-tap instant routing, or
+            <b>swipe left</b> to skip tracks.
+          </li>
+          <li>
+            <b>iOS Persistent Audio &amp; IndexedDB Offline Store:</b> Reuses a single persistent
+            <code>HTMLAudioElement</code> across transitions with
+            <code>URL.revokeObjectURL()</code> cleanup and
+            <code>navigator.mediaSession</code> lockscreen controls, persisting batches, decisions,
+            and audio blobs offline via <code>idb</code> (<code>navigator.storage.persist()</code>)
+            plus autonomous iPhone Files import.
+          </li>
+          <li>
+            <b>4 Dedicated Mobile Views:</b> <code>VibeSorterView</code> (pad matrix),
+            <code>BatchQueueView</code> (filterable 30-track list &amp; search),
+            <code>InspectorBottomSheet</code> (YT Scout, local CLAP RAG, 4-band spectral FFT
+            profile), and <code>SyncBridgeView</code> (Wi-Fi pull/commit, Files import, storage
+            meter, JSON export).
+          </li>
+          <li>
+            <b>iPhone Setup &amp; Environment Variables:</b> Run <code>npm run build</code> then
+            <code>npm run pocket</code> (or <code>npm run pocket:sandbox</code>), open the printed
+            LAN URL on iPhone Safari, and tap <b>Share &rarr; Add to Home Screen</b>. Optional
+            overrides: <code>POCKET_PORT</code> (default <code>8080</code>) and
+            <code>CRATEMIND_DB_PATH</code> (test DB isolation).
+          </li>
+        </ul>
+
+        <table class="pocket-api-table" aria-label="CrateMind Pocket REST API Specification">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Query / Headers</th>
+              <th>Status Codes &amp; Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>GET</code></td>
+              <td><code>/api/health</code></td>
+              <td>&mdash;</td>
+              <td>
+                <code>200 OK</code>: Bridge uptime, <code>incomingCount</code>,
+                <code>ragCount</code>, <code>isBusy</code>, <code>activeTask</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GET</code></td>
+              <td><code>/api/batch</code></td>
+              <td><code>?limit=30</code> (1&ndash;30)</td>
+              <td>
+                <code>200 OK</code>: Up to 30 tracks enriched with ID3, Vibes 4-band/energy curves,
+                local SQLite RAG hints, and YT Scout neighbors.
+              </td>
+            </tr>
+            <tr>
+              <td><code>GET</code></td>
+              <td><code>/api/audio/:id</code></td>
+              <td>
+                <code>:id</code> = <code>base64url(filename)</code><br /><code
+                  >Range: bytes=start-end</code
+                ><br /><code>Accept-Ranges: bytes</code>, <code>Content-Range</code>,
+                <code>Content-Length</code>
+              </td>
+              <td>
+                <code>206 Partial Content</code> (with <code>Range</code>) or
+                <code>200 OK</code> serving FFmpeg 128kbps AAC <code>.m4a</code> previews
+                (original-format fallback); <code>400</code> traversal, <code>404</code> missing,
+                <code>416</code> bad range.
+              </td>
+            </tr>
+            <tr>
+              <td><code>POST</code></td>
+              <td><code>/api/commit</code></td>
+              <td>JSON <code>{ batchId, decisions[] }</code></td>
+              <td>
+                <code>200 OK</code>: Routes tagged files, moves skips to
+                <code>Sorted/skipped/</code>, leaves pending/empty untouched in
+                <code>Incoming/</code>, invalidates RAG cache. Returns <code>400</code> invalid
+                crate/JSON, <code>409 Conflict</code> if desktop task busy, <code>413</code> &gt; 2
+                MB.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- prettier-ignore -->
+        <pre class="pocket-cmd-pre">
+npm run build          # Compile Node backend (dist/) + Vite PWA bundle (dist/pocket-web/)
+npm run build:node     # Compile only Node TypeScript backend
+npm run build:pocket   # Build only Vite PWA client bundle
+npm run pocket         # Start Mac Wi-Fi HTTP bridge daemon (port 8080 or POCKET_PORT)
+npm run pocket:sandbox # Boot isolated sandbox with tagged mock WAVs, 21 crates &amp; LAN IP banner
+npm test               # Run full 4-tier Vitest suite (backend, client, 390x844 E2E)
+npm run test:pocket    # Run Pocket backend unit &amp; HTTP 206/409 integration tests
+npm run test:client    # Run Pocket PWA IndexedDB, audio engine &amp; UI tests
+npm run test:e2e       # Run headless Chrome 390x844 mobile viewport E2E tests</pre>
 
         <h2>Key Features:</h2>
         <ul>
@@ -927,32 +2019,62 @@
             using GramJS userbot credentials. Features built-in duplicate detection checking local
             Incoming files, Sorted folders, and the Engine DJ DB before downloading. Integrates with
             file watcher buffering to wait for a full <code>BATCH_SIZE</code> chunk of tracks before
-            starting analysis, optimizing Gemini API limits. Supports a dedicated interactive **Download-Only Mode** (prompted upon starting sync) to fetch tracks into the Incoming directory without spawning any LLM or analysis tasks. Includes automatic mix protection to skip long DJ sets/podcasts based on duration limits, and a snippet filter to skip files under a minimum size threshold (10 MB for lossless, 3 MB for lossy).
+            starting analysis, optimizing Gemini API limits. Supports a dedicated interactive
+            <b>Download-Only Mode</b> (prompted upon starting sync) to fetch tracks into the
+            Incoming directory without spawning any LLM or analysis tasks. Includes automatic mix
+            protection to skip long DJ sets/podcasts based on duration limits, and a snippet filter
+            to skip files under a minimum size threshold (10 MB for lossless, 3 MB for lossy).
           </li>
           <li>
-            <b>Drive-to-Drive Mirror Sync:</b> Integrated directly into <code>[S]</code> Sync to Collection. When both the master SD card and the target backup drive are mounted, displays an interactive dual prompt: <code>[Y] Sorted &rarr; SD</code> or <code>[D] Mirror SD &rarr; EngineDJ Drive</code>. Performs smart track relocation for reorganized crates (e.g. into <code>Atmosphere/</code> subcrates) via instant target disk filesystem operations (avoiding redundant USB re-transfers), safely recovers any active tracks previously archived in <code>Removed from SD/</code>, and archives genuinely deleted tracks preserving folder structure. Automatically rewrites absolute paths in target Engine DJ databases (<code>m.db</code> and <code>hm.db</code>) to match the target drive volume prefix. Features a structured 4-stage pipeline (<code>[1/4] Checking obsolete &amp; relocated tracks</code>, <code>[2/4] Dry-run discovery</code>, <code>[3/4] Music Collection mirror</code>, <code>[4/4] Engine Library &amp; DB rewrite</code>) with real-time ASCII progress telemetry (<code>SyncProgressBanner</code>) powered by targeted file transfers (<code>--files-from</code>) and <code>--progress</code> unbuffered streaming, displaying live file counters, percentages, and active track filenames without 64 KB block buffering lag.
+            <b>Drive-to-Drive Mirror Sync:</b> Integrated directly into <code>[S]</code> Sync to
+            Collection. When both the master SD card and the target backup drive are mounted,
+            displays an interactive dual prompt: <code>[Y] Sorted &rarr; SD</code> or
+            <code>[D] Mirror SD &rarr; EngineDJ Drive</code>. Performs smart track relocation for
+            reorganized crates (e.g. into <code>Atmosphere/</code> subcrates) via instant target
+            disk filesystem operations (avoiding redundant USB re-transfers), safely recovers any
+            active tracks previously archived in <code>Removed from SD/</code>, and archives
+            genuinely deleted tracks preserving folder structure. Automatically rewrites absolute
+            paths in target Engine DJ databases (<code>m.db</code> and <code>hm.db</code>) to match
+            the target drive volume prefix. Features a structured 4-stage pipeline (<code
+              >[1/4] Checking obsolete &amp; relocated tracks</code
+            >, <code>[2/4] Dry-run discovery</code>, <code>[3/4] Music Collection mirror</code>,
+            <code>[4/4] Engine Library &amp; DB rewrite</code>) with real-time ASCII progress
+            telemetry (<code>SyncProgressBanner</code>) powered by targeted file transfers
+            (<code>--files-from</code>) and <code>--progress</code> unbuffered streaming, displaying
+            live file counters, percentages, and active track filenames without 64 KB block
+            buffering lag.
           </li>
           <li>
-            <b>Universal Process Lock &amp; Contextual BottomBar Banners:</b> Guarantees complete isolation of resource-intensive tasks. Whenever Drive Mirroring, Vibe Indexing, or Telegram Downloading is in progress, conflicting hotkeys are locked out and the TUI's <code>BottomBar</code> dynamically transitions into an amber status banner:
+            <b>Universal Process Lock &amp; Contextual BottomBar Banners:</b> Guarantees complete
+            isolation of resource-intensive tasks. Whenever Drive Mirroring, Vibe Indexing, or
+            Telegram Downloading is in progress, conflicting hotkeys are locked out and the TUI's
+            <code>BottomBar</code> dynamically transitions into an amber status banner:
             <code>[Drive Mirror in progress...] Hotkeys locked | [Q] Exit Sorter</code>,
             <code>[Vibe Indexing in progress...] Hotkeys locked | [Q] Exit Sorter</code>, or
             <code>[Telegram Download in progress...] Hotkeys locked | [Q] Exit Sorter</code>.
-            Attempting to trigger any background task while track analysis is actively listening or classifying tracks prompts the user to pause first.
+            Attempting to trigger any background task while track analysis is actively listening or
+            classifying tracks prompts the user to pause first.
           </li>
           <li>
             <b>Live Stats Header:</b> Single-line status bar showing real-time
             <code>Incoming</code> count (updated instantly via chokidar events), plus global
-            lifetime stats from <code>rag_examples</code>: Sorted total, AI hits, Manual fixes,
-            and AI accuracy rate calculated over actually classified tracks
-            (<code>auto &divide; (auto + manual)</code>).
+            lifetime stats from <code>rag_examples</code>: Sorted total, AI hits, Manual fixes, and
+            AI accuracy rate calculated over actually classified tracks (<code
+              >auto &divide; (auto + manual)</code
+            >).
           </li>
           <li>
             <b>LLM-driven Vibe Categorization (Gemini 3.5 Flash-Lite):</b> Powered by Google's
-            <code>gemini-3.5-flash-lite</code> with native <code>responseSchema</code> structured output validation, ensuring deterministic multi-track batch routing across 21 custom atmospheric folders without hallucinated crates.
+            <code>gemini-3.5-flash-lite</code> with native <code>responseSchema</code> structured
+            output validation, ensuring deterministic multi-track batch routing across 21 custom
+            atmospheric folders without hallucinated crates.
           </li>
           <li>
-            <b>Vibes.app Acoustic &amp; Semantic Intelligence:</b> Integrates strictly read-only with
-            <code>vibes.sqlite</code> to ingest 57 curated vibes across 6 categories, spectral acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves in 3 fast batch queries. Persists these profiles locally in the <code>track_intelligence</code> table in <code>cratemind.db</code>.
+            <b>Vibes.app Acoustic &amp; Semantic Intelligence:</b> Integrates strictly read-only
+            with <code>vibes.sqlite</code> to ingest 57 curated vibes across 6 categories, spectral
+            acoustics (sub-bass, mid, high, onset density), and 16-bin structural energy curves in 3
+            fast batch queries. Persists these profiles locally in the
+            <code>track_intelligence</code> table in <code>cratemind.db</code>.
           </li>
           <li>
             <b>RAG memory:</b> Builds context from past sortings — classifies by atmosphere, not
@@ -960,8 +2082,9 @@
             manual entries (<code>source: 'manual'</code>) or files physically present in the
             collection (<code>source: 'scan'/'engine-dj'</code>), ensuring automatic LLM
             classifications from previous runs that were never confirmed do not bypass re-analysis
-            if they return to the Incoming folder. Features **unlimited RAG database capacity** to
-            retain all confirmed track vibes forever without rotation or eviction.
+            if they return to the Incoming folder. Features
+            <b>unlimited RAG database capacity</b> to retain all confirmed track vibes forever
+            without rotation or eviction.
           </li>
           <li>
             <b>Personal Prompt Adaptation (Self-Reflective RAG):</b> Dynamically learns from your
@@ -1072,15 +2195,30 @@
           </li>
           <li>
             <b>Local Audio ML &amp; Vibes.app Engine Integration (Hybrid Local-First RAG):</b>
-            Inspired by <b><a href="https://vibesdj.io" target="_blank" rel="noopener" style="color: #5599ff; text-decoration: underline;">Vibes</a></b> (developed by European DJ/producer <b>Ben Modigell</b>, artist alias <i>"so I so"</i>, pioneering Energy-Based Mixing).
-            Bridges CrateMind with local deep-learning audio models (such as LAION-CLAP, SKey CoreML, and Beat This!).
-            Enables 512-dimensional zero-shot audio embeddings to compare raw waveform signatures against existing crate folders via cosine similarity (solving the "Unknown Artist" dilemma),
-            detects structural track transitions (drops, breakdowns, verses) for automatic Engine DJ hot cue placement,
-            and allows bidirectional sync with the local <code>vibes.sqlite</code> database for unified DJ library management.
+            Inspired by
+            <b
+              ><a
+                href="https://vibesdj.io"
+                target="_blank"
+                rel="noopener"
+                style="color: #5599ff; text-decoration: underline"
+                >Vibes</a
+              ></b
+            >
+            (developed by European DJ/producer <b>Ben Modigell</b>, artist alias <i>"so I so"</i>,
+            pioneering Energy-Based Mixing). Bridges CrateMind with local deep-learning audio models
+            (such as LAION-CLAP, SKey CoreML, and Beat This!). Enables 512-dimensional zero-shot
+            audio embeddings to compare raw waveform signatures against existing crate folders via
+            cosine similarity (solving the "Unknown Artist" dilemma), detects structural track
+            transitions (drops, breakdowns, verses) for automatic Engine DJ hot cue placement, and
+            allows bidirectional sync with the local <code>vibes.sqlite</code> database for unified
+            DJ library management.
           </li>
           <li>
-            <b>Beatport Purchase Integration:</b> Automatically search Beatport for identified tracks
-            to retrieve purchase links, and write them directly into the audio files' ID3 tags (e.g. inside Comments or custom URL frames) for quick reference when building live DJ libraries.
+            <b>Beatport Purchase Integration:</b> Automatically search Beatport for identified
+            tracks to retrieve purchase links, and write them directly into the audio files' ID3
+            tags (e.g. inside Comments or custom URL frames) for quick reference when building live
+            DJ libraries.
           </li>
         </ul>
       </section>
@@ -1095,5 +2233,97 @@
         </p>
       </footer>
     </div>
+
+    <script>
+      (function () {
+        var tabBtns = document.querySelectorAll('[data-pocket-tab]');
+        var views = {
+          sorter: document.getElementById('pocket-view-sorter'),
+          queue: document.getElementById('pocket-view-queue'),
+          sync: document.getElementById('pocket-view-sync')
+        };
+        var inspectorSheet = document.getElementById('pocket-inspector-sheet');
+        var openInspectorBtn = document.getElementById('pocket-open-inspector-btn');
+        var closeInspectorBtn = document.getElementById('pocket-close-inspector-btn');
+        var applyInspectorBtn = document.getElementById('pocket-apply-inspector-btn');
+        var padGrid = document.getElementById('pocket-pad-grid');
+        var routeBtn = document.getElementById('pocket-route-btn');
+
+        function getActiveViewName() {
+          var activeKey = 'sorter';
+          Object.keys(views).forEach(function (key) {
+            if (views[key] && views[key].classList.contains('active')) {
+              activeKey = key;
+            }
+          });
+          return activeKey;
+        }
+
+        function closeInspectorSheet() {
+          if (inspectorSheet) {
+            inspectorSheet.classList.remove('open');
+          }
+          var activeView = getActiveViewName();
+          tabBtns.forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-pocket-tab') === activeView);
+          });
+        }
+
+        function setActiveTab(name) {
+          tabBtns.forEach(function (btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-pocket-tab') === name);
+          });
+          if (name === 'inspector') {
+            if (inspectorSheet) inspectorSheet.classList.add('open');
+            return;
+          }
+          if (inspectorSheet) inspectorSheet.classList.remove('open');
+          Object.keys(views).forEach(function (key) {
+            if (views[key]) {
+              views[key].classList.toggle('active', key === name);
+            }
+          });
+        }
+
+        tabBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            setActiveTab(btn.getAttribute('data-pocket-tab'));
+          });
+        });
+
+        if (openInspectorBtn) {
+          openInspectorBtn.addEventListener('click', function () {
+            setActiveTab('inspector');
+          });
+        }
+        if (closeInspectorBtn) {
+          closeInspectorBtn.addEventListener('click', function () {
+            closeInspectorSheet();
+          });
+        }
+        if (inspectorSheet) {
+          inspectorSheet.addEventListener('click', function (ev) {
+            if (ev.target === inspectorSheet) {
+              closeInspectorSheet();
+            }
+          });
+        }
+        if (applyInspectorBtn) {
+          applyInspectorBtn.addEventListener('click', function () {
+            setActiveTab('sorter');
+          });
+        }
+
+        if (padGrid && routeBtn) {
+          padGrid.addEventListener('click', function (ev) {
+            var pad = ev.target.closest('.pocket-pad');
+            if (!pad) return;
+            pad.classList.toggle('selected');
+            var count = padGrid.querySelectorAll('.pocket-pad.selected').length;
+            routeBtn.textContent = 'Route (' + count + ' selected) \u2192';
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

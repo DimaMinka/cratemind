@@ -23,7 +23,8 @@ import { writeMetadata } from './ID3Service.js';
 export async function routeFile(
   srcPath: string,
   selectedFolders: string[],
-  metadata?: { bpm?: number; key?: string }
+  metadata?: { bpm?: number; key?: string },
+  sortedDir: string = SORTED_DIR
 ): Promise<void> {
   // If in mock mode and the file doesn't physically exist, bypass routing gracefully
   if (MOCK_MODE && !fs.existsSync(srcPath)) {
@@ -43,7 +44,7 @@ export async function routeFile(
 
   // Copy file to all target subfolders if not already present
   for (const folder of selectedFolders) {
-    const targetDir = path.join(SORTED_DIR, folder);
+    const targetDir = path.join(sortedDir, folder);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
