@@ -6,7 +6,7 @@ import type {
 } from '../types/pocketWeb.types.js';
 
 const DEFAULT_DB_NAME = 'cratemind_pocket_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 let currentDbName = DEFAULT_DB_NAME;
@@ -34,6 +34,9 @@ export async function initIndexedDbStore(dbName = DEFAULT_DB_NAME): Promise<IDBP
         }
         if (!db.objectStoreNames.contains('decisions')) {
           db.createObjectStore('decisions', { keyPath: 'trackId' });
+        }
+        if (!db.objectStoreNames.contains('pending_mutations')) {
+          db.createObjectStore('pending_mutations', { keyPath: 'id' });
         }
       }
     }).catch((err) => {
@@ -226,6 +229,33 @@ export async function exportDecisionsAsJson(): Promise<string> {
   };
 
   return JSON.stringify(payload, null, 2);
+}
+
+export interface PocketPendingMutation {
+  id: string;
+  trackId: string;
+  decision: unknown;
+  createdAt: number;
+}
+
+export async function enqueueMutation(mutation: PocketPendingMutation): Promise<void> {
+  const db = await getDb();
+  await db.put('pending_mutations', mutation);
+}
+
+export async function getPendingMutations(): Promise<PocketPendingMutation[]> {
+  const db = await getDb();
+  return (await db.getAll('pending_mutations')) as PocketPendingMutation[];
+}
+
+export async function clearPendingMutations(ids: string[]): Promise<void> {
+  if (!ids || ids.length === 0) return;
+  const db = await getDb();
+  const tx = db.transaction('pending_mutations', 'readwrite');
+  for (const id of ids) {
+    await tx.objectStore('pending_mutations').delete(id);
+  }
+  await tx.done;
 }
 
 export async function clearBatch(): Promise<void> {

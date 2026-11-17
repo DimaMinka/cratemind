@@ -15,20 +15,66 @@
     <meta name="color-scheme" content="dark" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Public+Sans:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-      rel="stylesheet"
-    />
+    <script>
+      window.__CRATEMIND_READY__ = false;
+      window.__resetPocketCache = async function () {
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const r of regs) await r.unregister();
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            for (const k of keys) await caches.delete(k);
+          }
+        } catch (e) {}
+        window.location.reload();
+      };
+      setTimeout(function () {
+        if (!window.__CRATEMIND_READY__) {
+          var el = document.getElementById('boot-watchdog');
+          if (el) {
+            el.style.display = 'block';
+            el.innerHTML =
+              '<p style="color:#f87171;font-size:12px;margin-bottom:12px;">BOOT TIMEOUT: OFFLINE SHELL LOCKED</p>' +
+              '<button onclick="window.location.reload()" style="background:#27272a;color:#fff;border:1px solid #3f3f46;padding:8px 14px;border-radius:6px;margin-right:8px;font-size:12px;cursor:pointer;">Reload Shell</button>' +
+              '<button onclick="window.__resetPocketCache()" style="background:#7f1d1d;color:#fff;border:1px solid #991b1b;padding:8px 14px;border-radius:6px;font-size:12px;cursor:pointer;">Reset SW Cache</button>';
+          }
+        }
+      }, 3500);
+    </script>
   </head>
   <body class="bg-black text-neutral-200 antialiased overflow-hidden select-none">
-    <div id="root"></div>
+    <div id="root">
+      <div
+        style="
+          min-height: 100dvh;
+          background: #000;
+          color: #fff;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        "
+      >
+        <h1
+          style="
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            color: #00ffff;
+            margin: 0;
+          "
+        >
+          CRATEMIND POCKET
+        </h1>
+        <p style="font-size: 12px; color: #10b981; margin-top: 8px; letter-spacing: 0.05em">
+          BOOTING LOCAL ENGINE...
+        </p>
+        <div id="boot-watchdog" style="display: none; margin-top: 24px; text-align: center"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -83,10 +83,11 @@ export async function runPocketCli(): Promise<void> {
   const lanIp = getLocalNetworkIp();
 
   const bridge = new PocketBridgeService({ port, host });
-  const { port: actualPort } = await bridge.start();
+  const { port: actualPort, isHttps } = await bridge.start();
 
-  const localUrl = `http://localhost:${actualPort}`;
-  const networkUrl = `http://${lanIp}:${actualPort}`;
+  const scheme = isHttps ? 'https' : 'http';
+  const localUrl = `${scheme}://localhost:${actualPort}`;
+  const networkUrl = `${scheme}://${lanIp}:${actualPort}`;
 
   renderBanner(localUrl, networkUrl);
 

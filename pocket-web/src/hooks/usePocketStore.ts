@@ -12,7 +12,9 @@ import {
   getAllDecisions,
   saveDecision,
   getTotalCachedAudioSize,
-  requestPersistentStorage
+  enqueueMutation,
+  getPendingMutations,
+  clearPendingMutations
 } from '../engine/indexedDbStore.js';
 import { SEED_TRACKS, SEED_MANIFEST } from './seedTracks.js';
 import {
@@ -100,6 +102,15 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
     }
 
     await saveDecision(decision).catch(() => {});
+    const { isBridgeConnected } = get();
+    if (!isBridgeConnected) {
+      await enqueueMutation({
+        id: `mut_${currentTrack.id}_${Date.now()}`,
+        trackId: currentTrack.id,
+        decision,
+        createdAt: Date.now()
+      }).catch(() => {});
+    }
   },
 
   skipTrack: async () => {
@@ -133,6 +144,15 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
     }
 
     await saveDecision(decision).catch(() => {});
+    const { isBridgeConnected } = get();
+    if (!isBridgeConnected) {
+      await enqueueMutation({
+        id: `mut_${currentTrack.id}_${Date.now()}`,
+        trackId: currentTrack.id,
+        decision,
+        createdAt: Date.now()
+      }).catch(() => {});
+    }
   },
 
   selectTrackIndex: (index: number) => {
@@ -226,11 +246,16 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   checkBridgeHealth: () => checkBridgeHealthAction(set),
 
   initStore: async () => {
+    // 1. Non-blocking storage persistence request in background
+    if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+      void navigator.storage.persist().catch(() => {});
+    }
+
+    // 2. Synchronous Local-First Hydration from IndexedDB (<50ms)
     try {
       await initIndexedDbStore();
-      const quota = await requestPersistentStorage();
       const cachedBytes = await getTotalCachedAudioSize();
-      set({ storageQuota: quota, cachedAudioSize: cachedBytes });
+      set({ cachedAudioSize: cachedBytes });
 
       const manifest = await getBatchManifest();
       if (manifest && manifest.tracks && manifest.tracks.length > 0) {
@@ -249,11 +274,52 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
           cachedAudioSize: cachedBytes
         });
       }
-    } catch {
-      // Fallback kept
+    } catch (e) {
+      console.warn('[CrateMind Pocket] Local storage hydration warning:', e);
     }
 
-    await checkBridgeHealthAction(set);
+    // 3. Asynchronous non-blocking Mac bridge check with 1500ms timeout
+    if (typeof fetch === 'function') {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 1500);
+      fetch('/api/health', { signal: ctrl.signal })
+        .then((res) => {
+          clearTimeout(timer);
+          set({ isBridgeConnected: res.ok });
+          if (res.ok) {
+            void get().flushPendingMutations();
+          }
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          set({ isBridgeConnected: false });
+        });
+    }
+  },
+
+  flushPendingMutations: async () => {
+    const mutations = await getPendingMutations().catch(() => []);
+    if (!mutations || mutations.length === 0) return;
+
+    const payload = {
+      batchId: get().manifest?.batchId || 'offline_batch',
+      committedAt: Date.now(),
+      decisions: mutations.map((m) => m.decision as PocketDecision)
+    };
+
+    try {
+      const res = await fetch('/api/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const ids = mutations.map((m) => m.id);
+        await clearPendingMutations(ids);
+      }
+    } catch {
+      // Retained in queue for next sync window
+    }
   },
 
   pullBatchFromMac: (limit = 30, append = true) => pullBatchFromMacAction(set, get, limit, append),

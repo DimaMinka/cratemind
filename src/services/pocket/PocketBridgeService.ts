@@ -1,4 +1,5 @@
 import * as http from 'node:http';
+import * as https from 'node:https';
 import * as net from 'node:net';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -17,6 +18,13 @@ export interface PocketBridgeOptions {
   sortedDir?: string;
   staticDir?: string;
   cacheDir?: string;
+  enableHttps?: boolean;
+}
+
+export interface PocketBridgeResolvedOptions extends Required<
+  Omit<PocketBridgeOptions, 'enableHttps'>
+> {
+  enableHttps: boolean;
 }
 
 const STATIC_MIME_TYPES: Record<string, string> = {
@@ -35,11 +43,12 @@ const STATIC_MIME_TYPES: Record<string, string> = {
 };
 
 export class PocketBridgeService {
-  private server: http.Server | null = null;
+  private server: http.Server | https.Server | null = null;
   private connections = new Set<net.Socket>();
-  private options: Required<PocketBridgeOptions>;
+  private options: PocketBridgeResolvedOptions;
   private port = 0;
   private host = '';
+  private isHttps = false;
 
   constructor(options?: PocketBridgeOptions) {
     this.options = {
@@ -49,7 +58,8 @@ export class PocketBridgeService {
       incomingDir: options?.incomingDir ?? path.resolve(INCOMING_DIR),
       sortedDir: options?.sortedDir ?? path.resolve(SORTED_DIR),
       staticDir: options?.staticDir ?? path.resolve('dist/pocket-web'),
-      cacheDir: options?.cacheDir ?? path.resolve('.pocket-cache/previews')
+      cacheDir: options?.cacheDir ?? path.resolve('.pocket-cache/previews'),
+      enableHttps: options?.enableHttps ?? process.env.NODE_ENV !== 'test'
     };
   }
 
@@ -61,22 +71,47 @@ export class PocketBridgeService {
     return this.host;
   }
 
-  public getServer(): http.Server | null {
+  public getServer(): http.Server | https.Server | null {
     return this.server;
+  }
+
+  public getIsHttps(): boolean {
+    return this.isHttps;
   }
 
   public async start(
     port?: number,
     host?: string
-  ): Promise<{ server: http.Server; port: number; host: string }> {
+  ): Promise<{ server: http.Server | https.Server; port: number; host: string; isHttps: boolean }> {
     if (this.server) {
-      return { server: this.server, port: this.port, host: this.host };
+      return { server: this.server, port: this.port, host: this.host, isHttps: this.isHttps };
     }
 
     const targetPort = port ?? this.options.port;
     const targetHost = host ?? this.options.host;
 
-    this.server = http.createServer((req, res) => {
+    // Check for SSL certificates if enabled
+    let sslOptions: { key: Buffer; cert: Buffer } | null = null;
+    if (this.options.enableHttps) {
+      const envKey = process.env.POCKET_SSL_KEY;
+      const envCert = process.env.POCKET_SSL_CERT;
+      const localKey = path.resolve('.pocket-certs/key.pem');
+      const localCert = path.resolve('.pocket-certs/cert.pem');
+
+      if (envKey && envCert && fs.existsSync(envKey) && fs.existsSync(envCert)) {
+        sslOptions = {
+          key: fs.readFileSync(envKey),
+          cert: fs.readFileSync(envCert)
+        };
+      } else if (fs.existsSync(localKey) && fs.existsSync(localCert)) {
+        sslOptions = {
+          key: fs.readFileSync(localKey),
+          cert: fs.readFileSync(localCert)
+        };
+      }
+    }
+
+    const requestListener: http.RequestListener = (req, res) => {
       this.handleRequest(req, res).catch((err) => {
         if (!res.headersSent) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -88,7 +123,15 @@ export class PocketBridgeService {
           );
         }
       });
-    });
+    };
+
+    if (sslOptions) {
+      this.server = https.createServer(sslOptions, requestListener);
+      this.isHttps = true;
+    } else {
+      this.server = http.createServer(requestListener);
+      this.isHttps = false;
+    }
 
     this.server.on('connection', (socket) => {
       this.connections.add(socket);
@@ -101,7 +144,12 @@ export class PocketBridgeService {
         const actualPort = typeof addr === 'object' && addr ? addr.port : targetPort;
         this.port = actualPort;
         this.host = targetHost;
-        resolve({ server: this.server!, port: actualPort, host: targetHost });
+        resolve({
+          server: this.server!,
+          port: actualPort,
+          host: targetHost,
+          isHttps: this.isHttps
+        });
       });
       this.server!.once('error', reject);
     });
@@ -138,6 +186,8 @@ export class PocketBridgeService {
 
     if (pathname === '/api/health' && method === 'GET') {
       await this.handleHealth(res);
+    } else if (pathname === '/api/cert-ca' && method === 'GET') {
+      await this.handleCertCa(res);
     } else if (pathname === '/api/batch' && method === 'GET') {
       await this.handleBatch(res, url);
     } else if (pathname.startsWith('/api/audio/') && method === 'GET') {
@@ -150,6 +200,20 @@ export class PocketBridgeService {
       res.end(JSON.stringify({ error: 'Endpoint not found' }));
     } else {
       await this.handleStatic(res, pathname);
+    }
+  }
+
+  private async handleCertCa(res: http.ServerResponse): Promise<void> {
+    const rootCaPath = path.resolve('.pocket-certs/rootCA.pem');
+    if (fs.existsSync(rootCaPath)) {
+      res.writeHead(200, {
+        'Content-Type': 'application/x-x509-ca-cert',
+        'Content-Disposition': 'attachment; filename="cratemind-rootCA.pem"'
+      });
+      fs.createReadStream(rootCaPath).pipe(res);
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Root CA not found' }));
     }
   }
 

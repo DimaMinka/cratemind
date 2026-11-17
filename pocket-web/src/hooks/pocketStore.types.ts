@@ -63,5 +63,6 @@ export interface PocketStoreState {
   initStore: () => Promise<void>;
   pullBatchFromMac: (limit?: number, append?: boolean) => Promise<boolean>;
   commitToMac: () => Promise<boolean>;
+  flushPendingMutations: () => Promise<void>;
   importLocalFiles: (files: File[]) => Promise<void>;
 }

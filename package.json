@@ -11,6 +11,7 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.tsx",
     "pocket": "tsx src/services/pocket/pocketCli.ts",
+    "pocket:certs": "node scripts/generate-pocket-certs.mjs",
     "pocket:sandbox": "tsx src/scripts/pocket-sandbox.ts",
     "telegram-login": "ts-node src/scripts/telegram-login.ts",
     "test": "vitest run",

@@ -14,3 +14,4 @@ cratemind.db*
 scratch
 backups/
 .pocket-cache/
+.pocket-certs/

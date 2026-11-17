@@ -216,12 +216,18 @@ export class IosAudioEngine {
   }
 
   public async play(): Promise<void> {
-    await this.audio.play();
-    this.isUnlocked = true;
-    if (typeof navigator !== 'undefined' && navigator.mediaSession) {
-      navigator.mediaSession.playbackState = 'playing';
+    try {
+      await this.audio.play();
+      this.isUnlocked = true;
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
+      this.updatePositionState();
+    } catch (err) {
+      this.isUnlocked = false;
+      // Handle iOS autoplay / user gesture policy silently without throwing unhandled rejection
+      console.warn('[IosAudioEngine] Playback prevented by browser policy:', err);
     }
-    this.updatePositionState();
   }
 
   public pause(): void {
