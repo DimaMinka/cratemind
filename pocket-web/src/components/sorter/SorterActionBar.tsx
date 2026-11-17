@@ -15,7 +15,7 @@ export const SorterActionBar: React.FC<SorterActionBarProps> = ({
     selectedCount > 0 ? `Route & Next (${selectedCount} selected)` : 'Route & Next';
 
   return (
-    <footer className="flex justify-between items-center gap-2 pt-2 safe-bottom-padding border-t border-neutral-800">
+    <footer className="flex justify-between items-center gap-2 pt-1.5 safe-bottom-padding border-t border-neutral-800 shrink-0">
       <button
         id="btn-skip"
         type="button"
