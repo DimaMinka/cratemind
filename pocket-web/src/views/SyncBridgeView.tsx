@@ -71,7 +71,7 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
   return (
     <div
       data-view="sync"
-      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-y-auto p-3 space-y-3 font-sans"
+      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-y-auto p-3 space-y-3 font-sans min-h-0"
     >
       <header className="border-b border-neutral-800 pb-2">
         <h2 className="text-sm font-bold tracking-wider text-white">SYNC &amp; LOCAL STORAGE</h2>

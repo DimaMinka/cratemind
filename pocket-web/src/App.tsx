@@ -171,7 +171,7 @@ export const App: React.FC = () => {
   return (
     <div
       id="app"
-      className="flex flex-col min-h-dvh w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-x-hidden overflow-y-auto relative justify-between font-sans border-x border-neutral-900"
+      className="flex flex-col h-dvh max-h-dvh w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden relative justify-between font-sans border-x border-neutral-900"
     >
       <ScanlineOverlay />
 
