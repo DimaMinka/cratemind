@@ -61,10 +61,10 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
   return (
     <div
       data-view="queue"
-      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden justify-between p-3 font-sans"
+      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden justify-between p-3 font-sans min-h-0"
     >
       {/* Search Bar */}
-      <div className="relative mb-2">
+      <div className="relative mb-2 shrink-0">
         <input
           type="text"
           value={searchQuery}
@@ -75,7 +75,7 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
       </div>
 
       {/* Filter Pills */}
-      <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1 text-xs font-mono">
+      <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1 text-xs font-mono shrink-0">
         {(
           [
             { id: 'all', label: `All (${tracks.length})` },
@@ -100,7 +100,7 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
       </div>
 
       {/* Scrollable Track List */}
-      <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 my-1">
+      <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 my-1 min-h-0 overscroll-contain">
         {filteredTracks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-neutral-500 text-xs">
             <span>No tracks found</span>
@@ -226,7 +226,7 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
       </div>
 
       {/* Sticky Bottom Commit Bar */}
-      <footer className="pt-2 border-t border-neutral-800">
+      <footer className="pt-2 safe-bottom-padding border-t border-neutral-800 shrink-0">
         <button
           type="button"
           onClick={onCommit}

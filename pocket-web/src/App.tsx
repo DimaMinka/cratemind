@@ -238,7 +238,7 @@ export const App: React.FC = () => {
       <div
         id="view-queue"
         style={{ display: activeView === 'queue' ? 'flex' : 'none' }}
-        className="flex-1 flex-col justify-between overflow-hidden"
+        className="flex-1 flex-col justify-between overflow-hidden min-h-0"
       >
         <BatchQueueView
           tracks={tracks}
