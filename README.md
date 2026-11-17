@@ -63,10 +63,14 @@
 - **Automatic Log Rotation**:
   - Capped local logging size to prevent infinite disk usage. The file `cratemind.log` is automatically rotated and backed up as `cratemind.old.log` when it reaches 5MB.
 - **CrateMind Pocket (iOS Offline PWA & Local Mac Bridge)**:
-  - Mobile-first offline vibe sorter PWA (`pocket-web/`) paired with a lightweight local macOS `node:http` bridge daemon (`src/services/pocket/`).
+  - Mobile-first offline vibe sorter PWA (`pocket-web/`) paired with a lightweight local macOS `node:https` / `node:http` bridge daemon (`src/services/pocket/`).
+  - **Zero External Dependencies & Secure Context (HTTPS)**: Uses native Apple typography stacks (`-apple-system`, `SF Pro`, `SF Mono`) without external Google Fonts blocking offline boots, and serves over local HTTPS via `mkcert` / OpenSSL so iOS WebKit activates `navigator.serviceWorker` and persistent `CacheStorage` on LAN IP addresses.
+  - **Instant Boot Splash & Watchdog**: Inline CSS/HTML boot screen inside `<div id="root">` (FCP < 30ms) paired with an emergency 3500ms recovery watchdog timer with one-tap shell reload and Service Worker cache reset.
+  - **Local-First Hydration & Offline Outbox**: Instantly hydrates UI from IndexedDB (<50ms) before network queries, performs non-blocking bridge health checks with `AbortSignal.timeout(1500)`, and enqueues offline curation decisions in `pending_mutations` for auto-flushing upon Mac connection.
+  - **Single-Bundle Vite & Workbox Range Streaming**: Rollup single-bundle output eliminates offline `ChunkLoadError`, while Workbox precaches all static shell assets with offline navigation fallbacks.
   - **Zero Cloud AI**: Strictly offline local intelligence using SQLite queries across `rag_examples`, 512-dim CLAP embeddings in `track_intelligence`, `yt_playlist_items`, and acoustic proximity (BPM/Camelot) — zero Gemini/LLM API calls.
-  - **iOS Audio & Lockscreen Engine**: Reuses a single persistent `HTMLAudioElement` across track transitions with `URL.revokeObjectURL()` cleanup and `navigator.mediaSession` lockscreen controls (-10s, +30s, play/pause, next/prev).
-  - **Offline IndexedDB Store**: Caches up to 30 tracks, manifests, audio blobs, and sorting decisions via `idb` with `navigator.storage.persist()`, plus autonomous iPhone Files import and JSON export.
+  - **iOS Audio & Lockscreen Engine**: Reuses a single persistent `HTMLAudioElement` with lazy gesture-driven playback to comply with WebKit autoplay policies, `URL.revokeObjectURL()` cleanup, and `navigator.mediaSession` lockscreen controls (-10s, +30s, play/pause, next/prev).
+  - **Offline IndexedDB Store**: Caches tracks, manifests, audio blobs, and sorting decisions via `idb` with `navigator.storage.persist()`, plus autonomous iPhone Files import and JSON export.
   - **Tactile DJ Pad Grid & Gestures**: 3x7 crate matrix fitting 390x844 with zero vertical scroll, multi-select tagging, 450ms long-press 1-tap routing, and swipe-left to skip.
   - **HTTP 206 Preview Streaming & Mutual Exclusion**: Compresses preview audio via FFmpeg (256kbps AAC) with `Accept-Ranges: bytes` partial content support, and enforces HTTP 409 Conflict locks when desktop tasks (Telegram download, Vibes indexing, Drive sync, or LLM analysis) are active.
 - **Single Active Process & Universal Hotkey Interlocking**:
@@ -119,6 +123,7 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
 | Method | Endpoint         | Query / Headers                                                                                                                  | Status Codes & Behavior                                                                                                                                                                                                                                                                                                                                                                                |
 | ------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET`  | `/api/health`    | —                                                                                                                                | `200 OK`: Returns `{ status: 'ok', uptime, incomingCount, ragCount, isBusy, activeTask }`.                                                                                                                                                                                                                                                                                                             |
+| `GET`  | `/api/cert-ca`   | —                                                                                                                                | `200 OK`: Serves `cratemind-rootCA.pem` (`application/x-x509-ca-cert`) generated by `mkcert` for 1-tap installation on iPhone; `404` if not found.                                                                                                                                                                                                                                                     |
 | `GET`  | `/api/batch`     | `?limit=30` (`1–30`, default `30`)<br>`&exclude=file1.mp3,file2.flac`                                                            | `200 OK`: Scans up to `limit` incoming tracks excluding any already loaded in client queue, enriched with ID3, Vibes.app 4-band/energy profiles, local SQLite RAG hints, and YT Scout neighbors (`PocketBatchManifest`). Supports cumulative batches (+30).                                                                                                                                            |
 | `GET`  | `/api/audio/:id` | `:id` = `base64url(filename)`<br>Req: `Range: bytes=start-end`<br>Res: `Accept-Ranges: bytes`, `Content-Range`, `Content-Length` | `206 Partial Content` (with `Range`) or `200 OK` (full stream) serving FFmpeg 256kbps AAC `.m4a` (`audio/mp4`) previews with original-format fallback; `400` invalid filename/traversal, `404` missing file, `416` invalid range.                                                                                                                                                                      |
 | `POST` | `/api/commit`    | Body: `{ batchId, decisions[] }` (`tagged` \| `skipped` \| `pending`)                                                            | `200 OK`: Validates tracks & crates (`21 FOLDERS` + `skipped`), routes tagged tracks, moves explicit skips to `Sorted/skipped/`, leaves `pending`/empty selections untouched in `Incoming/`, invalidates RAG cache, and adds `manual` examples. Returns `400` invalid crate/traversal/JSON, `409 Conflict` if desktop tasks (`Telegram`, `Vibes`, `Drive Sync`, `LLM`) are busy, `413` if body > 2 MB. |
@@ -136,14 +141,19 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
    ```bash
    npm run build
    ```
-2. Start the local Wi-Fi bridge on your Mac (or boot the isolated sandbox for testing):
+2. (Optional, recommended for iOS) Generate local HTTPS certificates for your LAN IP:
+   ```bash
+   npm run pocket:certs
+   ```
+   _Tip for mkcert_: To install the root certificate on your iPhone, open `https://<MAC_LAN_IP>:8080/api/cert-ca` in Safari, install the profile in iOS Settings, and enable full trust in **Settings → General → About → Certificate Trust Settings**.
+3. Start the local Wi-Fi bridge on your Mac:
    ```bash
    npm run pocket
    # or for isolated sandbox testing without touching ./Incoming, ./Sorted, or ./cratemind.db:
    npm run pocket:sandbox
    ```
-3. Connect your iPhone to the same Wi-Fi network, open the printed **Network URL** (`http://<MAC_LAN_IP>:8080`) in Safari, and tap **Share → Add to Home Screen** to install CrateMind Pocket as a full-screen standalone PWA.
-4. In the **Sync** tab, tap **Pull 30 Tracks from Mac (Wi-Fi)** to cache audio previews and metadata in IndexedDB, curate offline anywhere, then tap **Sync Sorted Tracks to Mac** when back on Wi-Fi.
+4. Connect your iPhone to the same Wi-Fi network, open the printed **Network URL** (`https://<MAC_LAN_IP>:8080`) in Safari, and tap **Share → Add to Home Screen** to install CrateMind Pocket as a full-screen standalone PWA.
+5. In the **Sync** tab, tap **Pull 30 Tracks from Mac (Wi-Fi)** to cache audio previews and metadata in IndexedDB. Once cached, the app works 100% offline anywhere without the Mac. When you sort tracks offline, decisions are queued in `pending_mutations` and automatically committed to your Mac when you reconnect to Wi-Fi.
 
 ### Pocket CLI & Test Commands
 
@@ -151,13 +161,11 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
 # Build both backend TypeScript (dist/) and Vite PWA bundle (dist/pocket-web/)
 npm run build
 
-# Build only the Node.js TypeScript backend
-npm run build:node
+# Generate local SSL/TLS certificates for local HTTPS
+npm run pocket:certs
 
-# Build only the PWA client bundle
-npm run build:pocket
-
-# Start the Mac Wi-Fi HTTP bridge daemon (port 8080 or POCKET_PORT)
+# Start the Mac Wi-Fi bridge daemon (HTTPS/HTTP on port 8080 or POCKET_PORT)
+npm run pocket
 npm run pocket
 
 # Boot an isolated interactive sandbox with tagged mock WAV tracks, 21 crates, temp DB, and LAN IP banner
