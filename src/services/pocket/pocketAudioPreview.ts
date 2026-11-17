@@ -17,7 +17,7 @@ export interface PreviewResult {
 
 export interface StreamAudioOptions {
   cacheDir?: string;
-  bitrate?: string; // default '128k'
+  bitrate?: string; // default '256k'
 }
 
 /**
@@ -56,7 +56,7 @@ export async function getOrCreatePreview(
   options?: StreamAudioOptions
 ): Promise<PreviewResult> {
   const cacheDir = options?.cacheDir ?? DEFAULT_PREVIEW_CACHE_DIR;
-  const bitrate = options?.bitrate ?? '128k';
+  const bitrate = options?.bitrate ?? '256k';
 
   if (!fs.existsSync(cacheDir)) {
     await fs.promises.mkdir(cacheDir, { recursive: true });

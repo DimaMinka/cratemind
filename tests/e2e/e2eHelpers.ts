@@ -62,6 +62,11 @@ export async function setupE2ESandbox(): Promise<E2ESandbox> {
   fs.mkdirSync(sortedDir, { recursive: true });
   process.env.CRATEMIND_DB_PATH = dbPath;
 
+  // Create mock audio tracks in incomingDir so the PWA has tracks to sort
+  fs.writeFileSync(path.join(incomingDir, 'track-01.mp3'), 'ID3mock1');
+  fs.writeFileSync(path.join(incomingDir, 'track-02.wav'), 'RIFFmock2');
+  fs.writeFileSync(path.join(incomingDir, 'track-03.mp3'), 'ID3mock3');
+
   const distStatic = path.resolve('dist/pocket-web');
   const indexHtml = path.join(distStatic, 'index.html');
   if (!fs.existsSync(indexHtml)) {

@@ -13,6 +13,23 @@ describe('CrateMind Pocket Mobile Layout E2E (iPhone 390x844)', () => {
     browser = launcher.browser;
     page = launcher.page;
     await page.goto(sandbox.baseUrl, { waitUntil: 'domcontentloaded' });
+    // If tracks are not loaded in sorter, navigate to sync and click pull button
+    const pad = await page.$('.dj-pad');
+    if (!pad) {
+      const syncTab = await page.$('#tab-sync');
+      if (syncTab) {
+        await syncTab.click();
+        const pullBtn = await page.waitForSelector('button::-p-text(Pull 30 Tracks from Mac)', {
+          timeout: 4000
+        });
+        if (pullBtn) {
+          await pullBtn.click();
+          await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
+        }
+        const sorterTab = await page.$('#tab-sorter');
+        if (sorterTab) await sorterTab.click();
+      }
+    }
     await page.waitForSelector('.dj-pad', { timeout: 10000 });
   }, 30000);
 
