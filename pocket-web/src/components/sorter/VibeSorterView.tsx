@@ -64,7 +64,7 @@ export const VibeSorterView: React.FC<VibeSorterViewProps> = ({
   return (
     <div
       data-view="sorter"
-      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-y-auto justify-between p-3 font-sans min-h-0"
+      className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden justify-between p-3 font-sans min-h-0"
     >
       {/* Top Header Telemetry */}
       {showHeader && (

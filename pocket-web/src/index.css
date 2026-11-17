@@ -27,9 +27,8 @@ body {
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
-  overflow-x: hidden;
-  overflow-y: auto;
-  min-height: 100%;
+  overflow: hidden;
+  height: 100%;
   width: 100%;
 }
 
