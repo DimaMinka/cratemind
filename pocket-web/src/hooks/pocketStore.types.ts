@@ -53,6 +53,7 @@ export interface PocketStoreState {
   prevTrack: () => void;
   nextTrack: () => void;
   undoDecision: (trackId: string) => Promise<void>;
+  resetAllDecisions: () => Promise<void>;
   applyRagAndYtMatches: () => Promise<void>;
   setIsPlaying: (playing: boolean) => void;
   setPlaybackTime: (currentTime: number, duration?: number) => void;

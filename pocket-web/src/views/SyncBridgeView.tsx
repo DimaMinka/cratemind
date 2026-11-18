@@ -14,6 +14,7 @@ export interface SyncBridgeViewProps {
   onPullBatch: () => void;
   onCommitToMac: () => void;
   onImportFiles: (files: File[]) => void;
+  onClearDecisions?: () => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -34,7 +35,8 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
   skippedCount = 0,
   onPullBatch,
   onCommitToMac,
-  onImportFiles
+  onImportFiles,
+  onClearDecisions
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -183,6 +185,21 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
         >
           Export Decisions as JSON
         </button>
+
+        {onClearDecisions && (
+          <button
+            type="button"
+            onClick={onClearDecisions}
+            disabled={isSyncing || actionableCount === 0}
+            className={`w-full py-2 rounded font-mono text-xs font-bold transition-colors ${
+              actionableCount > 0 && !isSyncing
+                ? 'bg-neutral-900 hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-red-900/60 cursor-pointer'
+                : 'bg-neutral-900/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+            }`}
+          >
+            Clear Decisions Cache
+          </button>
+        )}
       </section>
     </div>
   );

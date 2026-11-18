@@ -258,6 +258,11 @@ export async function clearPendingMutations(ids: string[]): Promise<void> {
   await tx.done;
 }
 
+export async function clearAllDecisions(): Promise<void> {
+  const db = await getDb();
+  await db.clear('decisions');
+}
+
 export async function clearBatch(): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(['manifest', 'audio_blobs', 'decisions'], 'readwrite');

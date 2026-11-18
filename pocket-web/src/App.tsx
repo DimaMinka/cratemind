@@ -44,7 +44,8 @@ export const App: React.FC = () => {
     initStore,
     pullBatchFromMac,
     commitToMac,
-    importLocalFiles
+    importLocalFiles,
+    resetAllDecisions
   } = usePocketStore();
 
   const audioEngineRef = useRef<IosAudioEngine | null>(null);
@@ -275,6 +276,7 @@ export const App: React.FC = () => {
           onPullBatch={() => void pullBatchFromMac()}
           onCommitToMac={() => void commitToMac()}
           onImportFiles={(files) => void importLocalFiles(files)}
+          onClearDecisions={() => void resetAllDecisions()}
         />
       </div>
 

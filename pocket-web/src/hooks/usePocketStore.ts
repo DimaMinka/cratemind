@@ -14,7 +14,8 @@ import {
   getTotalCachedAudioSize,
   enqueueMutation,
   getPendingMutations,
-  clearPendingMutations
+  clearPendingMutations,
+  clearAllDecisions
 } from '../engine/indexedDbStore.js';
 import { SEED_TRACKS, SEED_MANIFEST } from './seedTracks.js';
 import {
@@ -208,6 +209,26 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
 
     await saveDecision(updated).catch(() => {});
     set({ decisions: { ...decisions, [trackId]: updated } });
+  },
+
+  resetAllDecisions: async () => {
+    const { tracks } = get();
+    await clearAllDecisions().catch(() => {});
+
+    const freshDecisions: Record<string, PocketDecision> = {};
+    for (const t of tracks) {
+      freshDecisions[t.id] = {
+        trackId: t.id,
+        status: 'pending',
+        selectedFolders: [],
+        decisionTimestamp: Date.now()
+      };
+    }
+
+    set({
+      decisions: freshDecisions,
+      selectedFolders: []
+    });
   },
 
   applyRagAndYtMatches: async () => {

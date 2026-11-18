@@ -241,6 +241,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
           onPullBatch={vi.fn()}
           onCommitToMac={vi.fn()}
           onImportFiles={vi.fn()}
+          onClearDecisions={vi.fn()}
         />
       </>
     );
@@ -249,6 +250,9 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     const syncCommitBtn = screen.getByRole('button', { name: 'Sync 1 Sorted Tracks to Mac' });
     expect(queueCommitBtn).not.toBeDisabled();
     expect(syncCommitBtn).not.toBeDisabled();
+
+    const clearDecisionsBtn = screen.getByRole('button', { name: 'Clear Decisions Cache' });
+    expect(clearDecisionsBtn).not.toBeDisabled();
     expect(screen.getByText('0 MB / 1.00 GB')).toBeInTheDocument();
   });
 
