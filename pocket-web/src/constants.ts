@@ -19,13 +19,13 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     name: 'Party/Groove',
     color: '#FFFF00',
     borderColor: '#FFFF00',
-    folders: ['club party', 'beach party', 'nargila vibe', 'new day vibe', 'epic']
+    folders: ['club party', 'beach party', 'nargila vibe', 'new day vibe', 'epic', 'psy']
   },
   Cosmic: {
     name: 'Cosmic/Deep',
     color: '#FF00FF',
     borderColor: '#FF00FF',
-    folders: ['galaxy trip', 'psy', 'retro', 'robotic']
+    folders: ['galaxy trip', 'retro', 'robotic']
   },
   Genres: {
     name: 'Genres/Utility',
