@@ -10,8 +10,7 @@ interface HeaderTelemetryProps {
 export const HeaderTelemetry: React.FC<HeaderTelemetryProps> = ({
   sortedCount,
   totalTracks,
-  cachedBytes,
-  ragExamplesCount = 574
+  cachedBytes
 }) => {
   const cachedMb = Math.round(cachedBytes / (1024 * 1024));
 
@@ -28,9 +27,6 @@ export const HeaderTelemetry: React.FC<HeaderTelemetryProps> = ({
 
       <div className="flex items-center gap-1 shrink-0">
         <span className="text-[8.5px] text-neutral-400">OFFLINE CACHED • {cachedMb} MB</span>
-        <span className="bg-[#00FFFF]/10 text-[#00FFFF] border border-[#00FFFF]/30 px-1 py-0.2 rounded text-[8.5px] font-bold">
-          RAG: {ragExamplesCount}
-        </span>
       </div>
     </header>
   );
