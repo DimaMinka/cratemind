@@ -4,22 +4,22 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     color: '#00FFFF',
     borderColor: '#00FFFF',
     folders: [
-      'mountain sunset',
-      'magic forest',
       'desert vibe',
-      'tropical vibe',
-      'iceland',
       'earth',
+      'iceland',
       'india jungle',
+      'magic forest',
+      'mantra',
+      'mountain sunset',
       'spain vibe',
-      'mantra'
+      'tropical vibe'
     ]
   },
   Party: {
     name: 'Party/Groove',
     color: '#FFFF00',
     borderColor: '#FFFF00',
-    folders: ['club party', 'beach party', 'nargila vibe', 'new day vibe', 'epic', 'psy']
+    folders: ['beach party', 'club party', 'epic', 'nargila vibe', 'new day vibe', 'psy']
   },
   Cosmic: {
     name: 'Cosmic/Deep',
@@ -31,7 +31,7 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     name: 'Genres/Utility',
     color: '#777777',
     borderColor: '#555555',
-    folders: ["drum 'n' bass", 'rock', 'intro outro']
+    folders: ["drum 'n' bass", 'intro outro', 'rock']
   }
 };
 
