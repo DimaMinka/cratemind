@@ -8,100 +8,6 @@ export interface InspectorBottomSheetProps {
   onApplyMatches: () => void;
 }
 
-function dbToPercent(db: number): number {
-  if (!Number.isFinite(db)) return 0;
-  if (db > 0) return Math.max(0, Math.min(100, Math.round(db)));
-  return Math.max(5, Math.min(100, Math.round(((db + 60) / 60) * 100)));
-}
-
-function onsetToPercent(density: number): number {
-  if (!Number.isFinite(density) || density <= 0) return 0;
-  return Math.max(5, Math.min(100, Math.round((density / 10) * 100)));
-}
-
-interface SpectralBandMetric {
-  label: string;
-  color: string;
-  heightPercent: number;
-  displayValue: string;
-}
-
-function resolveSpectralBands(track: PocketTrackItem): {
-  bands: SpectralBandMetric[];
-  hasData: boolean;
-} {
-  const sp = track.spectralProfile;
-  const ac = track.acoustic;
-
-  const subPct =
-    ac?.subBassPercent != null
-      ? ac.subBassPercent
-      : sp?.subBassDb != null
-        ? dbToPercent(sp.subBassDb)
-        : null;
-  const midPct =
-    ac?.midPercent != null ? ac.midPercent : sp?.midDb != null ? dbToPercent(sp.midDb) : null;
-  const highPct =
-    ac?.highPercent != null ? ac.highPercent : sp?.highDb != null ? dbToPercent(sp.highDb) : null;
-  const onsetPct =
-    ac?.onsetPercent != null
-      ? ac.onsetPercent
-      : sp?.onsetDensity != null
-        ? onsetToPercent(sp.onsetDensity)
-        : null;
-
-  const hasData = subPct !== null || midPct !== null || highPct !== null || onsetPct !== null;
-
-  const bands: SpectralBandMetric[] = [
-    {
-      label: 'Sub',
-      color: '#00FF00',
-      heightPercent: subPct ?? 0,
-      displayValue:
-        ac?.subBassPercent != null
-          ? `${ac.subBassPercent}%`
-          : sp?.subBassDb != null
-            ? `${sp.subBassDb.toFixed(1)} dB`
-            : '--'
-    },
-    {
-      label: 'Mid',
-      color: '#00FFFF',
-      heightPercent: midPct ?? 0,
-      displayValue:
-        ac?.midPercent != null
-          ? `${ac.midPercent}%`
-          : sp?.midDb != null
-            ? `${sp.midDb.toFixed(1)} dB`
-            : '--'
-    },
-    {
-      label: 'High',
-      color: '#FFFF00',
-      heightPercent: highPct ?? 0,
-      displayValue:
-        ac?.highPercent != null
-          ? `${ac.highPercent}%`
-          : sp?.highDb != null
-            ? `${sp.highDb.toFixed(1)} dB`
-            : '--'
-    },
-    {
-      label: 'Onset',
-      color: '#FF4444',
-      heightPercent: onsetPct ?? 0,
-      displayValue:
-        ac?.onsetPercent != null
-          ? `${ac.onsetPercent}%`
-          : sp?.onsetDensity != null
-            ? `${sp.onsetDensity.toFixed(1)}/s`
-            : '--'
-    }
-  ];
-
-  return { bands, hasData };
-}
-
 export const InspectorBottomSheet: React.FC<InspectorBottomSheetProps> = ({
   isOpen,
   track,
@@ -128,8 +34,6 @@ export const InspectorBottomSheet: React.FC<InspectorBottomSheetProps> = ({
   const collectedSuggestions: string[] = [];
   if (ragFolder && !collectedSuggestions.includes(ragFolder)) collectedSuggestions.push(ragFolder);
   if (ytFolder && !collectedSuggestions.includes(ytFolder)) collectedSuggestions.push(ytFolder);
-
-  const { bands, hasData: hasSpectralData } = resolveSpectralBands(track);
 
   return (
     <div
@@ -240,35 +144,6 @@ export const InspectorBottomSheet: React.FC<InspectorBottomSheetProps> = ({
                   : 'No local vector neighbors found for this track.'}
               </p>
             )}
-          </div>
-
-          {/* Vibes.app Spectral FFT Card */}
-          <div className="bg-neutral-900/90 border border-neutral-800 rounded-lg p-2.5">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-mono text-[#FFFF00] font-bold">
-                SPECTRAL FFT PROFILE
-              </span>
-              <span className="text-[9px] font-mono text-neutral-500">
-                {hasSpectralData ? '4-Band Live Analysis' : 'No spectral analysis'}
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
-              {bands.map((band) => (
-                <div key={band.label}>
-                  <div className="h-16 bg-neutral-950 rounded flex items-end p-0.5">
-                    <div
-                      className="w-full rounded-sm transition-all"
-                      style={{
-                        height: `${band.heightPercent}%`,
-                        backgroundColor: band.color
-                      }}
-                    />
-                  </div>
-                  <span className="text-neutral-300 mt-1 block text-[9px]">{band.label}</span>
-                  <span className="text-neutral-400 block text-[9px]">{band.displayValue}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 

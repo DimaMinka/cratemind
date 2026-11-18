@@ -166,20 +166,13 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(finalPatch.tracks[0].id).toBe('t2');
   });
 
-  it('TC-PI-03: InspectorBottomSheet renders backend playlistTitle, yt/rag neighbors, and spectralProfile', () => {
+  it('TC-PI-03: InspectorBottomSheet renders backend playlistTitle, yt/rag neighbors', () => {
     const backendTrack: PocketTrackItem = {
       id: 'bk-1',
       filename: 'Bedouin - Nomad.mp3',
       title: 'Nomad',
       artist: 'Bedouin',
       duration: 240,
-      spectralProfile: {
-        subBassDb: -12.4,
-        bassDb: -10.0,
-        midDb: -18.2,
-        highDb: -24.5,
-        onsetDensity: 6.4
-      },
       ragSuggestion: {
         folder: 'desert vibe',
         confidence: 94,
@@ -211,30 +204,6 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(screen.getByText('#6 Viken Arman -> desert vibe')).toBeInTheDocument();
     expect(screen.getByText('Bedouin - Whistleman')).toBeInTheDocument();
     expect(screen.getByText('Cosine 0.94 -> desert vibe')).toBeInTheDocument();
-    expect(screen.getByText('-12.4 dB')).toBeInTheDocument();
-    expect(screen.getByText('-18.2 dB')).toBeInTheDocument();
-    expect(screen.getByText('-24.5 dB')).toBeInTheDocument();
-    expect(screen.getByText('6.4/s')).toBeInTheDocument();
-  });
-
-  it('TC-PI-04: InspectorBottomSheet shows explicit fallback when spectralProfile is absent', () => {
-    const bareTrack: PocketTrackItem = {
-      id: 'bare-1',
-      filename: 'bare.mp3',
-      title: 'Bare',
-      artist: 'Artist',
-      duration: 180
-    };
-    render(
-      <InspectorBottomSheet
-        isOpen={true}
-        track={bareTrack}
-        onClose={vi.fn()}
-        onApplyMatches={vi.fn()}
-      />
-    );
-    expect(screen.getByText('No spectral analysis')).toBeInTheDocument();
-    expect(screen.queryByText('84%')).not.toBeInTheDocument();
   });
 
   it('TC-PI-05: BatchQueueView and SyncBridgeView enable Commit when skippedCount > 0 and taggedCount === 0', () => {
