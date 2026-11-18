@@ -1,36 +1,3 @@
-export const FOLDERS = [
-  'mountain sunset',
-  'magic forest',
-  'club party',
-  'beach party',
-  'nargila vibe',
-  'new day vibe',
-  'galaxy trip',
-  'psy',
-  'desert vibe',
-  'tropical vibe',
-  'epic',
-  'iceland',
-  'mantra',
-  'earth',
-  "drum 'n' bass",
-  'rock',
-  'retro',
-  'robotic',
-  'india jungle',
-  'spain vibe',
-  'intro outro'
-] as const;
-
-export type FolderName = (typeof FOLDERS)[number];
-
-export interface CrateCategory {
-  name: 'Nature' | 'Party/Groove' | 'Cosmic/Deep' | 'Genres/Utility';
-  color: string;
-  borderColor: string;
-  folders: readonly string[];
-}
-
 export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
   Nature: {
     name: 'Nature',
@@ -41,6 +8,7 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
       'magic forest',
       'desert vibe',
       'tropical vibe',
+      'epic',
       'iceland',
       'earth',
       'india jungle',
@@ -57,15 +25,22 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     name: 'Cosmic/Deep',
     color: '#FF00FF',
     borderColor: '#FF00FF',
-    folders: ['galaxy trip', 'psy', 'epic', 'mantra', 'robotic']
+    folders: ['galaxy trip', 'psy', 'retro', 'robotic']
   },
   Genres: {
     name: 'Genres/Utility',
     color: '#777777',
     borderColor: '#555555',
-    folders: ["drum 'n' bass", 'rock', 'retro', 'intro outro']
+    folders: ['mantra', "drum 'n' bass", 'rock', 'intro outro']
   }
 };
+
+export const FOLDERS = [
+  ...CRATE_CATEGORIES.Nature.folders,
+  ...CRATE_CATEGORIES.Party.folders,
+  ...CRATE_CATEGORIES.Cosmic.folders,
+  ...CRATE_CATEGORIES.Genres.folders
+] as const;
 
 export function getFolderCategory(folder: string): CrateCategory {
   for (const cat of Object.values(CRATE_CATEGORIES)) {
