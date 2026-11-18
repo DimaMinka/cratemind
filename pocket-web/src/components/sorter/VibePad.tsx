@@ -57,7 +57,7 @@ export const VibePad: React.FC<VibePadProps> = ({
       onContextMenu={onContextMenu}
       onClick={onClick}
     >
-      <span className="truncate leading-tight text-[11px] font-medium">{folder}</span>
+      <span className="truncate leading-tight text-[13px] font-medium">{folder}</span>
       <div className="flex gap-1 flex-wrap mt-0.5">
         {ragBadge && (
           <span className="text-[8px] font-mono px-1 py-0.2 bg-[#00FFFF] text-black font-bold rounded">
