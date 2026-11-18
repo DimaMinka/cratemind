@@ -11,7 +11,8 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
       'iceland',
       'earth',
       'india jungle',
-      'spain vibe'
+      'spain vibe',
+      'mantra'
     ]
   },
   Party: {
@@ -30,7 +31,7 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     name: 'Genres/Utility',
     color: '#777777',
     borderColor: '#555555',
-    folders: ['mantra', "drum 'n' bass", 'rock', 'intro outro']
+    folders: ["drum 'n' bass", 'rock', 'intro outro']
   }
 };
 
