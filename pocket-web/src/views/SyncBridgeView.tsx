@@ -157,14 +157,14 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
           <button
             type="button"
             onClick={onClearDecisions}
-            disabled={isSyncing || actionableCount === 0}
+            disabled={isSyncing || (actionableCount === 0 && cachedAudioSize === 0)}
             className={`w-full py-2 rounded font-mono text-xs font-bold transition-colors ${
-              actionableCount > 0 && !isSyncing
+              (actionableCount > 0 || cachedAudioSize > 0) && !isSyncing
                 ? 'bg-neutral-900 hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-red-900/60 cursor-pointer'
                 : 'bg-neutral-900/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
             }`}
           >
-            Clear Decisions Cache
+            Clear Cache &amp; Decisions
           </button>
         )}
       </section>

@@ -258,6 +258,11 @@ export async function clearPendingMutations(ids: string[]): Promise<void> {
   await tx.done;
 }
 
+export async function clearAudioBlobs(): Promise<void> {
+  const db = await getDb();
+  await db.clear('audio_blobs');
+}
+
 export async function clearAllDecisions(): Promise<void> {
   const db = await getDb();
   await db.clear('decisions');

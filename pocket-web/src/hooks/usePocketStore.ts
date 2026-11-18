@@ -15,7 +15,8 @@ import {
   enqueueMutation,
   getPendingMutations,
   clearPendingMutations,
-  clearAllDecisions
+  clearAllDecisions,
+  clearAudioBlobs
 } from '../engine/indexedDbStore.js';
 import { SEED_TRACKS, SEED_MANIFEST } from './seedTracks.js';
 import {
@@ -211,7 +212,7 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
 
   resetAllDecisions: async () => {
     const { tracks } = get();
-    await clearAllDecisions().catch(() => {});
+    await Promise.all([clearAllDecisions().catch(() => {}), clearAudioBlobs().catch(() => {})]);
 
     const freshDecisions: Record<string, PocketDecision> = {};
     for (const t of tracks) {
@@ -225,7 +226,8 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
 
     set({
       decisions: freshDecisions,
-      selectedFolders: []
+      selectedFolders: [],
+      cachedAudioSize: 0
     });
   },
 

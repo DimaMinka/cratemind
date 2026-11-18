@@ -249,7 +249,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(queueCommitBtn).not.toBeDisabled();
     expect(syncCommitBtn).not.toBeDisabled();
 
-    const clearDecisionsBtn = screen.getByRole('button', { name: 'Clear Decisions Cache' });
+    const clearDecisionsBtn = screen.getByRole('button', { name: 'Clear Cache & Decisions' });
     expect(clearDecisionsBtn).not.toBeDisabled();
     expect(screen.getByText('0 MB / 1.00 GB')).toBeInTheDocument();
   });
