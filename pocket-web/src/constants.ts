@@ -8,7 +8,6 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
       'magic forest',
       'desert vibe',
       'tropical vibe',
-      'epic',
       'iceland',
       'earth',
       'india jungle',
@@ -19,7 +18,7 @@ export const CRATE_CATEGORIES: Record<string, CrateCategory> = {
     name: 'Party/Groove',
     color: '#FFFF00',
     borderColor: '#FFFF00',
-    folders: ['club party', 'beach party', 'nargila vibe', 'new day vibe']
+    folders: ['club party', 'beach party', 'nargila vibe', 'new day vibe', 'epic']
   },
   Cosmic: {
     name: 'Cosmic/Deep',
