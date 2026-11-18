@@ -20,7 +20,6 @@ export const App: React.FC = () => {
     activeView,
     isInspectorOpen,
     queueFilter,
-    queueSearchQuery,
     isPlaying,
     currentTime,
     duration,
@@ -32,7 +31,6 @@ export const App: React.FC = () => {
     setActiveView,
     setInspectorOpen,
     setQueueFilter,
-    setQueueSearchQuery,
     toggleFolder,
     routeTrack,
     skipTrack,
@@ -245,10 +243,8 @@ export const App: React.FC = () => {
           tracks={tracks}
           decisions={decisions}
           activeFilter={queueFilter}
-          searchQuery={queueSearchQuery}
           activeTrackId={currentTrack?.id}
           onSelectFilter={setQueueFilter}
-          onSearchChange={setQueueSearchQuery}
           onSelectTrack={selectTrackIndex}
           onOpenInspector={(t) => {
             selectTrackIndex(tracks.findIndex((x) => x.id === t.id));

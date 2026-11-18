@@ -25,7 +25,6 @@ export interface PocketStoreState {
   activeView: PocketView;
   isInspectorOpen: boolean;
   queueFilter: QueueFilter;
-  queueSearchQuery: string;
 
   // Audio state
   isPlaying: boolean;
@@ -44,7 +43,6 @@ export interface PocketStoreState {
   setActiveView: (view: PocketView) => void;
   setInspectorOpen: (open: boolean) => void;
   setQueueFilter: (filter: QueueFilter) => void;
-  setQueueSearchQuery: (query: string) => void;
   toggleFolder: (folder: string) => void;
   setSelectedFolders: (folders: string[]) => void;
   routeTrack: (folders?: string | string[]) => Promise<void>;

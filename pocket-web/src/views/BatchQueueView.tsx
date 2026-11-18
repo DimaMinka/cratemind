@@ -6,10 +6,8 @@ export interface BatchQueueViewProps {
   tracks: PocketTrackItem[];
   decisions: Record<string, PocketDecision>;
   activeFilter: QueueFilter;
-  searchQuery: string;
   activeTrackId?: string;
   onSelectFilter: (filter: QueueFilter) => void;
-  onSearchChange: (query: string) => void;
   onSelectTrack: (trackIndex: number) => void;
   onOpenInspector: (track: PocketTrackItem) => void;
   onCommit: () => void;
@@ -20,10 +18,8 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
   tracks,
   decisions,
   activeFilter,
-  searchQuery,
   activeTrackId,
   onSelectFilter,
-  onSearchChange,
   onSelectTrack,
   onOpenInspector,
   onCommit,
@@ -43,18 +39,6 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
     if (activeFilter === 'pending' && status !== 'pending') return false;
     if (activeFilter === 'tagged' && status !== 'tagged') return false;
     if (activeFilter === 'skipped' && status !== 'skipped') return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchTitle = (track.title || '').toLowerCase().includes(q);
-      const matchArtist = (track.artist || '').toLowerCase().includes(q);
-      const matchFilename = (track.filename || '').toLowerCase().includes(q);
-      const matchBpm = track.bpm?.toString().includes(q);
-      const matchKey = (track.key || '').toLowerCase().includes(q);
-      const matchFolders = decision?.selectedFolders?.some((f) => f.toLowerCase().includes(q));
-      return matchTitle || matchArtist || matchFilename || matchBpm || matchKey || matchFolders;
-    }
-
     return true;
   });
 
@@ -63,17 +47,6 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
       data-view="queue"
       className="flex flex-col flex-1 h-full w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden justify-between p-3 font-sans min-h-0"
     >
-      {/* Search Bar */}
-      <div className="relative mb-2 shrink-0">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Filter track, BPM, Key..."
-          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[#00FFFF]"
-        />
-      </div>
-
       {/* Filter Pills */}
       <div className="flex gap-1.5 mb-2 overflow-x-auto pb-1 text-xs font-mono shrink-0">
         {(

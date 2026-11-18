@@ -222,9 +222,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
             'sk-1': { trackId: 'sk-1', filename: '01.mp3', status: 'skipped', selectedFolders: [] }
           }}
           activeFilter="all"
-          searchQuery=""
           onSelectFilter={vi.fn()}
-          onSearchChange={vi.fn()}
           onSelectTrack={vi.fn()}
           onOpenInspector={vi.fn()}
           onCommit={vi.fn()}

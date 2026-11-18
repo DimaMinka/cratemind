@@ -35,7 +35,6 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   activeView: 'sorter',
   isInspectorOpen: false,
   queueFilter: 'all',
-  queueSearchQuery: '',
 
   isPlaying: false,
   currentTime: 0,
@@ -51,7 +50,6 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   setActiveView: (view: PocketView) => set({ activeView: view }),
   setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
   setQueueFilter: (filter: QueueFilter) => set({ queueFilter: filter }),
-  setQueueSearchQuery: (query: string) => set({ queueSearchQuery: query }),
 
   toggleFolder: (folder: string) => {
     const current = get().selectedFolders;
