@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import type { StorageQuotaInfo } from '../hooks/pocketStore.types.js';
 import { exportDecisionsAsJson } from '../engine/indexedDbStore.js';
 
@@ -13,7 +13,7 @@ export interface SyncBridgeViewProps {
   skippedCount?: number;
   onPullBatch: () => void;
   onCommitToMac: () => void;
-  onImportFiles: (files: File[]) => void;
+  onImportFiles?: (files: File[]) => void;
   onClearDecisions?: () => void;
 }
 
@@ -35,11 +35,8 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
   skippedCount = 0,
   onPullBatch,
   onCommitToMac,
-  onImportFiles,
   onClearDecisions
 }) => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
   const handleExportJson = async () => {
     try {
       const jsonStr = await exportDecisionsAsJson();
@@ -54,13 +51,6 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
       URL.revokeObjectURL(url);
     } catch {
       // Export failed
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const filesArray = Array.from(e.target.files);
-      onImportFiles(filesArray);
     }
   };
 
@@ -119,30 +109,7 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
         </button>
       </section>
 
-      {/* Card 2: Autonomous iPhone Files Import */}
-      <section className="bg-neutral-900/80 border border-neutral-800 rounded-lg p-3">
-        <span className="text-xs font-bold text-white block mb-1">Autonomous Files Import</span>
-        <p className="text-xs text-neutral-400 mb-3">
-          Curate music completely offline without Mac. Pick audio files from iPhone Files app.
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="audio/*,.mp3,.wav,.flac,.aiff,.m4a,.aac,.ogg"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 rounded font-mono text-xs font-bold transition-colors cursor-pointer"
-        >
-          Import Audio from iPhone Files
-        </button>
-      </section>
-
-      {/* Card 3: Storage Meter */}
+      {/* Card 2: Storage Meter */}
       <section className="bg-neutral-900/80 border border-neutral-800 rounded-lg p-3">
         <div className="flex justify-between items-center mb-1 text-xs">
           <span className="font-bold text-white">iPhone Offline Storage</span>
