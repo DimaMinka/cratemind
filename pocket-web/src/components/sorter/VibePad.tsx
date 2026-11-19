@@ -40,14 +40,25 @@ export const VibePad: React.FC<VibePadProps> = ({
     <button
       type="button"
       data-folder={folder}
+      data-active={isSelected ? 'true' : 'false'}
+      data-category-color={category.activeColor}
       className={`dj-pad relative flex flex-col justify-between p-1.5 rounded-md text-left text-xs min-h-[54px] min-w-[80px] border transition-all ${
         isSelected
-          ? 'glow-yellow-active bg-neutral-900 border-[#FFFF00] text-[#FFFF00] font-bold shadow-[0_0_12px_rgba(255,255,0,0.65)]'
+          ? 'pad-active bg-neutral-900 font-bold'
           : 'bg-neutral-900/90 text-neutral-200 border-neutral-800 hover:border-neutral-700'
       }`}
       style={{
         borderLeftWidth: '3px',
-        borderLeftColor: isSelected ? '#FFFF00' : category.borderColor
+        borderLeftColor: isSelected ? category.activeColor : category.borderColor,
+        ...(isSelected
+          ? {
+              borderTopColor: category.activeColor,
+              borderRightColor: category.activeColor,
+              borderBottomColor: category.activeColor,
+              color: category.activeColor,
+              boxShadow: `0 0 12px ${category.glowRgba}, inset 0 0 6px ${category.glowRgba}`
+            }
+          : {})
       }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

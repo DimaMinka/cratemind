@@ -141,35 +141,35 @@ describe('CrateMind Pocket Mobile Layout E2E (iPhone 390x844)', () => {
     expect(syncHidden).toBe(true);
   });
 
-  it('TC-E2E-07: Multi-select interaction toggles active yellow glow and selection count', async () => {
+  it('TC-E2E-07: Multi-select interaction toggles active category glow and selection count', async () => {
     const pads = await page.$$('.dj-pad');
     const firstPad = pads[0];
     const secondPad = pads[1];
 
     // Select first pad
     await firstPad.click();
-    let hasGlow1 = await firstPad.evaluate((el) => el.classList.contains('glow-yellow-active'));
+    let hasGlow1 = await firstPad.evaluate((el) => el.classList.contains('pad-active'));
     let routeText = await page.$eval('#btn-route', (el) => el.textContent || '');
     expect(hasGlow1).toBe(true);
     expect(routeText).toContain('(1 selected)');
 
     // Select second pad
     await secondPad.click();
-    let hasGlow2 = await secondPad.evaluate((el) => el.classList.contains('glow-yellow-active'));
+    let hasGlow2 = await secondPad.evaluate((el) => el.classList.contains('pad-active'));
     routeText = await page.$eval('#btn-route', (el) => el.textContent || '');
     expect(hasGlow2).toBe(true);
     expect(routeText).toContain('(2 selected)');
 
     // Deselect first pad
     await firstPad.click();
-    hasGlow1 = await firstPad.evaluate((el) => el.classList.contains('glow-yellow-active'));
+    hasGlow1 = await firstPad.evaluate((el) => el.classList.contains('pad-active'));
     routeText = await page.$eval('#btn-route', (el) => el.textContent || '');
     expect(hasGlow1).toBe(false);
     expect(routeText).toContain('(1 selected)');
 
     // Deselect second pad
     await secondPad.click();
-    hasGlow2 = await secondPad.evaluate((el) => el.classList.contains('glow-yellow-active'));
+    hasGlow2 = await secondPad.evaluate((el) => el.classList.contains('pad-active'));
     routeText = await page.$eval('#btn-route', (el) => el.textContent || '');
     expect(hasGlow2).toBe(false);
     expect(routeText).toBe('Route & Next');

@@ -229,9 +229,11 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
 
     const cacheText = screen.getByText('CACHED • 0 MB');
     expect(cacheText.className).not.toContain('hidden');
-    const pad = container.querySelector('[data-folder="psy"]');
+    const pad = container.querySelector('[data-folder="psy"]') as HTMLElement;
     expect(pad?.className).toContain('bg-neutral-900');
-    expect(pad?.className).toContain('text-[#FFFF00]');
+    expect(pad?.className).toContain('pad-active');
+    expect(pad?.getAttribute('data-category-color')).toBe('#FFFF00');
+    expect(pad?.style.color).toBe('rgb(255, 255, 0)');
     expect(pad?.className).not.toContain('bg-amber-400');
   });
 
@@ -258,5 +260,152 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(screen.getByText('0 / 2 SORTED')).toBeInTheDocument();
     expect(screen.getByText('03:20')).toBeInTheDocument();
     expect(screen.getByLabelText('Play')).toBeInTheDocument();
+  });
+
+  it('TC-PI-08: SyncBridgeView renders PocketHelpCard with quick controls and zero AI/LLM terms', () => {
+    const { container } = render(
+      <SyncBridgeView
+        isBridgeConnected={true}
+        isSyncing={false}
+        syncError={null}
+        storageQuota={{ usage: 0, quota: 1024 * 1024 * 1024, persisted: true }}
+        cachedAudioSize={0}
+        totalTracks={1}
+        taggedCount={1}
+        skippedCount={0}
+        onPullBatch={vi.fn()}
+        onCommitToMac={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('QUICK CONTROLS & GESTURES')).toBeInTheDocument();
+    expect(screen.getByText(/DJ TRANSPORT BUTTON/i)).toBeInTheDocument();
+    expect(screen.getByText(/1× Smart Replay/i)).toBeInTheDocument();
+
+    const textContent = container.textContent || '';
+    expect(textContent).not.toMatch(/\b(AI|Gemini|LLM)\b/i);
+  });
+
+  it('TC-PI-09: routes track, advances activeTrackIndex, and triggers auto-play on next track', async () => {
+    vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
+    usePocketStore.setState({
+      tracks: [
+        { id: 't1', filename: '01.mp3', title: 'Track 1', artist: 'Artist 1', duration: 180 },
+        { id: 't2', filename: '02.mp3', title: 'Track 2', artist: 'Artist 2', duration: 200 }
+      ],
+      decisions: {},
+      selectedFolders: ['desert vibe'],
+      activeTrackIndex: 0,
+      activeView: 'sorter',
+      isPlaying: false
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    const routeBtn = screen.getByRole('button', { name: /Route & Next/i });
+    await act(async () => {
+      fireEvent.click(routeBtn);
+    });
+
+    expect(usePocketStore.getState().activeTrackIndex).toBe(1);
+
+    await vi.waitFor(() => {
+      expect(usePocketStore.getState().isPlaying).toBe(true);
+    });
+  });
+
+  it('TC-PI-10: 1× auto-replays current track from 00:00 when ended with selected folders, then stops on second end', async () => {
+    vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
+    usePocketStore.setState({
+      tracks: [
+        { id: 't1', filename: '01.mp3', title: 'Track 1', artist: 'Artist 1', duration: 180 }
+      ],
+      decisions: {},
+      selectedFolders: ['desert vibe'],
+      activeTrackIndex: 0,
+      activeView: 'sorter',
+      isPlaying: true
+    });
+
+    const createdAudios: HTMLAudioElement[] = [];
+    const origAudio = window.Audio;
+    class MockAudio extends origAudio {
+      constructor(src?: string) {
+        super(src);
+        createdAudios.push(this);
+      }
+    }
+    window.Audio = MockAudio as unknown as typeof Audio;
+
+    try {
+      await act(async () => {
+        render(<App />);
+      });
+
+      const audio = createdAudios[0];
+      expect(audio).toBeDefined();
+
+      // Simulate track playing to 179s then ending
+      audio.currentTime = 179;
+      await act(async () => {
+        audio.dispatchEvent(new Event('ended'));
+      });
+
+      // 1st ended event: rewound to 0 and kept playing
+      expect(audio.currentTime).toBe(0);
+      expect(usePocketStore.getState().isPlaying).toBe(true);
+
+      // 2nd ended event: stops completely
+      await act(async () => {
+        audio.dispatchEvent(new Event('ended'));
+      });
+
+      expect(usePocketStore.getState().isPlaying).toBe(false);
+    } finally {
+      window.Audio = origAudio;
+    }
+  });
+
+  it('TC-PI-11: stops playback immediately on track ended when no vibe folders are selected', async () => {
+    vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
+    usePocketStore.setState({
+      tracks: [
+        { id: 't1', filename: '01.mp3', title: 'Track 1', artist: 'Artist 1', duration: 180 }
+      ],
+      decisions: {},
+      selectedFolders: [],
+      activeTrackIndex: 0,
+      activeView: 'sorter',
+      isPlaying: true
+    });
+
+    const createdAudios: HTMLAudioElement[] = [];
+    const origAudio = window.Audio;
+    class MockAudio extends origAudio {
+      constructor(src?: string) {
+        super(src);
+        createdAudios.push(this);
+      }
+    }
+    window.Audio = MockAudio as unknown as typeof Audio;
+
+    try {
+      await act(async () => {
+        render(<App />);
+      });
+
+      const audio = createdAudios[0];
+      expect(audio).toBeDefined();
+
+      await act(async () => {
+        audio.dispatchEvent(new Event('ended'));
+      });
+
+      expect(usePocketStore.getState().isPlaying).toBe(false);
+    } finally {
+      window.Audio = origAudio;
+    }
   });
 });

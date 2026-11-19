@@ -92,6 +92,10 @@ body {
   transform: scale(0.97);
 }
 
+.pad-active {
+  font-weight: 700;
+}
+
 .glow-yellow-active {
   border-color: #ffff00 !important;
   color: #ffff00 !important;

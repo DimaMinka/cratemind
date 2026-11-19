@@ -130,9 +130,15 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
 
 ### PWA Views & Touch Gestures (`pocket-web/`)
 
-- **Sorter (`VibeSorterView`)**: 3x7 OLED dark DJ pad grid (54pt touch targets, 13px font labels, categorized by vibe color palette with alphabetical sorting inside each category, iOS safe-area insets padding, natural vertical scroll), duration/BPM/key badges, square DJ-controller style Play/Pause button (single tap to toggle playback, double tap to seek `-30s`, hold to seek `+10s` continuously), 16-segment `INTR/DRP/BRK/OUT` energy LED bar, `RAG XX%` and `YT MATCH` badges, tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
+- **Sorter (`VibeSorterView`)**: 3x7 OLED dark DJ pad grid (54pt touch targets, 13px font labels, categorized by vibe color palette with alphabetical sorting inside each category, iOS safe-area insets padding, natural vertical scroll). Features:
+  - **Auto-Play On Advance**: Routing (`Route & Next` or `450ms` 1-tap hold) or skipping automatically advances and begins playing the next preview track seamlessly.
+  - **Category-Colored Active Glow**: Selected pads light up with their distinct neon category color (`Nature #00FFFF`, `Party/Groove #FFFF00`, `Cosmic/Deep #FF00FF`, `Genres/Utility #D4D4D4`) instead of a single uniform color.
+  - **Smart 1× Auto-Replay**: If 1 or more crates are selected when a track finishes playing, the track restarts from `00:00` once to let you finalize your selection, then stops completely.
+  - **DJ Transport Controls**: Square DJ-controller Play/Pause button (single tap to toggle playback, double tap to seek `-30s`, hold to seek `+10s` continuously).
+  - **Waveform & Telemetry**: 16-segment `INTR/DRP/BRK/OUT` energy LED bar, duration/BPM/key badges, and `RAG XX%` and `YT MATCH` discovery badges.
+  - **Tactile Gestures**: Tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
 - **Queue (`BatchQueueView`)**: Instant filterable queue (`All`, `Pending`, `Tagged`, `Skipped`) and batch commit trigger with zero UI clutter.
-- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, and a dedicated **"Clear Cache & Queue"** action to purge cached audio blobs, reset local decisions, and clear the current batch queue.
+- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, and an embedded **"Quick Controls & Gestures"** manual card detailing all playback workflows, gestures, and badge meanings.
 
 ### iPhone PWA Setup & Usage
 

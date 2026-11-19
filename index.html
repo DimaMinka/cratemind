@@ -1832,16 +1832,19 @@
             <code>YT MATCH</code> badges.
           </li>
           <li>
-            <b>One-Handed DJ Gestures:</b> Tap pads for multi-select routing, hold any pad for
-            <b>450ms</b> (long-press with haptic feedback) for 1-tap instant routing, or
-            <b>swipe left</b> to skip tracks.
+            <b>One-Handed DJ Gestures &amp; Playback:</b> Tap pads for multi-select routing with
+            category-colored neon glow (<code class="cyan">Nature</code>,
+            <code class="yellow">Party</code>, <code class="magenta">Cosmic</code>,
+            <code class="silver">Genres</code>), hold any pad for <b>450ms</b> (long-press with
+            haptic feedback) for instant 1-tap routing, or <b>swipe left</b> to skip tracks.
+            Auto-play starts the next track automatically upon routing or skipping.
           </li>
           <li>
-            <b>iOS Persistent Audio &amp; IndexedDB Offline Store:</b> Reuses a single persistent
-            <code>HTMLAudioElement</code> across transitions with
-            <code>URL.revokeObjectURL()</code> cleanup and
-            <code>navigator.mediaSession</code> lockscreen controls, persisting batches, decisions,
-            and audio blobs offline via <code>idb</code> (<code>navigator.storage.persist()</code>).
+            <b>Smart 1&times; Replay &amp; iOS Persistent Audio:</b> If one or more crates are
+            selected when preview playback finishes, the track restarts from <code>00:00</code> once
+            to allow final decision, then stops completely. Reuses a single persistent
+            <code>HTMLAudioElement</code> with <code>navigator.mediaSession</code> lockscreen
+            controls, persisting batches, decisions, and audio blobs offline via <code>idb</code>.
           </li>
           <li>
             <b>4 Dedicated Mobile Views:</b> <code>VibeSorterView</code> (pad matrix),

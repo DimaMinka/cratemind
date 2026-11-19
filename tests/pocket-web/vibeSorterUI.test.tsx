@@ -82,13 +82,29 @@ describe('Tier 3: VibeSorterView (Tactile Pad Matrix, 450ms Route & Zero AI)', (
       expect(defaultProps.onToggleFolder).toHaveBeenCalledWith('desert vibe');
     });
 
-    it('TC-UI-05: applies visual yellow highlight when pad is in selectedFolders', () => {
+    it('TC-UI-05: applies visual category-colored highlight and pad-active when pad is in selectedFolders', () => {
       const { container } = render(
-        <VibeSorterView {...defaultProps} selectedFolders={['desert vibe', 'club party']} />
+        <VibeSorterView
+          {...defaultProps}
+          selectedFolders={['desert vibe', 'club party', 'galaxy trip', "drum 'n' bass"]}
+        />
       );
 
-      const activePad = container.querySelector('[data-folder="desert vibe"]');
-      expect(activePad?.className).toContain('glow-yellow-active');
+      const naturePad = container.querySelector('[data-folder="desert vibe"]') as HTMLElement;
+      const partyPad = container.querySelector('[data-folder="club party"]') as HTMLElement;
+      const cosmicPad = container.querySelector('[data-folder="galaxy trip"]') as HTMLElement;
+      const genresPad = container.querySelector('[data-folder="drum \'n\' bass"]') as HTMLElement;
+
+      expect(naturePad?.className).toContain('pad-active');
+      expect(naturePad?.getAttribute('data-category-color')).toBe('#00FFFF');
+      expect(partyPad?.getAttribute('data-category-color')).toBe('#FFFF00');
+      expect(cosmicPad?.getAttribute('data-category-color')).toBe('#FF00FF');
+      expect(genresPad?.getAttribute('data-category-color')).toBe('#D4D4D4');
+
+      expect(naturePad?.style.borderLeftColor).toBe('rgb(0, 255, 255)');
+      expect(partyPad?.style.borderLeftColor).toBe('rgb(255, 255, 0)');
+      expect(cosmicPad?.style.borderLeftColor).toBe('rgb(255, 0, 255)');
+      expect(genresPad?.style.borderLeftColor).toBe('rgb(212, 212, 212)');
     });
   });
 

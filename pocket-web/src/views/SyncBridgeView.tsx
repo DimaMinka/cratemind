@@ -1,6 +1,7 @@
 import React from 'react';
 import type { StorageQuotaInfo } from '../hooks/pocketStore.types.js';
 import { exportDecisionsAsJson } from '../engine/indexedDbStore.js';
+import { PocketHelpCard } from '../components/sync/PocketHelpCard.js';
 
 export interface SyncBridgeViewProps {
   isBridgeConnected: boolean;
@@ -168,6 +169,9 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
           </button>
         )}
       </section>
+
+      {/* Card 5: Quick Controls & Gesture Help Zone */}
+      <PocketHelpCard />
     </div>
   );
 };

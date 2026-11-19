@@ -47,6 +47,9 @@ export const App: React.FC = () => {
     audioEngineRef.current = new IosAudioEngine();
   }
 
+  const shouldAutoPlayRef = useRef<boolean>(false);
+  const replayCountRef = useRef<number>(0);
+
   const currentTrack = tracks[activeTrackIndex] || null;
   const currentDurationRef = useRef<number>(220);
   currentDurationRef.current = currentTrack?.duration || 220;
@@ -75,9 +78,34 @@ export const App: React.FC = () => {
     if (!engine) return;
 
     engine.onTrackEnded(() => {
-      setIsPlaying(false);
+      const { selectedFolders } = usePocketStore.getState();
+      if (selectedFolders.length > 0 && replayCountRef.current === 0) {
+        replayCountRef.current = 1;
+        const audio = engine.getAudioElement();
+        audio.currentTime = 0;
+        const targetDuration =
+          Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : currentDurationRef.current;
+        setPlaybackTime(0, targetDuration);
+        engine.updatePositionState();
+        void engine.play().then((started) => {
+          setIsPlaying(started);
+        });
+      } else {
+        setIsPlaying(false);
+      }
     });
     engine.onNext(() => {
+      const { activeTrackIndex, tracks: batchTracks } = usePocketStore.getState();
+      if (activeTrackIndex + 1 < batchTracks.length) {
+        shouldAutoPlayRef.current = true;
+        void audioEngineRef.current?.unlock();
+      } else {
+        shouldAutoPlayRef.current = false;
+        audioEngineRef.current?.pause();
+        setIsPlaying(false);
+      }
       void usePocketStore.getState().routeTrack();
     });
     engine.onPrev(() => {
@@ -104,20 +132,65 @@ export const App: React.FC = () => {
     const engine = audioEngineRef.current;
     if (!currentTrack || !engine) return;
 
+    replayCountRef.current = 0;
     setIsPlaying(false);
     setPlaybackTime(0, currentTrack.duration || 220);
 
     void getAudioBlob(currentTrack.id)
       .catch(() => null)
-      .then((blob) => {
+      .then(async (blob) => {
         if (!cancelled) {
-          void engine.loadTrack(currentTrack, blob ?? undefined);
+          await engine.loadTrack(currentTrack, blob ?? undefined);
+          if (!cancelled && shouldAutoPlayRef.current) {
+            shouldAutoPlayRef.current = false;
+            const started = await engine.play();
+            setIsPlaying(started);
+          }
         }
       });
     return () => {
       cancelled = true;
     };
   }, [currentTrack, setIsPlaying, setPlaybackTime]);
+
+  const handleRouteInstant = (folder: string) => {
+    const { activeTrackIndex, tracks: batchTracks } = usePocketStore.getState();
+    if (activeTrackIndex + 1 < batchTracks.length) {
+      shouldAutoPlayRef.current = true;
+      void audioEngineRef.current?.unlock();
+    } else {
+      shouldAutoPlayRef.current = false;
+      audioEngineRef.current?.pause();
+      setIsPlaying(false);
+    }
+    void routeTrack(folder);
+  };
+
+  const handleRouteNext = () => {
+    const { activeTrackIndex, tracks: batchTracks } = usePocketStore.getState();
+    if (activeTrackIndex + 1 < batchTracks.length) {
+      shouldAutoPlayRef.current = true;
+      void audioEngineRef.current?.unlock();
+    } else {
+      shouldAutoPlayRef.current = false;
+      audioEngineRef.current?.pause();
+      setIsPlaying(false);
+    }
+    void routeTrack();
+  };
+
+  const handleSkipTrack = () => {
+    const { activeTrackIndex, tracks: batchTracks } = usePocketStore.getState();
+    if (activeTrackIndex + 1 < batchTracks.length) {
+      shouldAutoPlayRef.current = true;
+      void audioEngineRef.current?.unlock();
+    } else {
+      shouldAutoPlayRef.current = false;
+      audioEngineRef.current?.pause();
+      setIsPlaying(false);
+    }
+    void skipTrack();
+  };
 
   const handleTogglePlay = () => {
     const engine = audioEngineRef.current;
@@ -200,9 +273,9 @@ export const App: React.FC = () => {
             totalTracks={tracks.length}
             selectedFolders={selectedFolders}
             onToggleFolder={toggleFolder}
-            onRouteInstant={(f) => void routeTrack(f)}
-            onRouteNext={() => void routeTrack()}
-            onSkipTrack={() => void skipTrack()}
+            onRouteInstant={handleRouteInstant}
+            onRouteNext={handleRouteNext}
+            onSkipTrack={handleSkipTrack}
             isPlaying={isPlaying}
             currentTime={currentTime}
             duration={duration}

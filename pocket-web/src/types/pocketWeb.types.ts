@@ -119,3 +119,12 @@ export interface PocketHealthStatus {
   isBusy: boolean;
   activeTask: string | null;
 }
+
+export interface CrateCategory {
+  name: string;
+  color: string;
+  borderColor: string;
+  activeColor: string;
+  glowRgba: string;
+  folders: string[];
+}
