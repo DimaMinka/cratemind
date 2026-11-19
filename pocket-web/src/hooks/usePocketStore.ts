@@ -33,7 +33,6 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   selectedFolders: [],
 
   activeView: 'sorter',
-  isInspectorOpen: false,
   queueFilter: 'all',
 
   isPlaying: false,
@@ -48,7 +47,6 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   storageQuota: { usage: 0, quota: 0, persisted: false },
 
   setActiveView: (view: PocketView) => set({ activeView: view }),
-  setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
   setQueueFilter: (filter: QueueFilter) => set({ queueFilter: filter }),
 
   toggleFolder: (folder: string) => {
@@ -222,32 +220,6 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
       isPlaying: false,
       currentTime: 0
     });
-  },
-
-  applyRagAndYtMatches: async () => {
-    const { tracks, activeTrackIndex, routeTrack } = get();
-    const currentTrack = tracks[activeTrackIndex];
-    if (!currentTrack) return;
-
-    const collected: string[] = [];
-    if (currentTrack.ragSuggestions && currentTrack.ragSuggestions.length > 0) {
-      collected.push(currentTrack.ragSuggestions[0].folder);
-    } else if (currentTrack.ragSuggestion?.folder) {
-      collected.push(currentTrack.ragSuggestion.folder);
-    }
-
-    if (currentTrack.ytScout) {
-      const scout = currentTrack.ytScout;
-      const ytFolder = scout.matchedFolder || scout.suggestedFolder;
-      if (ytFolder && !collected.includes(ytFolder)) {
-        collected.push(ytFolder);
-      }
-    }
-
-    if (collected.length > 0) {
-      set({ isInspectorOpen: false });
-      await routeTrack(collected);
-    }
   },
 
   setIsPlaying: (playing: boolean) => set({ isPlaying: playing }),

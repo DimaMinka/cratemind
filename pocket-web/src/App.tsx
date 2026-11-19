@@ -8,7 +8,6 @@ import { ScanlineOverlay } from './components/common/ScanlineOverlay.js';
 import { VibeSorterView } from './components/sorter/VibeSorterView.js';
 import { BatchQueueView } from './views/BatchQueueView.js';
 import { SyncBridgeView } from './views/SyncBridgeView.js';
-import { InspectorBottomSheet } from './views/InspectorBottomSheet.js';
 
 export const App: React.FC = () => {
   const {
@@ -18,7 +17,6 @@ export const App: React.FC = () => {
     decisions,
     selectedFolders,
     activeView,
-    isInspectorOpen,
     queueFilter,
     isPlaying,
     currentTime,
@@ -29,13 +27,11 @@ export const App: React.FC = () => {
     syncError,
     storageQuota,
     setActiveView,
-    setInspectorOpen,
     setQueueFilter,
     toggleFolder,
     routeTrack,
     skipTrack,
     selectTrackIndex,
-    applyRagAndYtMatches,
     setIsPlaying,
     setPlaybackTime,
     checkBridgeHealth,
@@ -147,7 +143,7 @@ export const App: React.FC = () => {
         Number.isFinite(audio.duration) && audio.duration > 0
           ? audio.duration
           : currentTrack?.duration || 220;
-      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      audio.currentTime = Math.max(0, audio.currentTime - 30);
       setPlaybackTime(audio.currentTime, targetDuration);
       engine.updatePositionState();
     }
@@ -161,7 +157,7 @@ export const App: React.FC = () => {
         Number.isFinite(audio.duration) && audio.duration > 0
           ? audio.duration
           : currentTrack?.duration || 220;
-      audio.currentTime = Math.min(targetDuration, audio.currentTime + 30);
+      audio.currentTime = Math.min(targetDuration, audio.currentTime + 10);
       setPlaybackTime(audio.currentTime, targetDuration);
       engine.updatePositionState();
     }
@@ -198,7 +194,7 @@ export const App: React.FC = () => {
         {currentTrack ? (
           <VibeSorterView
             showHeader={false}
-            isActive={activeView === 'sorter' && !isInspectorOpen}
+            isActive={activeView === 'sorter'}
             currentTrack={currentTrack}
             trackIndex={activeTrackIndex}
             totalTracks={tracks.length}
@@ -207,7 +203,6 @@ export const App: React.FC = () => {
             onRouteInstant={(f) => void routeTrack(f)}
             onRouteNext={() => void routeTrack()}
             onSkipTrack={() => void skipTrack()}
-            onOpenInspector={() => setInspectorOpen(true)}
             isPlaying={isPlaying}
             currentTime={currentTime}
             duration={duration}
@@ -246,10 +241,6 @@ export const App: React.FC = () => {
           activeTrackId={currentTrack?.id}
           onSelectFilter={setQueueFilter}
           onSelectTrack={selectTrackIndex}
-          onOpenInspector={(t) => {
-            selectTrackIndex(tracks.findIndex((x) => x.id === t.id));
-            setInspectorOpen(true);
-          }}
           onCommit={() => void commitToMac()}
           isSyncing={isSyncing}
         />
@@ -275,14 +266,6 @@ export const App: React.FC = () => {
           onClearDecisions={() => void resetAllDecisions()}
         />
       </div>
-
-      {/* Inspector Bottom Sheet Modal */}
-      <InspectorBottomSheet
-        isOpen={isInspectorOpen}
-        track={currentTrack}
-        onClose={() => setInspectorOpen(false)}
-        onApplyMatches={() => void applyRagAndYtMatches()}
-      />
     </div>
   );
 };

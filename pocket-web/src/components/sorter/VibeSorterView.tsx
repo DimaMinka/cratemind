@@ -13,7 +13,6 @@ export interface VibeSorterViewProps {
   onToggleFolder: (folder: string) => void;
   onRouteInstant: (folder: string) => void;
   onSkipTrack: () => void;
-  onOpenInspector: () => void;
   onRouteNext?: () => void;
   isPlaying?: boolean;
   currentTime?: number;
@@ -33,7 +32,6 @@ export const VibeSorterView: React.FC<VibeSorterViewProps> = ({
   onToggleFolder,
   onRouteInstant,
   onSkipTrack,
-  onOpenInspector,
   onRouteNext,
   isPlaying = false,
   currentTime = 0,
@@ -85,7 +83,6 @@ export const VibeSorterView: React.FC<VibeSorterViewProps> = ({
         onTogglePlay={onTogglePlay}
         onSeekBackward={onSeekBackward}
         onSeekForward={onSeekForward}
-        onOpenInspector={onOpenInspector}
       />
 
       {/* 21 Pad Grid */}

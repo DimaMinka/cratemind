@@ -31,8 +31,7 @@ describe('Tier 3: VibeSorterView (Tactile Pad Matrix, 450ms Route & Zero AI)', (
     selectedFolders: [] as string[],
     onToggleFolder: vi.fn(),
     onRouteInstant: vi.fn(),
-    onSkipTrack: vi.fn(),
-    onOpenInspector: vi.fn()
+    onSkipTrack: vi.fn()
   };
 
   beforeEach(() => {
@@ -171,15 +170,59 @@ describe('Tier 3: VibeSorterView (Tactile Pad Matrix, 450ms Route & Zero AI)', (
   });
 
   describe('Gesture & Controls', () => {
-    it('TC-UI-12: triggers onSkipTrack on skip button click and onOpenInspector on info click', () => {
-      render(<VibeSorterView {...defaultProps} />);
+    it('TC-UI-12: triggers onSkipTrack on skip click and supports DJ play button gestures (tap, double-tap -30s, hold +10s)', () => {
+      const onTogglePlay = vi.fn();
+      const onSeekBackward = vi.fn();
+      const onSeekForward = vi.fn();
+      render(
+        <VibeSorterView
+          {...defaultProps}
+          onTogglePlay={onTogglePlay}
+          onSeekBackward={onSeekBackward}
+          onSeekForward={onSeekForward}
+        />
+      );
+
+      // Duration badge rendered alongside BPM
+      expect(screen.getByText('03:40')).toBeInTheDocument();
+
       const skipBtn = screen.getByText('SKIP');
       fireEvent.click(skipBtn);
       expect(defaultProps.onSkipTrack).toHaveBeenCalledTimes(1);
 
-      const inspectBtn = screen.getByLabelText('Open Inspector');
-      fireEvent.click(inspectBtn);
-      expect(defaultProps.onOpenInspector).toHaveBeenCalledTimes(1);
+      const playBtn = screen.getByLabelText('Play');
+
+      // Single tap -> toggle play after double-tap window
+      act(() => {
+        fireEvent.pointerDown(playBtn, { button: 0, pointerType: 'touch' });
+        fireEvent.pointerUp(playBtn);
+        vi.advanceTimersByTime(300);
+      });
+      expect(onTogglePlay).toHaveBeenCalledTimes(1);
+      expect(onSeekBackward).not.toHaveBeenCalled();
+
+      // Double tap -> seek backward 30s without toggling play
+      act(() => {
+        fireEvent.pointerDown(playBtn, { button: 0, pointerType: 'touch' });
+        fireEvent.pointerUp(playBtn);
+        vi.advanceTimersByTime(100);
+        fireEvent.pointerDown(playBtn, { button: 0, pointerType: 'touch' });
+        fireEvent.pointerUp(playBtn);
+        vi.advanceTimersByTime(300);
+      });
+      expect(onSeekBackward).toHaveBeenCalledTimes(1);
+      expect(onTogglePlay).toHaveBeenCalledTimes(1);
+
+      // Hold -> seek forward 10s repeatedly while held, no toggle play on release
+      act(() => {
+        fireEvent.pointerDown(playBtn, { button: 0, pointerType: 'touch' });
+        vi.advanceTimersByTime(350);
+        vi.advanceTimersByTime(350);
+        fireEvent.pointerUp(playBtn);
+        vi.advanceTimersByTime(300);
+      });
+      expect(onSeekForward).toHaveBeenCalledTimes(2);
+      expect(onTogglePlay).toHaveBeenCalledTimes(1);
     });
 
     it('TC-UI-13: releasing pointer after 450ms long press suppresses click and does not trigger onToggleFolder', () => {

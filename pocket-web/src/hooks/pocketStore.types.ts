@@ -21,9 +21,8 @@ export interface PocketStoreState {
   decisions: Record<string, PocketDecision>;
   selectedFolders: string[];
 
-  // Navigation & Modal
+  // Navigation
   activeView: PocketView;
-  isInspectorOpen: boolean;
   queueFilter: QueueFilter;
 
   // Audio state
@@ -41,7 +40,6 @@ export interface PocketStoreState {
 
   // Actions
   setActiveView: (view: PocketView) => void;
-  setInspectorOpen: (open: boolean) => void;
   setQueueFilter: (filter: QueueFilter) => void;
   toggleFolder: (folder: string) => void;
   setSelectedFolders: (folders: string[]) => void;
@@ -52,7 +50,6 @@ export interface PocketStoreState {
   nextTrack: () => void;
   undoDecision: (trackId: string) => Promise<void>;
   resetAllDecisions: () => Promise<void>;
-  applyRagAndYtMatches: () => Promise<void>;
   setIsPlaying: (playing: boolean) => void;
   setPlaybackTime: (currentTime: number, duration?: number) => void;
   setCachedAudioSize: (bytes: number) => void;

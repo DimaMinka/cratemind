@@ -17,7 +17,6 @@ import {
   commitToMacAction
 } from '../../pocket-web/src/hooks/pocketSyncActions.js';
 import { usePocketStore } from '../../pocket-web/src/hooks/usePocketStore.js';
-import { InspectorBottomSheet } from '../../pocket-web/src/views/InspectorBottomSheet.js';
 import { BatchQueueView } from '../../pocket-web/src/views/BatchQueueView.js';
 import { SyncBridgeView } from '../../pocket-web/src/views/SyncBridgeView.js';
 import { HeaderTelemetry } from '../../pocket-web/src/components/common/HeaderTelemetry.js';
@@ -166,46 +165,6 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(finalPatch.tracks[0].id).toBe('t2');
   });
 
-  it('TC-PI-03: InspectorBottomSheet renders backend playlistTitle, yt/rag neighbors', () => {
-    const backendTrack: PocketTrackItem = {
-      id: 'bk-1',
-      filename: 'Bedouin - Nomad.mp3',
-      title: 'Nomad',
-      artist: 'Bedouin',
-      duration: 240,
-      ragSuggestion: {
-        folder: 'desert vibe',
-        confidence: 94,
-        matchType: 'clap_embedding',
-        neighbors: [
-          { artist: 'Bedouin', title: 'Whistleman', folder: 'desert vibe', similarity: 0.94 }
-        ]
-      },
-      ytScout: {
-        hasMatch: true,
-        playlistId: 'pl-1',
-        playlistTitle: 'Cercle Petra Set #07',
-        trackIndex: 7,
-        matchedFolder: 'nargila vibe',
-        neighbors: [{ index: 6, artist: 'Viken Arman', title: 'Rosas', folder: 'desert vibe' }]
-      }
-    };
-
-    render(
-      <InspectorBottomSheet
-        isOpen={true}
-        track={backendTrack}
-        onClose={vi.fn()}
-        onApplyMatches={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText('Cercle Petra Set #07')).toBeInTheDocument();
-    expect(screen.getByText('#6 Viken Arman -> desert vibe')).toBeInTheDocument();
-    expect(screen.getByText('Bedouin - Whistleman')).toBeInTheDocument();
-    expect(screen.getByText('Cosine 0.94 -> desert vibe')).toBeInTheDocument();
-  });
-
   it('TC-PI-05: BatchQueueView and SyncBridgeView enable Commit when skippedCount > 0 and taggedCount === 0', () => {
     const track: PocketTrackItem = {
       id: 'sk-1',
@@ -224,7 +183,6 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
           activeFilter="all"
           onSelectFilter={vi.fn()}
           onSelectTrack={vi.fn()}
-          onOpenInspector={vi.fn()}
           onCommit={vi.fn()}
         />
         <SyncBridgeView
@@ -269,7 +227,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
       </>
     );
 
-    const cacheText = screen.getByText('OFFLINE CACHED • 0 MB');
+    const cacheText = screen.getByText('CACHED • 0 MB');
     expect(cacheText.className).not.toContain('hidden');
     const pad = container.querySelector('[data-folder="psy"]');
     expect(pad?.className).toContain('bg-neutral-900');
@@ -277,7 +235,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(pad?.className).not.toContain('bg-amber-400');
   });
 
-  it('TC-PI-07: App runs initStore once on mount, excludes pending from sortedCount, updates seek time, and isolates modal swipe', async () => {
+  it('TC-PI-07: App runs initStore once on mount, excludes pending from sortedCount, and shows duration badge', async () => {
     const initSpy = vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
     usePocketStore.setState({
       tracks: [
@@ -289,8 +247,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
         a2: { trackId: 'a2', filename: 'a2.mp3', status: 'pending', selectedFolders: [] }
       },
       activeTrackIndex: 0,
-      activeView: 'sorter',
-      isInspectorOpen: false
+      activeView: 'sorter'
     });
 
     await act(async () => {
@@ -299,28 +256,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
 
     expect(initSpy).toHaveBeenCalledTimes(1);
     expect(screen.getByText('0 / 2 SORTED')).toBeInTheDocument();
-
-    // Seek forward +30s updates UI time immediately
-    fireEvent.click(screen.getByText('+30s'));
-    expect(screen.getByText('00:30 / 03:20')).toBeInTheDocument();
-
-    // Open inspector and verify swipe left does not skip track
-    fireEvent.click(screen.getByLabelText('Open Inspector'));
-    act(() => {
-      const startTouch = { clientX: 300, clientY: 400 };
-      const endTouch = { clientX: 150, clientY: 400 };
-      window.dispatchEvent(
-        new TouchEvent('touchstart', { touches: [startTouch as unknown as Touch], bubbles: true })
-      );
-      window.dispatchEvent(
-        new TouchEvent('touchend', {
-          touches: [],
-          changedTouches: [endTouch as unknown as Touch],
-          bubbles: true
-        })
-      );
-    });
-    expect(usePocketStore.getState().activeTrackIndex).toBe(0);
-    expect(initSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('03:20')).toBeInTheDocument();
+    expect(screen.getByLabelText('Play')).toBeInTheDocument();
   });
 });

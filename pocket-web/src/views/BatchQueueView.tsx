@@ -9,7 +9,6 @@ export interface BatchQueueViewProps {
   activeTrackId?: string;
   onSelectFilter: (filter: QueueFilter) => void;
   onSelectTrack: (trackIndex: number) => void;
-  onOpenInspector: (track: PocketTrackItem) => void;
   onCommit: () => void;
   isSyncing?: boolean;
 }
@@ -21,7 +20,6 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
   activeTrackId,
   onSelectFilter,
   onSelectTrack,
-  onOpenInspector,
   onCommit,
   isSyncing = false
 }) => {
@@ -180,18 +178,6 @@ export const BatchQueueView: React.FC<BatchQueueViewProps> = ({
                     )
                   )}
                 </div>
-
-                <button
-                  type="button"
-                  aria-label="Inspect track"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenInspector(track);
-                  }}
-                  className="px-2 py-1 shrink-0 bg-neutral-800 hover:bg-neutral-700 text-[#00FFFF] rounded border border-neutral-700 text-xs font-mono"
-                >
-                  INFO
-                </button>
               </div>
             );
           })
