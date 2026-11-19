@@ -4,6 +4,7 @@ import { usePwaUpdate } from './hooks/usePwaUpdate.js';
 import { IosAudioEngine } from './engine/iosAudioEngine.js';
 import { getAudioBlob } from './engine/indexedDbStore.js';
 import { HeaderTelemetry } from './components/common/HeaderTelemetry.js';
+import { LandscapeGuardOverlay } from './components/common/LandscapeGuardOverlay.js';
 import { SegmentedNav } from './components/common/SegmentedNav.js';
 import { ScanlineOverlay } from './components/common/ScanlineOverlay.js';
 import { VibeSorterView } from './components/sorter/VibeSorterView.js';
@@ -262,6 +263,11 @@ export const App: React.FC = () => {
       className="flex flex-col h-dvh max-h-dvh w-full max-w-[390px] mx-auto bg-black text-neutral-200 select-none overflow-hidden relative justify-between font-sans border-x border-neutral-900"
     >
       <ScanlineOverlay />
+      <LandscapeGuardOverlay
+        isPlaying={isPlaying}
+        hasTrack={Boolean(currentTrack)}
+        onTogglePlay={handleTogglePlay}
+      />
 
       {/* Header Telemetry (temporarily swaps to Update Banner when a new build is ready) */}
       <HeaderTelemetry

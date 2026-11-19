@@ -672,4 +672,25 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     const remainingMutations = await getPendingMutations();
     expect(remainingMutations.some((m) => m.trackId === 'u1')).toBe(false);
   });
+
+  it('TC-PI-18: App renders LandscapeGuardOverlay with ROTATE TO PORTRAIT and Play/Pause button', async () => {
+    vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
+    usePocketStore.setState({
+      tracks: [{ id: 'lg1', filename: 'lg1.mp3', title: 'LG1', artist: 'Art', duration: 180 }],
+      decisions: {},
+      activeTrackIndex: 0,
+      activeView: 'sorter',
+      isPlaying: false
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    const guard = screen.getByTestId('landscape-guard');
+    expect(guard).toBeInTheDocument();
+    expect(guard.className).toContain('landscape-guard-overlay');
+    expect(screen.getByText('ROTATE TO PORTRAIT')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Play playback/i })).toBeInTheDocument();
+  });
 });

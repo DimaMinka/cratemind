@@ -112,6 +112,17 @@ body {
   box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
 }
 
+/* Landscape orientation guard on mobile phones */
+.landscape-guard-overlay {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-guard-overlay {
+    display: flex;
+  }
+}
+
 /* Custom Scrollbar for Queue */
 ::-webkit-scrollbar {
   width: 4px;
