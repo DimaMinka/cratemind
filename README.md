@@ -138,7 +138,7 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
   - **Waveform & Telemetry**: 16-segment `INTR/DRP/BRK/OUT` energy LED bar, duration/BPM/key badges, and `RAG XX%` and `YT MATCH` discovery badges.
   - **Tactile Gestures**: Tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
 - **Queue (`BatchQueueView`)**: Instant filterable queue (`All`, `Pending`, `Tagged`, `Skipped`) and batch commit trigger with zero UI clutter.
-- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, and an embedded **"Quick Controls & Gestures"** manual card detailing all playback workflows, gestures, and badge meanings.
+- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, and an embedded collapsible **"Quick Controls & Gestures"** accordion manual card (default collapsed, accessible `>= 44px` toggle) detailing all playback workflows, gestures, badge meanings, Queue re-tagging, and Sync commit mechanics.
 
 ### iPhone PWA Setup & Usage
 

@@ -262,7 +262,7 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(screen.getByLabelText('Play')).toBeInTheDocument();
   });
 
-  it('TC-PI-08: SyncBridgeView renders PocketHelpCard with quick controls and zero AI/LLM terms', () => {
+  it('TC-PI-08: SyncBridgeView renders PocketHelpCard as collapsible accordion with zero AI/LLM terms', () => {
     const { container } = render(
       <SyncBridgeView
         isBridgeConnected={true}
@@ -278,12 +278,32 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
       />
     );
 
-    expect(screen.getByText('QUICK CONTROLS & GESTURES')).toBeInTheDocument();
+    // 1. Collapsed by default
+    const toggleBtn = screen.getByRole('button', { name: /QUICK CONTROLS & GESTURES/i });
+    expect(toggleBtn).toBeInTheDocument();
+    expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('[+] HELP')).toBeInTheDocument();
+    expect(screen.queryByText(/DJ TRANSPORT BUTTON/i)).not.toBeInTheDocument();
+
+    // 2. Click to expand
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('[−] HIDE')).toBeInTheDocument();
     expect(screen.getByText(/DJ TRANSPORT BUTTON/i)).toBeInTheDocument();
     expect(screen.getByText(/1× Smart Replay/i)).toBeInTheDocument();
+    expect(screen.getByText('RAG XX%')).toBeInTheDocument();
+    expect(screen.getByText('YT MATCH')).toBeInTheDocument();
+    expect(screen.getByText(/QUEUE & RE-TAGGING/i)).toBeInTheDocument();
+    expect(screen.getByText(/SYNC & OFFLINE STORAGE/i)).toBeInTheDocument();
 
+    // 3. Strict zero AI / LLM copy policy across expanded content
     const textContent = container.textContent || '';
     expect(textContent).not.toMatch(/\b(AI|Gemini|LLM)\b/i);
+
+    // 4. Click again to collapse
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/DJ TRANSPORT BUTTON/i)).not.toBeInTheDocument();
   });
 
   it('TC-PI-09: routes track, advances activeTrackIndex, and triggers auto-play on next track', async () => {
