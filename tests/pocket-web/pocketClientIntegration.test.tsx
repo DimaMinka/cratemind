@@ -533,4 +533,36 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     // IndexedDB audio blob must remain untouched
     expect(await getAudioBlob('keep-me')).not.toBeNull();
   });
+
+  it('TC-PI-15: App automatically swaps HeaderTelemetry to update banner when a waiting Service Worker is detected', async () => {
+    vi.spyOn(usePocketStore.getState(), 'initStore').mockResolvedValue();
+    usePocketStore.setState({
+      tracks: [{ id: 'a1', filename: 'a1.mp3', title: 'A1', artist: 'Art', duration: 200 }],
+      decisions: {},
+      activeTrackIndex: 0,
+      activeView: 'sorter'
+    });
+
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        getRegistrations: vi.fn().mockResolvedValue([
+          {
+            waiting: { postMessage: vi.fn() },
+            update: vi.fn().mockResolvedValue(undefined)
+          }
+        ])
+      },
+      configurable: true
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /UPDATE AVAILABLE • TAP TO RELOAD/i })
+      ).toBeInTheDocument();
+    });
+  });
 });
