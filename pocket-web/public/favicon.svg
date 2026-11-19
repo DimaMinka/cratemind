@@ -1,4 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#000000" stroke="#00FF00" stroke-width="3" />
-  <text x="32" y="42" font-family="monospace" font-size="32" font-weight="bold" fill="#00FF00" text-anchor="middle">★</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="padGlow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#00FF00" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#171717" stop-opacity="0" />
+    </radialGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Solid OLED Black Background (opaque for iOS Home Screen) -->
+  <rect width="512" height="512" fill="#000000" />
+
+  <!-- DJ Controller Play Pad Surface -->
+  <rect
+    x="56"
+    y="56"
+    width="400"
+    height="400"
+    rx="64"
+    fill="#171717"
+    stroke="#00FF00"
+    stroke-width="16"
+    filter="url(#neonGlow)"
+  />
+  <rect x="64" y="64" width="384" height="384" rx="56" fill="url(#padGlow)" />
+
+  <!-- Optically Centered Neon Green Play Triangle (No Text Label) -->
+  <polygon
+    points="204,158 204,354 366,256"
+    fill="#00FF00"
+    stroke="#00FF00"
+    stroke-width="12"
+    stroke-linejoin="round"
+    filter="url(#neonGlow)"
+  />
 </svg>
