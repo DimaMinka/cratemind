@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { usePocketStore } from './hooks/usePocketStore.js';
+import { usePwaUpdate } from './hooks/usePwaUpdate.js';
 import { IosAudioEngine } from './engine/iosAudioEngine.js';
 import { getAudioBlob } from './engine/indexedDbStore.js';
 import { HeaderTelemetry } from './components/common/HeaderTelemetry.js';
@@ -50,6 +51,8 @@ export const App: React.FC = () => {
   const shouldAutoPlayRef = useRef<boolean>(false);
   const replayCountRef = useRef<number>(0);
 
+  const { versionLabel, hasUpdate, isUpdating, checkForUpdate, forceReloadShell } = usePwaUpdate();
+
   const currentTrack = tracks[activeTrackIndex] || null;
   const currentDurationRef = useRef<number>(220);
   currentDurationRef.current = currentTrack?.duration || 220;
@@ -65,12 +68,13 @@ export const App: React.FC = () => {
     void initStore();
   }, [initStore]);
 
-  // Refresh Mac bridge health when opening Sync view
+  // Refresh Mac bridge health & check PWA version when opening Sync view
   useEffect(() => {
     if (activeView === 'sync') {
       void checkBridgeHealth();
+      void checkForUpdate();
     }
-  }, [activeView, checkBridgeHealth]);
+  }, [activeView, checkBridgeHealth, checkForUpdate]);
 
   // Attach single persistent audio engine callbacks and timeupdate listener
   useEffect(() => {
@@ -243,12 +247,15 @@ export const App: React.FC = () => {
     >
       <ScanlineOverlay />
 
-      {/* Header Telemetry */}
+      {/* Header Telemetry (temporarily swaps to Update Banner when a new build is ready) */}
       <HeaderTelemetry
         sortedCount={sortedCount}
         totalTracks={tracks.length}
         cachedBytes={cachedAudioSize}
         ragExamplesCount={manifest?.ragExamplesCount ?? 574}
+        hasUpdate={hasUpdate}
+        isUpdating={isUpdating}
+        onUpdateClick={() => void forceReloadShell()}
       />
 
       {/* Segmented Tab Navigation */}
@@ -337,6 +344,10 @@ export const App: React.FC = () => {
           onCommitToMac={() => void commitToMac()}
           onImportFiles={(files) => void importLocalFiles(files)}
           onClearDecisions={() => void resetAllDecisions()}
+          versionLabel={versionLabel}
+          hasUpdate={hasUpdate}
+          isUpdating={isUpdating}
+          onForceReloadShell={() => void forceReloadShell()}
         />
       </div>
     </div>

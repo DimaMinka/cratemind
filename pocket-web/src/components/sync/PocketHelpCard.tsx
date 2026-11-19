@@ -178,6 +178,12 @@ export const PocketHelpCard: React.FC = () => {
                 for backup, or use <code>Clear Cache &amp; Queue</code> to wipe local device storage
                 (never deletes files on Mac).
               </li>
+              <li>
+                <strong className="text-white">In-App Shell Update:</strong> When a new build is
+                ready on Mac, the top bar turns yellow (<code>TAP TO RELOAD</code>), or use{' '}
+                <code>Force Reload Shell</code> over Wi-Fi without reinstalling the icon or losing
+                IndexedDB data.
+              </li>
             </ul>
           </div>
 

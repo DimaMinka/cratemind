@@ -118,6 +118,8 @@ export interface PocketHealthStatus {
   ragCount: number;
   isBusy: boolean;
   activeTask: string | null;
+  version?: string;
+  buildHash?: string;
 }
 
 export interface CrateCategory {

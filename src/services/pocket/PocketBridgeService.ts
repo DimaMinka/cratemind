@@ -243,7 +243,26 @@ export class PocketBridgeService {
 
     const ragCount = getRagTotalExamples();
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    let version: string | undefined;
+    let buildHash: string | undefined;
+    try {
+      const versionPath = path.join(this.options.staticDir, 'version.json');
+      if (fs.existsSync(versionPath)) {
+        const raw = JSON.parse(fs.readFileSync(versionPath, 'utf8')) as {
+          version?: string;
+          buildHash?: string;
+        };
+        version = raw.version;
+        buildHash = raw.buildHash;
+      }
+    } catch {
+      // Ignore missing or unreadable version.json
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
     res.end(
       JSON.stringify({
         status: 'ok',
@@ -251,7 +270,9 @@ export class PocketBridgeService {
         incomingCount,
         ragCount,
         isBusy,
-        activeTask
+        activeTask,
+        ...(version ? { version } : {}),
+        ...(buildHash ? { buildHash } : {})
       })
     );
   }
@@ -390,9 +411,13 @@ export class PocketBridgeService {
     if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
       const ext = path.extname(targetPath).toLowerCase();
       const mimeType = STATIC_MIME_TYPES[ext] || 'application/octet-stream';
+      const normalizedRel = path.relative(staticDir, targetPath).replace(/\\/g, '/');
+      const isImmutableAsset = normalizedRel.startsWith('assets/');
       res.writeHead(200, {
         'Content-Type': mimeType,
-        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000'
+        'Cache-Control': isImmutableAsset
+          ? 'public, max-age=31536000, immutable'
+          : 'no-cache, no-store, must-revalidate'
       });
       fs.createReadStream(targetPath).pipe(res);
       return;
@@ -403,7 +428,7 @@ export class PocketBridgeService {
     if (fs.existsSync(indexPath)) {
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       });
       fs.createReadStream(indexPath).pipe(res);
       return;

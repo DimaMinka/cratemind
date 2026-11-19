@@ -16,6 +16,10 @@ export interface SyncBridgeViewProps {
   onCommitToMac: () => void;
   onImportFiles?: (files: File[]) => void;
   onClearDecisions?: () => void;
+  versionLabel?: string;
+  hasUpdate?: boolean;
+  isUpdating?: boolean;
+  onForceReloadShell?: () => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -36,7 +40,11 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
   skippedCount = 0,
   onPullBatch,
   onCommitToMac,
-  onClearDecisions
+  onClearDecisions,
+  versionLabel = 'v0.1.0 • #dev',
+  hasUpdate = false,
+  isUpdating = false,
+  onForceReloadShell
 }) => {
   const handleExportJson = async () => {
     try {
@@ -170,7 +178,52 @@ export const SyncBridgeView: React.FC<SyncBridgeViewProps> = ({
         )}
       </section>
 
-      {/* Card 5: Quick Controls & Gesture Help Zone */}
+      {/* Card 5: App Shell & Version */}
+      {onForceReloadShell && (
+        <section className="bg-neutral-900/80 border border-neutral-800 rounded-lg p-3 space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="font-bold text-white">App Shell &amp; Version</span>
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                hasUpdate
+                  ? 'bg-[#FFFF00] text-black'
+                  : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+              }`}
+            >
+              {hasUpdate ? 'UPDATE READY' : versionLabel}
+            </span>
+          </div>
+          {hasUpdate && (
+            <p className="text-[10px] font-mono text-neutral-400">Installed: {versionLabel}</p>
+          )}
+          <button
+            type="button"
+            onClick={onForceReloadShell}
+            disabled={!isBridgeConnected || isSyncing || isUpdating}
+            className={`w-full min-h-[44px] py-2 rounded font-mono text-xs font-bold transition-all ${
+              !isBridgeConnected || isSyncing || isUpdating
+                ? 'bg-neutral-900/40 text-neutral-600 border border-neutral-800 cursor-not-allowed'
+                : hasUpdate
+                  ? 'bg-[#FFFF00] text-black shadow-[0_0_12px_rgba(255,255,0,0.45)] cursor-pointer'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-[#00FFFF] border border-[#00FFFF]/40 cursor-pointer'
+            }`}
+          >
+            {isUpdating
+              ? 'UPDATING SHELL...'
+              : !isBridgeConnected
+                ? 'Force Reload Shell (Requires Wi-Fi)'
+                : hasUpdate
+                  ? 'Update Ready — Reload Shell'
+                  : 'Force Reload Shell'}
+          </button>
+          <p className="text-[10px] text-neutral-500 leading-snug">
+            Clears Service Worker &amp; shell cache only. Your offline tracks &amp; tags in
+            IndexedDB stay untouched.
+          </p>
+        </section>
+      )}
+
+      {/* Card 6: Quick Controls & Gesture Help Zone */}
       <PocketHelpCard />
     </div>
   );

@@ -22,6 +22,7 @@ import { SyncBridgeView } from '../../pocket-web/src/views/SyncBridgeView.js';
 import { HeaderTelemetry } from '../../pocket-web/src/components/common/HeaderTelemetry.js';
 import { VibePad } from '../../pocket-web/src/components/sorter/VibePad.js';
 import { App } from '../../pocket-web/src/App.js';
+import { clearShellCachesAndReload } from '../../pocket-web/src/hooks/usePwaUpdate.js';
 import type {
   PocketBatchManifest,
   PocketTrackItem
@@ -430,5 +431,106 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     } finally {
       window.Audio = origAudio;
     }
+  });
+
+  it('TC-PI-12: HeaderTelemetry swaps to high-contrast update banner when hasUpdate is true while keeping .header-telemetry', () => {
+    const onUpdateClick = vi.fn();
+    const { container } = render(
+      <HeaderTelemetry
+        sortedCount={3}
+        totalTracks={30}
+        cachedBytes={1024 * 1024 * 10}
+        hasUpdate={true}
+        onUpdateClick={onUpdateClick}
+      />
+    );
+
+    const header = container.querySelector('.header-telemetry');
+    expect(header).not.toBeNull();
+    expect(screen.queryByText('3 / 30 SORTED')).not.toBeInTheDocument();
+
+    const updateBtn = screen.getByRole('button', { name: /UPDATE AVAILABLE • TAP TO RELOAD/i });
+    expect(updateBtn).toBeInTheDocument();
+    fireEvent.click(updateBtn);
+    expect(onUpdateClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('TC-PI-13: SyncBridgeView shows versionLabel and guards Force Reload Shell behind Wi-Fi bridge status', () => {
+    const onForceReloadShell = vi.fn();
+    const { rerender } = render(
+      <SyncBridgeView
+        isBridgeConnected={false}
+        isSyncing={false}
+        syncError={null}
+        storageQuota={{ usage: 0, quota: 1024 * 1024 * 1024, persisted: true }}
+        cachedAudioSize={0}
+        totalTracks={1}
+        taggedCount={0}
+        onPullBatch={vi.fn()}
+        onCommitToMac={vi.fn()}
+        versionLabel="v0.1.0 • #abc1234"
+        hasUpdate={false}
+        onForceReloadShell={onForceReloadShell}
+      />
+    );
+
+    expect(screen.getByText('v0.1.0 • #abc1234')).toBeInTheDocument();
+    const offlineBtn = screen.getByRole('button', {
+      name: /Force Reload Shell \(Requires Wi-Fi\)/i
+    });
+    expect(offlineBtn).toBeDisabled();
+
+    rerender(
+      <SyncBridgeView
+        isBridgeConnected={true}
+        isSyncing={false}
+        syncError={null}
+        storageQuota={{ usage: 0, quota: 1024 * 1024 * 1024, persisted: true }}
+        cachedAudioSize={0}
+        totalTracks={1}
+        taggedCount={0}
+        onPullBatch={vi.fn()}
+        onCommitToMac={vi.fn()}
+        versionLabel="v0.1.0 • #abc1234"
+        hasUpdate={true}
+        onForceReloadShell={onForceReloadShell}
+      />
+    );
+
+    expect(screen.getByText('UPDATE READY')).toBeInTheDocument();
+    const onlineBtn = screen.getByRole('button', { name: /Update Ready — Reload Shell/i });
+    expect(onlineBtn).not.toBeDisabled();
+    fireEvent.click(onlineBtn);
+    expect(onForceReloadShell).toHaveBeenCalledTimes(1);
+  });
+
+  it('TC-PI-14: clearShellCachesAndReload purges CacheStorage and SW without touching IndexedDB audio blobs', async () => {
+    await saveAudioBlob('keep-me', new Blob(['offline-audio'], { type: 'audio/mp4' }));
+
+    const deleteCacheSpy = vi.fn().mockResolvedValue(true);
+    const unregisterSpy = vi.fn().mockResolvedValue(true);
+    const reloadSpy = vi.fn();
+
+    Object.defineProperty(window, 'caches', {
+      value: {
+        keys: vi.fn().mockResolvedValue(['workbox-precache-v2']),
+        delete: deleteCacheSpy
+      },
+      configurable: true
+    });
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: {
+        getRegistrations: vi.fn().mockResolvedValue([{ unregister: unregisterSpy }])
+      },
+      configurable: true
+    });
+
+    await clearShellCachesAndReload(reloadSpy);
+
+    expect(unregisterSpy).toHaveBeenCalledTimes(1);
+    expect(deleteCacheSpy).toHaveBeenCalledWith('workbox-precache-v2');
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    // IndexedDB audio blob must remain untouched
+    expect(await getAudioBlob('keep-me')).not.toBeNull();
   });
 });
