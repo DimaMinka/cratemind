@@ -37,7 +37,7 @@ export const WaveformBar: React.FC<WaveformBarProps> = ({
   };
 
   return (
-    <div className="w-full bg-black/60 rounded p-1.5 border border-neutral-800/80 my-1">
+    <div className="w-full bg-black/60 rounded p-1.5 border border-neutral-800/80">
       <div className="flex justify-between items-center text-[8px] font-mono text-neutral-400 mb-1 px-0.5">
         <span className="text-[#00FF00]">INTR</span>
         <span className="text-[#00FFFF]">DRP</span>
