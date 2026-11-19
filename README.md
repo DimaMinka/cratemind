@@ -137,7 +137,7 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
   - **DJ Transport Controls**: Square DJ-controller Play/Pause button (single tap to toggle playback, double tap to seek `-30s`, hold to seek `+10s` continuously).
   - **Waveform & Telemetry**: 16-segment `INTR/DRP/BRK/OUT` energy LED bar, duration/BPM/key badges, and `RAG XX%` and `YT MATCH` discovery badges.
   - **Tactile Gestures**: Tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
-- **Queue (`BatchQueueView`)**: Instant filterable queue (`All`, `Pending`, `Tagged`, `Skipped`) and batch commit trigger with zero UI clutter.
+- **Queue (`BatchQueueView`)**: Instant filterable queue (`All`, `Pending`, `Tagged`, `Skipped`) with zero UI clutter: tap any row to open in Sorter, tap `▶` to open and immediately start playback, **450ms long-press** on `Tagged` or `Skipped` rows to reset back to `Pending`, plus a sticky batch commit bar.
 - **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, **App Shell & Version** card (`v0.1.0 • #<buildHash>` + Wi-Fi-guarded **"Force Reload Shell"** button that refreshes the SW/shell without touching IndexedDB, paired with a high-contrast neon update bar replacing `HeaderTelemetry` whenever a newer build is detected), and an embedded collapsible **"Quick Controls & Gestures"** accordion manual card (default collapsed, accessible `>= 44px` toggle) detailing all playback workflows, gestures, badge meanings, Queue re-tagging, and the 4-stage preview pipeline.
 
 ### End-to-End Audio Preview & Sync Pipeline

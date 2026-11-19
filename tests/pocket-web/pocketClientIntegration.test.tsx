@@ -5,8 +5,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import {
   clearBatch,
+  enqueueMutation,
   getAllDecisions,
   getAudioBlob,
+  getPendingMutations,
   initIndexedDbStore,
   saveAudioBlob,
   saveBatchManifest,
@@ -564,5 +566,110 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
         screen.getByRole('button', { name: /UPDATE AVAILABLE • TAP TO RELOAD/i })
       ).toBeInTheDocument();
     });
+  });
+
+  it('TC-PI-16: BatchQueueView supports 450ms long-press reset on tagged/skipped rows, scroll cancel, and Play button autoplay trigger', () => {
+    vi.useFakeTimers();
+    try {
+      const tracks: PocketTrackItem[] = [
+        { id: 'q1', filename: '01.mp3', title: 'Tagged Track', artist: 'A', duration: 180 },
+        { id: 'q2', filename: '02.mp3', title: 'Skipped Track', artist: 'B', duration: 180 },
+        { id: 'q3', filename: '03.mp3', title: 'Pending Track', artist: 'C', duration: 180 }
+      ];
+      const onSelectTrack = vi.fn();
+      const onPlayTrack = vi.fn();
+      const onUndoDecision = vi.fn();
+
+      const { container } = render(
+        <BatchQueueView
+          tracks={tracks}
+          decisions={{
+            q1: { trackId: 'q1', filename: '01.mp3', status: 'tagged', selectedFolders: ['psy'] },
+            q2: { trackId: 'q2', filename: '02.mp3', status: 'skipped', selectedFolders: [] },
+            q3: { trackId: 'q3', filename: '03.mp3', status: 'pending', selectedFolders: [] }
+          }}
+          activeFilter="all"
+          onSelectFilter={vi.fn()}
+          onSelectTrack={onSelectTrack}
+          onPlayTrack={onPlayTrack}
+          onUndoDecision={onUndoDecision}
+          onCommit={vi.fn()}
+        />
+      );
+
+      const taggedRow = container.querySelector('[data-track-id="q1"]') as HTMLElement;
+      const skippedRow = container.querySelector('[data-track-id="q2"]') as HTMLElement;
+      const pendingRow = container.querySelector('[data-track-id="q3"]') as HTMLElement;
+
+      // 1. 450ms long-press on tagged row -> resets to pending, suppresses release click
+      act(() => {
+        fireEvent.pointerDown(taggedRow, { clientX: 100, clientY: 100 });
+        vi.advanceTimersByTime(450);
+        fireEvent.pointerUp(taggedRow);
+        fireEvent.click(taggedRow);
+      });
+      expect(onUndoDecision).toHaveBeenCalledWith('q1');
+      expect(onSelectTrack).not.toHaveBeenCalled();
+
+      // 2. Scroll (>10px move) on skipped row cancels long-press
+      act(() => {
+        fireEvent.pointerDown(skippedRow, { clientX: 100, clientY: 100 });
+        vi.advanceTimersByTime(200);
+        fireEvent.pointerMove(skippedRow, { clientX: 100, clientY: 130 });
+        vi.advanceTimersByTime(300);
+        fireEvent.pointerUp(skippedRow);
+      });
+      expect(onUndoDecision).toHaveBeenCalledTimes(1);
+
+      // 3. 450ms long-press on skipped row -> resets to pending
+      act(() => {
+        fireEvent.pointerDown(skippedRow, { clientX: 100, clientY: 100 });
+        vi.advanceTimersByTime(450);
+        fireEvent.pointerUp(skippedRow);
+      });
+      expect(onUndoDecision).toHaveBeenCalledWith('q2');
+
+      // 4. Short tap on pending row opens Sorter without triggering undo
+      fireEvent.click(pendingRow);
+      expect(onSelectTrack).toHaveBeenCalledWith(2);
+
+      // 5. Clicking mini-Play button triggers onPlayTrack (jump to Sorter & play immediately)
+      const playBtn = screen.getByLabelText('Play Tagged Track');
+      fireEvent.pointerDown(playBtn, { clientX: 10, clientY: 10 });
+      fireEvent.click(playBtn);
+      expect(onPlayTrack).toHaveBeenCalledWith(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('TC-PI-17: undoDecision resets track to pending, clears active selectedFolders, and prunes stale pending_mutations', async () => {
+    const decision = {
+      trackId: 'u1',
+      filename: 'u1.mp3',
+      status: 'tagged' as const,
+      selectedFolders: ['desert vibe']
+    };
+    await enqueueMutation({
+      id: 'mut_u1_1',
+      trackId: 'u1',
+      decision,
+      createdAt: Date.now()
+    });
+
+    usePocketStore.setState({
+      tracks: [{ id: 'u1', filename: 'u1.mp3', title: 'U1', artist: 'Art', duration: 180 }],
+      activeTrackIndex: 0,
+      selectedFolders: ['desert vibe'],
+      decisions: { u1: decision }
+    });
+
+    await usePocketStore.getState().undoDecision('u1');
+
+    expect(usePocketStore.getState().decisions['u1'].status).toBe('pending');
+    expect(usePocketStore.getState().decisions['u1'].selectedFolders).toEqual([]);
+    expect(usePocketStore.getState().selectedFolders).toEqual([]);
+    const remainingMutations = await getPendingMutations();
+    expect(remainingMutations.some((m) => m.trackId === 'u1')).toBe(false);
   });
 });

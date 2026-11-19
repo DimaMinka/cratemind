@@ -33,6 +33,7 @@ export const App: React.FC = () => {
     routeTrack,
     skipTrack,
     selectTrackIndex,
+    undoDecision,
     setIsPlaying,
     setPlaybackTime,
     checkBridgeHealth,
@@ -196,6 +197,21 @@ export const App: React.FC = () => {
     void skipTrack();
   };
 
+  const handlePlayTrackFromQueue = (index: number) => {
+    const engine = audioEngineRef.current;
+    const { activeTrackIndex: currentIdx } = usePocketStore.getState();
+    void engine?.unlock();
+    if (index === currentIdx) {
+      selectTrackIndex(index);
+      if (engine) {
+        void engine.play().then((started) => setIsPlaying(started));
+      }
+    } else {
+      shouldAutoPlayRef.current = true;
+      selectTrackIndex(index);
+    }
+  };
+
   const handleTogglePlay = () => {
     const engine = audioEngineRef.current;
     if (!engine) return;
@@ -321,6 +337,8 @@ export const App: React.FC = () => {
           activeTrackId={currentTrack?.id}
           onSelectFilter={setQueueFilter}
           onSelectTrack={selectTrackIndex}
+          onPlayTrack={handlePlayTrackFromQueue}
+          onUndoDecision={(trackId) => void undoDecision(trackId)}
           onCommit={() => void commitToMac()}
           isSyncing={isSyncing}
         />

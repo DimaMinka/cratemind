@@ -137,6 +137,14 @@ export const PocketHelpCard: React.FC = () => {
                 track and restores its selected crates to review or re-tag before commit.
               </li>
               <li>
+                <strong className="text-white">Tap ▶ Button:</strong> Jumps to Sorter on that track
+                and starts playback immediately.
+              </li>
+              <li>
+                <strong className="text-white">Hold 450ms (Tagged/Skipped):</strong> Resets the
+                track back to <code>Pending</code> with haptic feedback.
+              </li>
+              <li>
                 <strong className="text-white">Filter Pills:</strong> Filter by <code>All</code>,{' '}
                 <code>Pending</code>, <code>Tagged</code>, or <code>Skipped</code> to audit your
                 batch before syncing.

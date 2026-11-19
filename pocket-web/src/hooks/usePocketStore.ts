@@ -192,7 +192,7 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
   },
 
   undoDecision: async (trackId: string) => {
-    const { decisions } = get();
+    const { decisions, tracks, activeTrackIndex } = get();
     const existing = decisions[trackId];
     if (!existing) return;
 
@@ -203,8 +203,18 @@ export const usePocketStore = create<PocketStoreState>((set, get) => ({
       decisionTimestamp: Date.now()
     };
 
+    const isCurrentTrack = tracks[activeTrackIndex]?.id === trackId;
+    set({
+      decisions: { ...decisions, [trackId]: updated },
+      ...(isCurrentTrack ? { selectedFolders: [] } : {})
+    });
+
     await saveDecision(updated).catch(() => {});
-    set({ decisions: { ...decisions, [trackId]: updated } });
+    const mutations = await getPendingMutations().catch(() => []);
+    const staleIds = mutations.filter((m) => m.trackId === trackId).map((m) => m.id);
+    if (staleIds.length > 0) {
+      await clearPendingMutations(staleIds).catch(() => {});
+    }
   },
 
   resetAllDecisions: async () => {
