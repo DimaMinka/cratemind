@@ -183,7 +183,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
           onPointerLeave={handlePlayPointerCancel}
           onPointerCancel={handlePlayPointerCancel}
           onContextMenu={(e) => e.preventDefault()}
-          className={`dj-play-btn w-12 h-12 min-w-[48px] min-h-[48px] shrink-0 rounded-lg border-2 flex flex-col items-center justify-center font-mono select-none touch-none transition-all cursor-pointer ${
+          className={`dj-play-btn w-14 h-14 min-w-[56px] min-h-[56px] shrink-0 rounded-lg border-2 flex flex-col items-center justify-center font-mono select-none touch-none transition-all cursor-pointer ${
             isSeekingForward
               ? 'bg-[#00FFFF]/20 border-[#00FFFF] text-[#00FFFF] shadow-[0_0_12px_rgba(0,255,255,0.5)]'
               : isPlaying
@@ -191,10 +191,10 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
                 : 'bg-neutral-900 hover:bg-neutral-800 border-[#00FF00]/60 text-[#00FF00] shadow-[inset_0_0_8px_rgba(0,255,0,0.12)]'
           }`}
         >
-          <span className="text-base leading-none font-bold">
+          <span className="text-lg leading-none font-bold">
             {isSeekingForward ? '»' : isPlaying ? '❚❚' : '▶'}
           </span>
-          <span className="text-[8px] font-bold tracking-wider mt-0.5 leading-none">
+          <span className="text-[9px] font-bold tracking-wider mt-0.5 leading-none">
             {isSeekingForward ? '+10s' : isPlaying ? 'PAUSE' : 'PLAY'}
           </span>
         </button>
