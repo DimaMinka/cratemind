@@ -138,7 +138,16 @@ CrateMind Pocket lets you curate tracks offline on your iPhone (e.g., on a fligh
   - **Waveform & Telemetry**: 16-segment `INTR/DRP/BRK/OUT` energy LED bar, duration/BPM/key badges, and `RAG XX%` and `YT MATCH` discovery badges.
   - **Tactile Gestures**: Tap for multi-select, **450ms long-press** for 1-tap instant route, and **swipe left** to skip.
 - **Queue (`BatchQueueView`)**: Instant filterable queue (`All`, `Pending`, `Tagged`, `Skipped`) and batch commit trigger with zero UI clutter.
-- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, and an embedded collapsible **"Quick Controls & Gestures"** accordion manual card (default collapsed, accessible `>= 44px` toggle) detailing all playback workflows, gestures, badge meanings, Queue re-tagging, and Sync commit mechanics.
+- **Sync (`SyncBridgeView`)**: Local Wi-Fi pull/commit controls with cumulative **"Add +30 More Tracks"** batch loading, IndexedDB storage meter, JSON decision export, dedicated **"Clear Cache & Queue"** action, and an embedded collapsible **"Quick Controls & Gestures"** accordion manual card (default collapsed, accessible `>= 44px` toggle) detailing all playback workflows, gestures, badge meanings, Queue re-tagging, and the 4-stage preview pipeline.
+
+### End-to-End Audio Preview & Sync Pipeline
+
+CrateMind Pocket uses a 4-stage architecture that keeps heavy master audio safe on your Mac while allowing lightweight, zero-latency curation on iPhone:
+
+1. **Mac Scan & Enrichment (`Incoming/` → Manifest)**: Scans incoming audio (`WAV`, `FLAC`, `AIFF`, `MP3`), extracting ID3 tags, Camelot key, BPM, 16-bar energy profiles, and local RAG/YouTube scout similarity matches.
+2. **FFmpeg Preview Transcoding (`.pocket-cache/previews/`)**: Converts master files into optimized 256kbps AAC (`.m4a`, 44.1kHz) previews cached by content hash at `.pocket-cache/previews/<sha256>.m4a` and streamed over LAN via RFC 7233 HTTP 206 byte ranges (4x parallel prefetch workers).
+3. **iPhone Offline IndexedDB (`cratemind_pocket_db`)**: Persists metadata, waveforms, and compressed `.m4a` audio blobs in local IndexedDB. Works 100% offline (flights, commutes) with decisions queued in `pending_mutations`. Original master files on Mac remain untouched.
+4. **Lossless Master Routing & Cleanup (`Incoming/` → `Sorted/`)**: On commit, only lightweight JSON decision payloads are transmitted. The Mac routes original lossless/master files into `Sorted/<crate>/` (or `Sorted/skipped/`), keeps pending files untouched in `Incoming/`, and the iPhone purges committed audio blobs to free device storage.
 
 ### iPhone PWA Setup & Usage
 

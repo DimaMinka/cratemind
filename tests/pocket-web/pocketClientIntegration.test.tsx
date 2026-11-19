@@ -295,6 +295,9 @@ describe('Tier 3: Pocket Client Sync, Views & Lifecycle Remediation', () => {
     expect(screen.getByText('YT MATCH')).toBeInTheDocument();
     expect(screen.getByText(/QUEUE & RE-TAGGING/i)).toBeInTheDocument();
     expect(screen.getByText(/SYNC & OFFLINE STORAGE/i)).toBeInTheDocument();
+    expect(screen.getByText(/HOW POCKET WORKS/i)).toBeInTheDocument();
+    expect(screen.getByText(/256kbps AAC/i)).toBeInTheDocument();
+    expect(screen.getByText(/\.pocket-cache\/previews\//i)).toBeInTheDocument();
 
     // 3. Strict zero AI / LLM copy policy across expanded content
     const textContent = container.textContent || '';

@@ -180,6 +180,40 @@ export const PocketHelpCard: React.FC = () => {
               </li>
             </ul>
           </div>
+
+          {/* How Pocket Works: 4-Stage Pipeline */}
+          <div className="space-y-1">
+            <span className="font-bold text-[#00FFFF] font-mono text-[11px] block">
+              ⚙ HOW POCKET WORKS (4-STAGE PIPELINE)
+            </span>
+            <ol className="text-neutral-300 space-y-1.5 pl-2 text-[11px] leading-relaxed list-decimal list-inside">
+              <li>
+                <strong className="text-white">1. Mac Scan &amp; Metrics:</strong> Scans up to 30
+                incoming master tracks (<code>WAV</code>, <code>FLAC</code>, <code>AIFF</code>,{' '}
+                <code>MP3</code>) in <code>Incoming/</code>, extracting ID3 tags, Camelot key, BPM,
+                and 16-bar energy waveforms.
+              </li>
+              <li>
+                <strong className="text-white">2. FFmpeg Preview Cache:</strong> Transcodes heavy
+                audio into optimized{' '}
+                <code className="text-[#00FFFF] font-mono">256kbps AAC (.m4a)</code> previews cached
+                on Mac in <code className="text-[#00FFFF] font-mono">.pocket-cache/previews/</code>{' '}
+                and streamed via HTTP 206 byte-ranges.
+              </li>
+              <li>
+                <strong className="text-white">3. iPhone IndexedDB Offline Store:</strong> Saves
+                compressed audio blobs and metadata into 4 local stores (<code>manifest</code>,{' '}
+                <code>audio_blobs</code>, <code>decisions</code>, <code>pending_mutations</code>).
+                Original master files on Mac remain untouched while you curate offline.
+              </li>
+              <li>
+                <strong className="text-white">4. Lossless Master Routing:</strong> On commit, Mac
+                moves your original lossless/master files from <code>Incoming/</code> to{' '}
+                <code>Sorted/&lt;crate&gt;/</code> (or <code>Sorted/skipped/</code>) and updates
+                similarity memory. iPhone automatically purges committed audio blobs to free space.
+              </li>
+            </ol>
+          </div>
         </div>
       )}
     </section>
